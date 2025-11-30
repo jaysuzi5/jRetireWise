@@ -13,6 +13,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render, redirect
 from django.contrib.auth import logout as auth_logout
 from django.contrib import messages
+from django.views.decorators.http import require_http_methods
+from django.utils.decorators import method_decorator
 from .models import UserProfile
 from .serializers import UserSerializer, UserProfileSerializer
 from jretirewise.financial.models import FinancialProfile
@@ -32,10 +34,16 @@ class LoginView(APIView):
 
 class LogoutView(APIView):
     """Handle user logout."""
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        """Logout endpoint (GET redirect)."""
+        auth_logout(request)
+        messages.success(request, 'You have been logged out successfully.')
+        return redirect('account_login')
 
     def post(self, request):
-        """Logout endpoint."""
+        """Logout endpoint (POST API)."""
         auth_logout(request)
         return Response({'status': 'logged out'})
 
