@@ -63,36 +63,42 @@ jobs:
 
     - name: Run migrations
       env:
-        DATABASE_NAME: jretirewise_test
-        DATABASE_USER: jretirewise
-        DATABASE_PASSWORD: testpass
-        DATABASE_HOST: localhost
-        DATABASE_PORT: 5432
+        DB_NAME: jretirewise_test
+        DB_USER: jretirewise
+        DB_PASSWORD: testpass
+        DB_HOST: localhost
+        DB_PORT: 5432
         REDIS_URL: redis://localhost:6379/0
+        SECRET_KEY: test-secret-key-for-ci
+        DEBUG: "true"
       run: |
-        python manage.py migrate
+        python manage.py migrate --noinput
 
     - name: Run unit tests
       env:
-        DATABASE_NAME: jretirewise_test
-        DATABASE_USER: jretirewise
-        DATABASE_PASSWORD: testpass
-        DATABASE_HOST: localhost
-        DATABASE_PORT: 5432
+        DB_NAME: jretirewise_test
+        DB_USER: jretirewise
+        DB_PASSWORD: testpass
+        DB_HOST: localhost
+        DB_PORT: 5432
         REDIS_URL: redis://localhost:6379/0
+        SECRET_KEY: test-secret-key-for-ci
+        DEBUG: "true"
       run: |
-        pytest tests/unit/ -v --cov=jretirewise --cov-report=xml --cov-report=term
+        pytest tests/unit/ -v --cov=jretirewise --cov-report=xml --cov-report=term-missing
 
     - name: Run integration tests
       env:
-        DATABASE_NAME: jretirewise_test
-        DATABASE_USER: jretirewise
-        DATABASE_PASSWORD: testpass
-        DATABASE_HOST: localhost
-        DATABASE_PORT: 5432
+        DB_NAME: jretirewise_test
+        DB_USER: jretirewise
+        DB_PASSWORD: testpass
+        DB_HOST: localhost
+        DB_PORT: 5432
         REDIS_URL: redis://localhost:6379/0
+        SECRET_KEY: test-secret-key-for-ci
+        DEBUG: "true"
       run: |
-        pytest tests/integration/ -v --cov=jretirewise --cov-append --cov-report=xml --cov-report=term
+        pytest tests/integration/ -v --cov=jretirewise --cov-append --cov-report=xml --cov-report=term-missing
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
@@ -108,7 +114,7 @@ jobs:
       uses: dorny/test-reporter@v1
       with:
         name: Test Results
-        path: '**/pytest-report.xml'
+        path: '**/coverage.xml'
         reporter: 'java-junit'
         fail-on-error: false
 
