@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}{% if form.instance.pk %}Edit{% else %}Create{% endif %} Scenario - jRetireWise{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <h1 class="text-3xl font-bold text-gray-900 mb-8">
+        {% if form.instance.pk %}Edit Scenario{% else %}Create New Scenario{% endif %}
+    </h1>
+
+    {% if form.non_field_errors %}
+        <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+            {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <form method="post" class="bg-white rounded-lg shadow p-8 space-y-6">
+        {% csrf_token %}
+
+        <div>
+            <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium text-gray-700">Name</label>
+            {{ form.name }}
+            {% if form.name.errors %}
+                <p class="mt-1 text-sm text-red-600">{{ form.name.errors.0 }}</p>
+            {% endif %}
+        </div>
+
+        <div>
+            <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-700">Description</label>
+            {{ form.description }}
+            {% if form.description.errors %}
+                <p class="mt-1 text-sm text-red-600">{{ form.description.errors.0 }}</p>
+            {% endif %}
+        </div>
+
+        <div>
+            <label for="{{ form.calculator_type.id_for_label }}" class="block text-sm font-medium text-gray-700">Calculator Type</label>
+            {{ form.calculator_type }}
+            {% if form.calculator_type.errors %}
+                <p class="mt-1 text-sm text-red-600">{{ form.calculator_type.errors.0 }}</p>
+            {% endif %}
+        </div>
+
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p class="text-sm text-blue-800">
+                <strong>Scenario Parameters:</strong> Parameters will be automatically filled based on your financial profile.
+                You can override specific values by setting the JSON parameters below.
+            </p>
+        </div>
+
+        <div>
+            <label for="{{ form.parameters_json.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.parameters_json.label }}</label>
+            {{ form.parameters_json }}
+            {% if form.parameters_json.errors %}
+                <p class="mt-1 text-sm text-red-600">{{ form.parameters_json.errors.0 }}</p>
+            {% endif %}
+            <p class="mt-2 text-xs text-gray-500">{{ form.parameters_json.help_text }}</p>
+        </div>
+
+        <div class="flex justify-end space-x-4 pt-6 border-t">
+            <a href="{% url 'scenarios' %}" class="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">
+                Cancel
+            </a>
+            <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                {% if form.instance.pk %}Update{% else %}Create{% endif %} Scenario
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

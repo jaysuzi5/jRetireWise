@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - jRetireWise{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Profile Sidebar -->
+    <div class="lg:col-span-1">
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-6">Account</h2>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Name</label>
+                    <p class="mt-1 text-lg text-gray-900">{{ user.get_full_name|default:user.username }}</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Email</label>
+                    <p class="mt-1 text-lg text-gray-900">{{ user.email }}</p>
+                </div>
+
+                <div class="pt-4 border-t border-gray-200">
+                    <a href="#" class="text-indigo-600 hover:text-indigo-900 text-sm">Edit Profile</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Profile Form -->
+    <div class="lg:col-span-2">
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-6">Financial Profile</h2>
+
+            {% if form.non_field_errors %}
+                <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+                    {% for error in form.non_field_errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ form.current_age.id_for_label }}" class="block text-sm font-medium text-gray-700">Current Age</label>
+                        {{ form.current_age }}
+                        {% if form.current_age.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.current_age.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.retirement_age.id_for_label }}" class="block text-sm font-medium text-gray-700">Retirement Age</label>
+                        {{ form.retirement_age }}
+                        {% if form.retirement_age.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.retirement_age.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.life_expectancy.id_for_label }}" class="block text-sm font-medium text-gray-700">Life Expectancy</label>
+                        {{ form.life_expectancy }}
+                        {% if form.life_expectancy.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.life_expectancy.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.current_portfolio_value.id_for_label }}" class="block text-sm font-medium text-gray-700">Portfolio Value</label>
+                        {{ form.current_portfolio_value }}
+                        {% if form.current_portfolio_value.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.current_portfolio_value.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.annual_spending.id_for_label }}" class="block text-sm font-medium text-gray-700">Annual Spending</label>
+                        {{ form.annual_spending }}
+                        {% if form.annual_spending.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.annual_spending.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.social_security_annual.id_for_label }}" class="block text-sm font-medium text-gray-700">Social Security (Annual)</label>
+                        {{ form.social_security_annual }}
+                        {% if form.social_security_annual.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.social_security_annual.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.pension_annual.id_for_label }}" class="block text-sm font-medium text-gray-700">Pension (Annual)</label>
+                        {{ form.pension_annual }}
+                        {% if form.pension_annual.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.pension_annual.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-4">
+                    <a href="{% url 'dashboard' %}" class="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">
+                        Cancel
+                    </a>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                        Save Profile
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

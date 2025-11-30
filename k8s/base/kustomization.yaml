@@ -1,0 +1,36 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: default
+
+resources:
+- configmap.yaml
+- secret.yaml
+- rbac.yaml
+- service.yaml
+- statefulset-postgres.yaml
+- deployment-redis.yaml
+- deployment-celery.yaml
+- deployment-web.yaml
+- ingress.yaml
+
+namePrefix: jretirewise-
+
+commonLabels:
+  app: jretirewise
+  managed-by: kustomize
+
+commonAnnotations:
+  kustomize.config.k8s.io/version: "5.0.0"
+  author: "Claude Code"
+
+# Replica counts can be overridden in overlays
+replicas:
+- name: postgres
+  count: 1
+- name: redis
+  count: 1
+- name: jretirewise-celery
+  count: 2
+- name: jretirewise-web
+  count: 3

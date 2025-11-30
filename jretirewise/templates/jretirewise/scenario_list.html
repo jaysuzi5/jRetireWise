@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Scenarios - jRetireWise{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-8">
+    <h1 class="text-3xl font-bold text-gray-900">Retirement Scenarios</h1>
+    <a href="{% url 'scenario-create' %}" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+        New Scenario
+    </a>
+</div>
+
+{% if scenarios %}
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Updated</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for scenario in scenarios %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ scenario.name }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-700">{{ scenario.get_calculator_type_display }}</td>
+                    <td class="px-6 py-4 text-sm">
+                        {% if scenario.result.status == 'completed' %}
+                            <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">Completed</span>
+                        {% elif scenario.result.status == 'pending' %}
+                            <span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">Running</span>
+                        {% elif scenario.result.status == 'failed' %}
+                            <span class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">Failed</span>
+                        {% else %}
+                            <span class="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">No Result</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-700">{{ scenario.updated_at|date:"M d, Y" }}</td>
+                    <td class="px-6 py-4 text-sm space-x-2">
+                        <a href="{% url 'scenario-detail' scenario.id %}" class="text-indigo-600 hover:text-indigo-900">View</a>
+                        <a href="{% url 'scenario-edit' scenario.id %}" class="text-blue-600 hover:text-blue-900">Edit</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if is_paginated %}
+    <div class="mt-8 flex justify-center space-x-2">
+        {% if page_obj.has_previous %}
+            <a href="?page=1" class="px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-50">First</a>
+            <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-50">Previous</a>
+        {% endif %}
+
+        <span class="px-3 py-1">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-50">Next</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}" class="px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-50">Last</a>
+        {% endif %}
+    </div>
+    {% endif %}
+{% else %}
+    <div class="bg-white rounded-lg shadow p-8 text-center">
+        <p class="text-gray-500 mb-4">No scenarios yet.</p>
+        <a href="{% url 'scenario-create' %}" class="text-indigo-600 hover:text-indigo-900">Create your first scenario</a>
+    </div>
+{% endif %}
+{% endblock %}

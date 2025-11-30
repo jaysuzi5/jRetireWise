@@ -1,0 +1,141 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jretirewise-celery
+  namespace: default
+  labels:
+    app: jretirewise
+    component: celery
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: jretirewise
+      component: celery
+  template:
+    metadata:
+      labels:
+        app: jretirewise
+        component: celery
+    spec:
+      serviceAccountName: jretirewise
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+
+      containers:
+      - name: celery
+        image: "jretirewise:latest"
+        imagePullPolicy: IfNotPresent
+        command:
+        - celery
+        - -A
+        - config
+        - worker
+        - -l
+        - info
+        - -c
+        - "4"
+
+        env:
+        - name: DEBUG
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: DEBUG
+        - name: DJANGO_SETTINGS_MODULE
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: DJANGO_SETTINGS_MODULE
+        - name: CELERY_BROKER_URL
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: CELERY_BROKER_URL
+        - name: CELERY_RESULT_BACKEND
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: CELERY_RESULT_BACKEND
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: REDIS_URL
+        - name: DATABASE_ENGINE
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: DATABASE_ENGINE
+        - name: DATABASE_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: DATABASE_NAME
+        - name: DATABASE_USER
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: DATABASE_USER
+        - name: DATABASE_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: DATABASE_HOST
+        - name: DATABASE_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: DATABASE_PORT
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: jretirewise-secret
+              key: SECRET_KEY
+        - name: DATABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: jretirewise-secret
+              key: DATABASE_PASSWORD
+
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
+
+      volumes:
+      - name: tmp
+        emptyDir: {}
+
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - jretirewise
+                - key: component
+                  operator: In
+                  values:
+                  - celery
+              topologyKey: kubernetes.io/hostname

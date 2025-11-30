@@ -1,0 +1,76 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: jretirewise-prod
+
+bases:
+- ../../base
+
+# Production replicas
+replicas:
+- name: jretirewise-celery
+  count: 3
+- name: jretirewise-web
+  count: 5
+- name: postgres
+  count: 1
+- name: redis
+  count: 1
+
+# ConfigMap overrides for production
+configMapGenerator:
+- name: jretirewise-config
+  behavior: merge
+  literals:
+  - DEBUG=false
+  - ALLOWED_HOSTS=jretirewise.example.com,www.jretirewise.example.com
+  - SECURE_SSL_REDIRECT=true
+  - SESSION_COOKIE_SECURE=true
+  - CSRF_COOKIE_SECURE=true
+
+# Image replacement for prod (Docker Hub)
+images:
+- name: jretirewise
+  newName: yourusername/jretirewise
+  newTag: latest
+
+commonLabels:
+  environment: production
+
+namePrefix: prod-
+
+# Production patches for higher resources
+patchesStrategicMerge:
+- deployment-web-patch.yaml
+- statefulset-postgres-patch.yaml
+- deployment-redis-patch.yaml
+- deployment-celery-patch.yaml
+
+# Network policies for prod
+patchesJson6902:
+- target:
+    group: apps
+    version: v1
+    kind: Deployment
+    name: jretirewise-web
+  patch: |-
+    - op: add
+      path: /spec/template/spec/affinity/podAntiAffinity
+      value:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: app
+              operator: In
+              values:
+              - jretirewise
+            - key: component
+              operator: In
+              values:
+              - web
+          topologyKey: kubernetes.io/hostname
+
+commonAnnotations:
+  environment: production
+  kustomize.config.k8s.io/version: "5.0.0"
+  backup.velero.io/backup: "true"

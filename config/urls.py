@@ -6,6 +6,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.http import JsonResponse
 from rest_framework.routers import DefaultRouter
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from jretirewise.authentication.views import LoginView, LogoutView, UserProfileView
@@ -15,6 +16,17 @@ from jretirewise.financial.views import (
 )
 from jretirewise.scenarios.views import ScenarioViewSet
 from jretirewise.calculations.views import CalculationView
+
+
+# Health check views
+def health_ready(request):
+    """Kubernetes readiness probe endpoint."""
+    return JsonResponse({'status': 'ready'})
+
+
+def health_live(request):
+    """Kubernetes liveness probe endpoint."""
+    return JsonResponse({'status': 'alive'})
 
 # API Router
 router = DefaultRouter()
@@ -49,8 +61,8 @@ urlpatterns = [
     path('financial/', include('jretirewise.financial.urls')),
 
     # Health checks
-    path('health/ready/', lambda r: __import__('django.http').JsonResponse({'status': 'ready'})),
-    path('health/live/', lambda r: __import__('django.http').JsonResponse({'status': 'alive'})),
+    path('health/ready/', health_ready, name='health-ready'),
+    path('health/live/', health_live, name='health-live'),
 ]
 
 # Serve media files in development

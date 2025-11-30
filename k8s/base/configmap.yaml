@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jretirewise-config
+  namespace: default
+data:
+  # Django settings
+  DEBUG: "false"
+  DJANGO_SETTINGS_MODULE: "config.settings"
+  ALLOWED_HOSTS: "jretirewise.example.com,www.jretirewise.example.com,localhost"
+
+  # Database
+  DATABASE_ENGINE: "django.db.backends.postgresql"
+  DATABASE_NAME: "jretirewise"
+  DATABASE_USER: "jretirewise"
+  DATABASE_HOST: "postgres-service"
+  DATABASE_PORT: "5432"
+
+  # Redis
+  REDIS_URL: "redis://redis-service:6379/0"
+  CELERY_BROKER_URL: "redis://redis-service:6379/0"
+  CELERY_RESULT_BACKEND: "redis://redis-service:6379/0"
+
+  # Email backend
+  EMAIL_BACKEND: "django.core.mail.backends.smtp.EmailBackend"
+  EMAIL_HOST: "smtp.gmail.com"
+  EMAIL_PORT: "587"
+  EMAIL_USE_TLS: "true"
+
+  # Django-allauth
+  ACCOUNT_EMAIL_VERIFICATION: "optional"
+  ACCOUNT_AUTHENTICATION_METHOD: "email"
+  ACCOUNT_EMAIL_REQUIRED: "true"
+
+  # Security
+  SECURE_SSL_REDIRECT: "true"
+  SESSION_COOKIE_SECURE: "true"
+  CSRF_COOKIE_SECURE: "true"
+  SECURE_BROWSER_XSS_FILTER: "true"
+  SECURE_CONTENT_SECURITY_POLICY: "default-src 'self'; script-src 'self' cdn.tailwindcss.com cdn.jsdelivr.net unpkg.com; style-src 'self' cdn.tailwindcss.com fonts.googleapis.com"
+
+  # Logging
+  LOG_LEVEL: "INFO"
+
+  # OpenTelemetry
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
+  OTEL_SDK_DISABLED: "false"
+
+  # Application
+  STATIC_URL: "/static/"
+  MEDIA_URL: "/media/"
+  STATIC_ROOT: "/app/staticfiles"
+  MEDIA_ROOT: "/app/media"
+
+  # Celery
+  CELERY_TASK_SERIALIZER: "json"
+  CELERY_RESULT_SERIALIZER: "json"
+  CELERY_ACCEPT_CONTENT: "json"
+  CELERY_TIMEZONE: "UTC"

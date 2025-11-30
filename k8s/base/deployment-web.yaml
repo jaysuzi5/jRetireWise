@@ -1,0 +1,289 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jretirewise-web
+  namespace: default
+  labels:
+    app: jretirewise
+    component: web
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: jretirewise
+      component: web
+  template:
+    metadata:
+      labels:
+        app: jretirewise
+        component: web
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: jretirewise
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+
+      containers:
+      - name: web
+        image: "jretirewise:latest"
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 8000
+          protocol: TCP
+
+        env:
+        # ConfigMap values
+        - name: DEBUG
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: DEBUG
+        - name: DJANGO_SETTINGS_MODULE
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: DJANGO_SETTINGS_MODULE
+        - name: ALLOWED_HOSTS
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: ALLOWED_HOSTS
+        - name: DATABASE_ENGINE
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: DATABASE_ENGINE
+        - name: DATABASE_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: DATABASE_NAME
+        - name: DATABASE_USER
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: DATABASE_USER
+        - name: DATABASE_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: DATABASE_HOST
+        - name: DATABASE_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: DATABASE_PORT
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: REDIS_URL
+        - name: CELERY_BROKER_URL
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: CELERY_BROKER_URL
+        - name: EMAIL_BACKEND
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: EMAIL_BACKEND
+        - name: EMAIL_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: EMAIL_HOST
+        - name: EMAIL_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: EMAIL_PORT
+        - name: EMAIL_USE_TLS
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: EMAIL_USE_TLS
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: OTEL_EXPORTER_OTLP_ENDPOINT
+
+        # Secret values
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: jretirewise-secret
+              key: SECRET_KEY
+        - name: DATABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: jretirewise-secret
+              key: DATABASE_PASSWORD
+        - name: EMAIL_HOST_USER
+          valueFrom:
+            secretKeyRef:
+              name: jretirewise-secret
+              key: EMAIL_HOST_USER
+        - name: EMAIL_HOST_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: jretirewise-secret
+              key: EMAIL_HOST_PASSWORD
+        - name: SOCIAL_AUTH_GOOGLE_OAUTH2_KEY
+          valueFrom:
+            secretKeyRef:
+              name: jretirewise-secret
+              key: SOCIAL_AUTH_GOOGLE_OAUTH2_KEY
+        - name: SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: jretirewise-secret
+              key: SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET
+
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+
+        # Startup probe: wait for app to be ready
+        startupProbe:
+          httpGet:
+            path: /health/live/
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30
+
+        # Readiness probe: check if ready to accept traffic
+        readinessProbe:
+          httpGet:
+            path: /health/ready/
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+
+        # Liveness probe: check if still running
+        livenessProbe:
+          httpGet:
+            path: /health/live/
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        # Volume mounts
+        volumeMounts:
+        - name: static-files
+          mountPath: /app/staticfiles
+        - name: media-files
+          mountPath: /app/media
+        - name: tmp
+          mountPath: /tmp
+
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
+
+      # Init container to run migrations
+      initContainers:
+      - name: migrate
+        image: "jretirewise:latest"
+        imagePullPolicy: IfNotPresent
+        command:
+        - python
+        - manage.py
+        - migrate
+        env:
+        - name: DEBUG
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: DEBUG
+        - name: DJANGO_SETTINGS_MODULE
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: DJANGO_SETTINGS_MODULE
+        - name: DATABASE_ENGINE
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: DATABASE_ENGINE
+        - name: DATABASE_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: DATABASE_NAME
+        - name: DATABASE_USER
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: DATABASE_USER
+        - name: DATABASE_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: DATABASE_HOST
+        - name: DATABASE_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: DATABASE_PORT
+        - name: DATABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: jretirewise-secret
+              key: DATABASE_PASSWORD
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: jretirewise-secret
+              key: SECRET_KEY
+
+      volumes:
+      - name: static-files
+        emptyDir: {}
+      - name: media-files
+        emptyDir: {}
+      - name: tmp
+        emptyDir: {}
+
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - jretirewise
+                - key: component
+                  operator: In
+                  values:
+                  - web
+              topologyKey: kubernetes.io/hostname
