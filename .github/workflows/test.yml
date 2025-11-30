@@ -55,23 +55,24 @@ jobs:
 
     - name: Run migrations
       env:
-        DATABASE_NAME: jretirewise_test
-        DATABASE_USER: jretirewise
-        DATABASE_PASSWORD: testpass
-        DATABASE_HOST: localhost
-        DATABASE_PORT: 5432
+        DB_NAME: jretirewise_test
+        DB_USER: jretirewise
+        DB_PASSWORD: testpass
+        DB_HOST: localhost
+        DB_PORT: 5432
         REDIS_URL: redis://localhost:6379/0
+        SECRET_KEY: test-secret-key-for-ci
         DEBUG: "true"
       run: |
         python manage.py migrate --noinput
 
     - name: Run all tests with coverage
       env:
-        DATABASE_NAME: jretirewise_test
-        DATABASE_USER: jretirewise
-        DATABASE_PASSWORD: testpass
-        DATABASE_HOST: localhost
-        DATABASE_PORT: 5432
+        DB_NAME: jretirewise_test
+        DB_USER: jretirewise
+        DB_PASSWORD: testpass
+        DB_HOST: localhost
+        DB_PORT: 5432
         REDIS_URL: redis://localhost:6379/0
         SECRET_KEY: test-secret-key-for-ci
         DEBUG: "true"
