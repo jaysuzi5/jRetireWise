@@ -160,7 +160,8 @@ Keep this tunnel running while GitHub Actions jobs execute. You have two options
 
 ```bash
 # Replace 443 with the correct ArgoCD port if different
-cloudflared tunnel run jretirewise-argocd --url http://192.168.86.229:443
+# NOTE: --url flag comes BEFORE the tunnel name
+cloudflared tunnel run --url http://192.168.86.229:443 jretirewise-argocd
 ```
 
 Output will show:
@@ -181,7 +182,8 @@ Run the tunnel in the background:
 
 ```bash
 # Start tunnel in background
-nohup cloudflared tunnel run jretirewise-argocd --url http://192.168.86.229:443 > argocd-tunnel.log 2>&1 &
+# NOTE: --url flag comes BEFORE the tunnel name
+nohup cloudflared tunnel run --url http://192.168.86.229:443 jretirewise-argocd > argocd-tunnel.log 2>&1 &
 
 # Verify it's running
 ps aux | grep cloudflared
@@ -546,8 +548,8 @@ argocd account generate-token --account admin-user
 ### Useful Commands
 
 ```bash
-# Start tunnel
-cloudflared tunnel run jretirewise-argocd --url http://192.168.86.229:443
+# Start tunnel (--url BEFORE tunnel name)
+cloudflared tunnel run --url http://192.168.86.229:443 jretirewise-argocd
 
 # Get tunnel public URL
 cloudflared tunnel info jretirewise-argocd
@@ -580,7 +582,7 @@ kubectl get pods -n jretirewise -w
 1. ✅ Install Cloudflared: `brew install cloudflare/cloudflare/cloudflared`
 2. ✅ Authenticate: `cloudflared tunnel login`
 3. ✅ Create tunnel: `cloudflared tunnel create jretirewise-argocd`
-4. ✅ Start tunnel: `cloudflared tunnel run jretirewise-argocd --url http://192.168.86.229:443`
+4. ✅ Start tunnel (--url BEFORE name): `cloudflared tunnel run --url http://192.168.86.229:443 jretirewise-argocd`
 5. ✅ Get public URL: `cloudflared tunnel info jretirewise-argocd`
 6. ✅ Add `ARGOCD_SERVER` to GitHub Secrets with your tunnel URL
 7. ✅ Verify `ARGOCD_AUTH_TOKEN` in GitHub Secrets
@@ -591,4 +593,4 @@ kubectl get pods -n jretirewise -w
 
 You're now ready to deploy to your local Kubernetes cluster from GitHub Actions!
 
-**Remember:** Keep the tunnel running whenever you want deployments to work. Use `cloudflared tunnel run ...` in a persistent terminal or background process.
+**Remember:** Keep the tunnel running whenever you want deployments to work. The `--url` flag MUST come BEFORE the tunnel name.
