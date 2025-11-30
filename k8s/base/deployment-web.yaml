@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: jretirewise-web
-  namespace: default
   labels:
     app: jretirewise
     component: web
