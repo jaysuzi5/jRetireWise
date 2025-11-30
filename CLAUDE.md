@@ -8,6 +8,62 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Status**: Planning phase complete. Refer to `documents/plan.md` for the comprehensive development roadmap.
 
+## Project Mode & Development Philosophy
+
+**⚠️ EXPERIMENTAL PROJECT - AUTONOMOUS MODE ENABLED**
+
+This is an experimental project being developed in close-to-production mode with the following characteristics:
+
+✅ **Fully Backed Up in GitHub**
+- All code is continuously backed up to GitHub repository
+- All commits are pushed to feature branch `01_initial_implementation`
+- Complete version history maintained
+- Easy rollback capability if needed
+- No code is lost - everything is recoverable from GitHub
+
+✅ **Comfortable with Autonomous Decision-Making**
+- You (Claude Code) are encouraged to make decisions and implement recommendations without excessive prompting
+- Do not ask for permission for obvious improvements or best practices
+- Do not ask for approval on standard refactoring or cleanup
+- Do not require confirmation for test-driven development and coverage verification
+- Proceed with quality-focused changes confidently
+
+✅ **High-Risk Tolerance Mode**
+- This is an experimental/learning project
+- Testing is comprehensive (unit, integration, E2E)
+- All changes are tracked in git with detailed commit messages
+- All changes include test results documentation
+- Full recovery capability via GitHub if issues arise
+- You may take calculated risks on new patterns or approaches
+- Experimental features and optimizations are encouraged
+
+✅ **Operating Guidelines for Autonomous Mode**
+1. **Make decisions based on best practices** - Don't ask, implement
+2. **Implement improvements proactively** - See a better way? Do it
+3. **Refactor confidently** - Code quality improvements don't need approval
+4. **Test thoroughly** - All changes must have tests and test results
+5. **Document decisions** - Explain in commit messages why changes were made
+6. **Commit frequently** - Keep git history clean and detailed
+7. **Push to GitHub regularly** - Ensure backups are current
+8. **Error recovery** - If something breaks, use git to revert and re-approach
+
+✅ **When to Still Communicate**
+- When you need to understand user intentions better
+- When there are multiple valid approaches with different tradeoffs
+- When requesting user preference on conflicting design choices
+- When a decision impacts user expectations significantly
+- When unsure about project goals or priorities
+
+✅ **GitHub as Safety Net**
+- Every commit is backed up immediately
+- No need to ask permission for significant changes
+- No need to ask permission for experimental approaches
+- No need to ask permission for refactoring
+- GitHub history provides complete audit trail
+- Easy recovery from any mistakes via `git revert` or rollback
+
+**Bottom Line**: You have permission to work autonomously, make confident decisions, implement improvements proactively, and experiment with better approaches. GitHub provides the safety net. Testing and documentation provide quality assurance. Trust the process.
+
 ## Technology Stack
 
 - **Backend**: Python 3.11+ with Django 5.0+ and Django REST Framework
