@@ -22,27 +22,32 @@ Since ArgoCD is only accessible on your local network (`192.168.86.229`), GitHub
 
 ---
 
-## Step 1: Install Cloudflare Wrangler
+## Step 1: Install Cloudflared
 
-Cloudflare Wrangler is the CLI tool for managing tunnels.
+Cloudflared is the CLI tool for managing Cloudflare Tunnels.
+
+**Note:** Do not use `wrangler` (that's for Cloudflare Workers). We need `cloudflared` instead.
 
 ### macOS
 ```bash
-brew install cloudflare-wrangler
+brew install cloudflare/cloudflare/cloudflared
 ```
 
 ### Linux (Ubuntu/Debian)
 ```bash
-curl -fsSL https://get.wrangler.dev | bash
+curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb -o cloudflared.deb
+sudo dpkg -i cloudflared.deb
 ```
 
 ### Windows
-Download from: https://github.com/cloudflare/wrangler/releases
+Download from: https://github.com/cloudflare/cloudflared/releases
 
 ### Verify Installation
 ```bash
-wrangler --version
+cloudflared --version
 ```
+
+Expected output: `cloudflared version 2025.x.x`
 
 ---
 
@@ -55,24 +60,26 @@ wrangler --version
 
 ---
 
-## Step 3: Authenticate Wrangler
+## Step 3: Authenticate Cloudflared
 
-Authenticate Wrangler with your Cloudflare account:
+Authenticate Cloudflared with your Cloudflare account:
 
 ```bash
-wrangler login
+cloudflared tunnel login
 ```
 
 This will:
 1. Open a browser to Cloudflare's authorization page
-2. Ask for permission to manage your account
-3. Create an API token automatically
-4. Save credentials locally
+2. Ask permission to create tunnels
+3. Generate a certificate automatically
+4. Save credentials locally to `~/.cloudflared/cert.pem`
 
 **Verify authentication:**
 ```bash
-wrangler whoami
+cloudflared tunnel list
 ```
+
+If successful, you'll see any existing tunnels (likely empty on first run).
 
 ---
 
@@ -81,17 +88,22 @@ wrangler whoami
 Create a tunnel named `jretirewise-argocd`:
 
 ```bash
-wrangler tunnel create jretirewise-argocd
+cloudflared tunnel create jretirewise-argocd
 ```
 
 Output will show:
 ```
-Tunnel credentials have been saved to /Users/username/.wrangler/state/certs/xxx.json
+Tunnel credentials have been saved to /Users/username/.cloudflared/abc123def456.json
 Tunnel ID: abc123def456
-Tunnel name: jretirewise-argocd
+Tunnel Name: jretirewise-argocd
 ```
 
 **Save the Tunnel ID** - you'll need it if you need to delete the tunnel later.
+
+**Verify tunnel was created:**
+```bash
+cloudflared tunnel list
+```
 
 ---
 
@@ -113,26 +125,30 @@ Note the port number (usually 443 or 8080). Use this in the next step.
 
 ---
 
-## Step 6: Create Public Route (Optional - for DNS record)
+## Step 6: Create Public Route (Optional - for Custom Domain)
 
-This step is optional if you just want to use the Cloudflare tunnel domain directly.
+This step is optional. You have two options:
 
-If you want a custom domain, create a CNAME record:
+### Option A: Use Default Cloudflare Tunnel URL (Easiest)
 
-1. Go to your Cloudflare dashboard
-2. Select your domain
-3. Go to DNS records
-4. Add a CNAME record:
-   - Name: `jretirewise-argocd`
-   - Value: `jretirewise-argocd.cfargotunnel.com`
-   - Proxy status: Proxied
+Cloudflare automatically generates a public URL. Skip this step and go to Step 7.
 
-Or use wrangler:
+### Option B: Create Route with Custom Domain
+
+If you want a custom domain like `jretirewise-argocd.your-domain.com`:
+
 ```bash
-wrangler tunnel route dns jretirewise-argocd your-domain.com
+cloudflared tunnel route dns jretirewise-argocd your-domain.com
 ```
 
-**Note:** If you don't have a custom domain, Cloudflare will generate a public URL like `jretirewise-argocd-xxxx.cfargotunnel.com`
+This will:
+1. Create a CNAME record in your Cloudflare DNS
+2. Point it to the Cloudflare tunnel infrastructure
+3. Give you a URL like `https://jretirewise-argocd.your-domain.com`
+
+**Note:** You must own the domain and have it set up in Cloudflare for this to work.
+
+To use the auto-generated URL instead, just skip this step.
 
 ---
 
@@ -144,15 +160,20 @@ Keep this tunnel running while GitHub Actions jobs execute. You have two options
 
 ```bash
 # Replace 443 with the correct ArgoCD port if different
-wrangler tunnel run --url http://192.168.86.229:443 jretirewise-argocd
+cloudflared tunnel run jretirewise-argocd --url http://192.168.86.229:443
 ```
 
 Output will show:
 ```
-Your tunnel is ready to accept traffic and route it to http://192.168.86.229:443
+INF Connection registered
+INF Registered tunnel connection connIndex=0
+INF Tunnel running at https://jretirewise-argocd.cfargotunnel.com
+INF Proxying traffic from tunnel to http://192.168.86.229:443
 ```
 
 **Keep this terminal running.** The tunnel will stay active as long as this command is running.
+
+To stop the tunnel, press `Ctrl+C`.
 
 ### Option B: Background Tunnel (Recommended for Production)
 
@@ -160,38 +181,41 @@ Run the tunnel in the background:
 
 ```bash
 # Start tunnel in background
-nohup wrangler tunnel run --url http://192.168.86.229:443 jretirewise-argocd > argocd-tunnel.log 2>&1 &
+nohup cloudflared tunnel run jretirewise-argocd --url http://192.168.86.229:443 > argocd-tunnel.log 2>&1 &
 
 # Verify it's running
-ps aux | grep wrangler
+ps aux | grep cloudflared
 
 # View logs
 tail -f argocd-tunnel.log
 ```
 
-Or use a process manager like `systemd` (Linux) or `launchd` (macOS).
+Or use a process manager like `systemd` (Linux) or `launchd` (macOS) - see Troubleshooting section for systemd example.
 
 ---
 
 ## Step 8: Get Your Public URL
 
-Once the tunnel is running, you have a few ways to access it:
+Once the tunnel is running, you have two options:
+
+### Using Default Cloudflare URL (Easiest)
+
+The tunnel generates a default URL automatically. You saw it in Step 7 output:
+```
+https://jretirewise-argocd.cfargotunnel.com
+```
+
+Or get it anytime with:
+```bash
+cloudflared tunnel info jretirewise-argocd
+```
 
 ### Using Custom Domain (if you created route in Step 6)
 ```
 https://jretirewise-argocd.your-domain.com
 ```
 
-### Using Default Cloudflare URL
-The tunnel will generate a default URL like:
-```
-https://jretirewise-argocd-xxxx.cfargotunnel.com
-```
-
-To find this URL:
-```bash
-wrangler tunnel info jretirewise-argocd
-```
+**Note:** The custom domain option requires owning a domain and setting it up in Cloudflare. For quick setup, just use the default Cloudflare URL.
 
 ---
 
@@ -353,15 +377,19 @@ argocd app sync jretirewise-prod --force
 
 ### Tunnel Connection Fails
 
-**Error:** `Failed to connect to tunnel`
+**Error:** `Failed to connect to tunnel` or tunnel appears inactive
 
 **Solution:**
 ```bash
 # Check tunnel status
-wrangler tunnel list
+cloudflared tunnel list
 
-# Restart tunnel
-wrangler tunnel run --url http://192.168.86.229:443 jretirewise-argocd
+# Check tunnel info
+cloudflared tunnel info jretirewise-argocd
+
+# Restart tunnel (stop and start again)
+# First, kill the running process: Ctrl+C or pkill cloudflared
+cloudflared tunnel run jretirewise-argocd --url http://192.168.86.229:443
 ```
 
 ### ArgoCD Login Fails
@@ -475,12 +503,12 @@ sudo systemctl status argocd-tunnel
 
 ```bash
 # List tunnels
-wrangler tunnel list
+cloudflared tunnel list
 
-# Get tunnel info
-wrangler tunnel info jretirewise-argocd
+# Get tunnel info and public URL
+cloudflared tunnel info jretirewise-argocd
 
-# View tunnel logs
+# View tunnel logs (if running in background)
 tail -f argocd-tunnel.log
 ```
 
@@ -519,13 +547,17 @@ argocd account generate-token --account admin-user
 
 ```bash
 # Start tunnel
-wrangler tunnel run --url http://192.168.86.229:443 jretirewise-argocd
+cloudflared tunnel run jretirewise-argocd --url http://192.168.86.229:443
 
-# Test tunnel
-curl https://jretirewise-argocd.your-domain.com/api/version
+# Get tunnel public URL
+cloudflared tunnel info jretirewise-argocd
 
-# Login to ArgoCD via tunnel
-argocd login https://jretirewise-argocd.your-domain.com --insecure
+# Test tunnel connection
+curl https://jretirewise-argocd.cfargotunnel.com/api/version
+
+# Login to ArgoCD via tunnel URL
+# Replace with your actual tunnel URL from cloudflared tunnel info
+argocd login https://jretirewise-argocd.cfargotunnel.com --insecure
 
 # Sync application
 argocd app sync jretirewise-prod --force
@@ -537,7 +569,7 @@ kubectl get pods -n jretirewise -w
 ### Documentation Links
 
 - [Cloudflare Tunnel Documentation](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/)
-- [Wrangler CLI Reference](https://developers.cloudflare.com/workers/wrangler/cli-wrangler/)
+- [Cloudflared CLI Reference](https://github.com/cloudflare/cloudflared)
 - [ArgoCD CLI Reference](https://argo-cd.readthedocs.io/en/stable/user-guide/commands/argocd/)
 - [jRetireWise CI/CD Setup](./CI_CD_SETUP.md)
 
@@ -545,16 +577,18 @@ kubectl get pods -n jretirewise -w
 
 ## Summary
 
-1. ✅ Install Wrangler
-2. ✅ Authenticate with Cloudflare
-3. ✅ Create tunnel named `jretirewise-argocd`
-4. ✅ Start tunnel pointing to `http://192.168.86.229:443`
-5. ✅ Get public URL from tunnel
-6. ✅ Add `ARGOCD_SERVER` to GitHub Secrets
+1. ✅ Install Cloudflared: `brew install cloudflare/cloudflare/cloudflared`
+2. ✅ Authenticate: `cloudflared tunnel login`
+3. ✅ Create tunnel: `cloudflared tunnel create jretirewise-argocd`
+4. ✅ Start tunnel: `cloudflared tunnel run jretirewise-argocd --url http://192.168.86.229:443`
+5. ✅ Get public URL: `cloudflared tunnel info jretirewise-argocd`
+6. ✅ Add `ARGOCD_SERVER` to GitHub Secrets with your tunnel URL
 7. ✅ Verify `ARGOCD_AUTH_TOKEN` in GitHub Secrets
-8. ✅ Create ArgoCD Application `jretirewise-prod`
-9. ✅ Test manually via CLI
+8. ✅ Create ArgoCD Application `jretirewise-prod` (in your K8s cluster)
+9. ✅ Test tunnel connection: `curl https://jretirewise-argocd.cfargotunnel.com/api/version`
 10. ✅ Test via GitHub Actions workflow
 11. ✅ Keep tunnel running for deployments
 
 You're now ready to deploy to your local Kubernetes cluster from GitHub Actions!
+
+**Remember:** Keep the tunnel running whenever you want deployments to work. Use `cloudflared tunnel run ...` in a persistent terminal or background process.
