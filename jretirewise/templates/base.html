@@ -9,27 +9,40 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body class="bg-gray-50">
     <!-- Navigation -->
-    <nav class="bg-white shadow-sm">
+    <nav class="bg-white border-b border-gray-200 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
-                <div class="flex items-center">
-                    <h1 class="text-2xl font-bold text-indigo-600">jRetireWise</h1>
+                <div class="flex items-center space-x-3">
+                    <div class="flex-shrink-0">
+                        <svg class="w-8 h-8 text-indigo-600" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                    </div>
+                    <h1 class="text-2xl font-bold text-gray-900">jRetireWise</h1>
                 </div>
                 <div class="hidden md:flex space-x-8">
-                    <a href="{% url 'dashboard' %}" class="text-gray-700 hover:text-indigo-600">Dashboard</a>
-                    <a href="{% url 'financial-profile' %}" class="text-gray-700 hover:text-indigo-600">Profile</a>
-                    <a href="{% url 'scenarios' %}" class="text-gray-700 hover:text-indigo-600">Scenarios</a>
+                    <a href="{% url 'dashboard' %}" class="text-gray-700 hover:text-indigo-600 font-medium transition duration-200">Dashboard</a>
+                    <a href="{% url 'financial-profile' %}" class="text-gray-700 hover:text-indigo-600 font-medium transition duration-200">Profile</a>
+                    <a href="{% url 'scenarios' %}" class="text-gray-700 hover:text-indigo-600 font-medium transition duration-200">Scenarios</a>
                 </div>
                 <div class="flex items-center space-x-4">
                     {% if user.is_authenticated %}
-                        <span class="text-gray-700">{{ user.email }}</span>
-                        <a href="{% url 'api-logout' %}" class="text-red-600 hover:text-red-800">Logout</a>
+                        <div class="text-sm">
+                            <p class="text-gray-600">{{ user.email }}</p>
+                        </div>
+                        <a href="{% url 'api-logout' %}" class="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 font-medium transition duration-200">Sign Out</a>
                     {% else %}
-                        <a href="{% url 'api-login' %}" class="text-indigo-600 hover:text-indigo-800">Login</a>
+                        <a href="{% url 'api-login' %}" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium transition duration-200">Sign In</a>
                     {% endif %}
                 </div>
             </div>
@@ -37,24 +50,61 @@
     </nav>
 
     <!-- Main Content -->
-    <main class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        {% if messages %}
-            {% for message in messages %}
-                <div class="mb-4 p-4 bg-{{ message.tags }}-100 border border-{{ message.tags }}-400 text-{{ message.tags }}-700 rounded">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        {% endif %}
+    <main class="min-h-[calc(100vh-80px)]">
+        <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="mb-4 p-4 bg-{{ message.tags }}-100 border border-{{ message.tags }}-400 text-{{ message.tags }}-700 rounded-lg shadow-sm">
+                        <div class="flex items-center">
+                            {% if message.tags == 'success' %}
+                                <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                </svg>
+                            {% elif message.tags == 'error' %}
+                                <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                                </svg>
+                            {% endif %}
+                            {{ message }}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
 
-        {% block content %}{% endblock %}
+            {% block content %}{% endblock %}
+        </div>
     </main>
 
     <!-- Footer -->
     <footer class="bg-white border-t border-gray-200 mt-16">
-        <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-            <p class="text-center text-gray-500 text-sm">
-                &copy; 2025 jRetireWise. All rights reserved.
-            </p>
+        <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900 mb-4">jRetireWise</h3>
+                    <p class="text-gray-600 text-sm">Professional retirement planning calculator for informed financial decisions.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-gray-900 mb-4">Product</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#" class="text-gray-600 hover:text-indigo-600">Features</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-indigo-600">Pricing</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-indigo-600">Documentation</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-gray-900 mb-4">Legal</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#" class="text-gray-600 hover:text-indigo-600">Privacy Policy</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-indigo-600">Terms of Service</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-indigo-600">Contact</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-200 pt-8">
+                <p class="text-center text-gray-500 text-sm">
+                    &copy; 2025 jRetireWise. All rights reserved.
+                </p>
+            </div>
         </div>
     </footer>
 
