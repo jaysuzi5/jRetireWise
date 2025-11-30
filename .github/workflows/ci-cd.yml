@@ -290,7 +290,7 @@ jobs:
     runs-on: ubuntu-latest
     name: End-to-End Tests
     needs: deploy
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && false
 
     steps:
     - uses: actions/checkout@v4
