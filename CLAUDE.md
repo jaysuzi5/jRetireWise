@@ -269,6 +269,140 @@ For comprehensive information on any aspect, refer to `documents/plan.md`:
 - **Risk Mitigation**: Identified risks and mitigation strategies
 - **Success Criteria**: Measurable deliverables for each phase
 
+## Documentation Standards
+
+**All documentation should be organized under the `documents/` directory following this structure:**
+
+```
+documents/
+├── Phase_1_MVP/                 # Phase 1 documentation
+│   ├── Phase_1_MVP.md          # Main requirements checklist
+│   ├── README.md               # Quick reference guide
+│   └── supporting/             # Supporting documentation
+│       ├── TEST_REPORT.md
+│       ├── KUBERNETES.md
+│       ├── CI_CD.md
+│       ├── IMPLEMENTATION_SUMMARY.md
+│       └── PHASE_1_COMPLETION_SUMMARY.txt
+├── Phase_2_**/                  # Phase 2 documentation (similar structure)
+├── Phase_3_**/                  # Phase 3 documentation (similar structure)
+├── test_results/                # Test result archives
+│   ├── 202511301145_test_results.md
+│   ├── 202511302100_test_results.md
+│   └── ...                      # One file per test run (YYYYMMDDHHmm format)
+├── plan.md                      # Complete project roadmap
+└── [other docs]                 # Additional documentation
+```
+
+**Guidelines:**
+- All documentation should be in `documents/` directory, not in root
+- Organize by phase or functional area in subdirectories
+- Each phase should have a main README and supporting/ subdirectory
+- Test results should have timestamped filenames: `YYYYMMDDHHmm_test_results.md`
+- Use Markdown format for all documentation files
+
+## Testing & Test Reporting Standards
+
+**CRITICAL: Every code change must include updated test cases and a test result summary.**
+
+### Test-Driven Development Workflow
+
+1. **Make Code Changes**
+   - Modify code in the application
+
+2. **Update Test Cases**
+   - Add/update unit tests in `tests/unit/`
+   - Add/update integration tests in `tests/integration/`
+   - Add/update E2E tests in `tests/e2e/`
+
+3. **Run All Tests**
+   ```bash
+   # Via Docker (recommended)
+   docker-compose exec -T web pytest tests/unit/test_forms.py tests/integration/ -v
+
+   # Or locally with pytest
+   pytest tests/ -v --cov=jretirewise --cov-report=term-missing
+   ```
+
+4. **Create Test Summary Document**
+   - Create file: `documents/test_results/YYYYMMDDHHmm_test_results.md`
+   - Example: `documents/test_results/202511301145_test_results.md`
+   - Replace YYYYMMDDHHmm with current year, month, day, hour, minute
+
+5. **Test Summary Format**
+   ```markdown
+   # Test Results Report
+   **Test Run Date/Time**: YYYY-MM-DD HH:MM:SS (UTC-5)
+   **Test Types**: Unit Tests, Integration Tests, E2E Tests
+
+   ## Executive Summary
+
+   ✅ ALL TESTS PASSED - X/X tests successful (100%)
+
+   | Metric | Result |
+   |--------|--------|
+   | **Total Tests Run** | X |
+   | **Tests Passed** | X (100%) |
+   | **Tests Failed** | 0 (0%) |
+   | **Code Coverage** | XX% |
+   | **Execution Time** | X.XX seconds |
+   | **Status** | ✅ PASS / ❌ FAIL |
+
+   ## Test Breakdown
+
+   ### Unit Tests (X/X passed)
+   - Test file: tests/unit/
+   - Coverage: XX%
+
+   ### Integration Tests (X/X passed)
+   - Test file: tests/integration/
+   - Coverage: XX%
+
+   ## Code Coverage Details
+
+   | Module | Coverage |
+   |--------|----------|
+   | module1 | XX% |
+   | module2 | XX% |
+
+   ## Issues Found
+   - ✅ No issues
+
+   ## Recommendations
+   - Ready for deployment
+   ```
+
+### Test Coverage Requirements
+
+- **Unit Tests**: ≥80% coverage (70%+ minimum)
+- **Integration Tests**: ≥75% coverage
+- **Calculation Engines**: 100% coverage required
+- **Overall**: Must meet or exceed requirements before committing
+
+### Example Test Workflow
+
+```bash
+# 1. Make code changes
+# [Edit files]
+
+# 2. Run tests
+docker-compose exec -T web pytest tests/ -v --cov=jretirewise --cov-report=term-missing
+
+# 3. If tests fail, fix code and re-run
+# [Fix issues]
+docker-compose exec -T web pytest tests/ -v
+
+# 4. Create test results document
+# Create documents/test_results/202511301200_test_results.md with summary
+
+# 5. Commit changes
+git add .
+git commit -m "feat: Add new feature with comprehensive tests"
+
+# 6. Push to GitHub
+git push origin feature-branch
+```
+
 ## Common Development Workflows
 
 ### Adding a New Calculator
@@ -277,7 +411,9 @@ For comprehensive information on any aspect, refer to `documents/plan.md`:
 3. Create DRF endpoint in `jretirewise/api/views.py`
 4. Write integration tests for endpoint
 5. Add template/HTMX interaction
-6. Run `pytest tests/` before committing
+6. Run full test suite: `pytest tests/` - all must pass
+7. Create test summary: `documents/test_results/YYYYMMDDHHmm_test_results.md`
+8. Commit with test results documentation
 
 ### Adding a New Model
 1. Define model in appropriate app (`financial/`, `scenarios/`, etc.)
@@ -285,14 +421,26 @@ For comprehensive information on any aspect, refer to `documents/plan.md`:
 3. Write model tests in `tests/integration/models/`
 4. Create serializers in `jretirewise/api/serializers.py`
 5. Write API endpoint tests
-6. Update CLAUDE.md if impacts architecture
+6. Run all tests and verify coverage
+7. Create test summary document
+8. Update CLAUDE.md if impacts architecture
+
+### Fixing a Bug
+1. Write test case that reproduces the bug (test should fail initially)
+2. Fix the bug in code
+3. Verify test now passes
+4. Run full test suite to ensure no regressions
+5. Create test summary showing all tests pass
+6. Commit with test results
 
 ### Deployment
-1. Commit to feature branch with passing tests
-2. Create PR (GitHub Actions runs checks)
-3. Merge to main (triggers Docker build and ArgoCD)
-4. Post-deployment smoke tests validate deployment
-5. If tests fail, automatic rollback occurs
+1. Make code changes with comprehensive tests
+2. Run full test suite and generate test summary
+3. Commit to feature branch with test results
+4. Create PR (GitHub Actions runs checks)
+5. Merge to main (triggers Docker build and ArgoCD)
+6. Post-deployment smoke tests validate deployment
+7. If tests fail, automatic rollback occurs
 
 ## Helpful Resources
 
