@@ -109,14 +109,8 @@ jobs:
         fail_ci_if_error: false
         verbose: true
 
-    - name: Test report
-      if: always()
-      uses: dorny/test-reporter@v1
-      with:
-        name: Test Results
-        path: '**/coverage.xml'
-        reporter: 'java-junit'
-        fail-on-error: false
+    # Test report is skipped - all test steps above already report results
+    # Coverage is uploaded to Codecov, test results show in the step logs above
 
   # Lint job: Code quality checks
   lint:
