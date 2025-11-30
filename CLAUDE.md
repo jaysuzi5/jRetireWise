@@ -27,6 +27,9 @@ This is an experimental project being developed in close-to-production mode with
 - Do not ask for approval on standard refactoring or cleanup
 - Do not require confirmation for test-driven development and coverage verification
 - Proceed with quality-focused changes confidently
+- Implement changes directly without asking "Should I proceed?" or "Would you like me to...?"
+- Make judgment calls on code improvements, refactoring, and testing without seeking approval
+- Only ask when truly ambiguous or when multiple significantly different approaches exist
 
 ✅ **High-Risk Tolerance Mode**
 - This is an experimental/learning project
@@ -48,11 +51,11 @@ This is an experimental project being developed in close-to-production mode with
 8. **Error recovery** - If something breaks, use git to revert and re-approach
 
 ✅ **When to Still Communicate**
-- When you need to understand user intentions better
-- When there are multiple valid approaches with different tradeoffs
-- When requesting user preference on conflicting design choices
-- When a decision impacts user expectations significantly
-- When unsure about project goals or priorities
+- Only when you genuinely cannot determine the best path forward
+- When there are multiple equally valid architectural approaches with significant tradeoffs
+- When the decision would substantially impact the user's workflow or expectations
+- When you lack critical information to proceed (e.g., unclear requirements or external dependencies)
+- Avoid asking for confirmation on standard decisions - just implement and explain in the commit message
 
 ✅ **GitHub as Safety Net**
 - Every commit is backed up immediately
@@ -113,7 +116,7 @@ python manage.py collectstatic
 ### Testing (See Testing Strategy in plan.md)
 ```bash
 # Unit tests
-pytest tests/unit/ --cov=jretirewise --cov-fail-under=80
+pytest tests/unit/ --cov=jretirewise --cov-fail-under=85
 
 # Integration tests
 pytest tests/integration/ -v
@@ -202,7 +205,7 @@ See `documents/plan.md` - **Testing Strategy** section for comprehensive details
 - Post-deployment smoke tests with automatic rollback
 
 **Quick Reference**:
-- Unit test target: ≥80% coverage
+- Unit test target: ≥85% coverage
 - Calculation engines: 100% coverage
 - API views: ≥75% coverage
 - Integration tests: MVP 10+, Phase 2 20+, Phase 3 30+
@@ -430,7 +433,7 @@ documents/
 
 ### Test Coverage Requirements
 
-- **Unit Tests**: ≥80% coverage (70%+ minimum)
+- **Unit Tests**: ≥85% coverage (target for all new code)
 - **Integration Tests**: ≥75% coverage
 - **Calculation Engines**: 100% coverage required
 - **Overall**: Must meet or exceed requirements before committing
