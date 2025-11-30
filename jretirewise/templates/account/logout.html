@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Out - jRetireWise{% endblock %}
+
+{% block content %}
+<div class="min-h-[calc(100vh-80px)] flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="w-full max-w-md">
+        <!-- Header Section -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-full mb-4">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">jRetireWise</h1>
+        </div>
+
+        <!-- Logout Confirmation Card -->
+        <div class="bg-white rounded-2xl shadow-lg p-8 space-y-6">
+            <div class="text-center">
+                <h2 class="text-2xl font-bold text-gray-900">Confirm Sign Out</h2>
+                <p class="text-gray-600 text-sm mt-1">Are you sure you want to sign out?</p>
+            </div>
+
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p class="text-blue-800 text-sm">
+                    <strong>Your data is safe.</strong> All your retirement planning data will be securely saved and available when you sign back in.
+                </p>
+            </div>
+
+            <form method="post" class="space-y-3">
+                {% csrf_token %}
+
+                <button type="submit" class="w-full px-4 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition duration-200">
+                    Yes, Sign Out
+                </button>
+
+                <a href="/" class="w-full px-4 py-3 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition duration-200 text-center block">
+                    Cancel
+                </a>
+            </form>
+
+            <div class="border-t border-gray-200 pt-6">
+                <p class="text-center text-gray-600 text-sm">
+                    For security, always sign out on shared devices
+                </p>
+            </div>
+        </div>
+
+        <!-- Footer Info -->
+        <p class="text-center text-gray-500 text-xs mt-6">
+            Questions? <a href="#" class="text-indigo-600 hover:text-indigo-700">Contact Support</a>
+        </p>
+    </div>
+</div>
+{% endblock %}
