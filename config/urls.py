@@ -36,7 +36,8 @@ router.register(r'expenses', ExpenseViewSet, basename='expense')
 router.register(r'financial-profile', FinancialProfileViewSet, basename='financial-profile')
 router.register(r'scenarios', ScenarioViewSet, basename='scenario')
 
-urlpatterns = [
+# Core URL patterns (without subpath prefix)
+core_patterns = [
     # Admin
     path('admin/', admin.site.urls),
 
@@ -65,15 +66,10 @@ urlpatterns = [
     path('health/live/', health_live, name='health-live'),
 ]
 
-# Support for subpath deployment (e.g., /jretirewise/)
-subpath_urlpatterns = [
-    path('jretirewise/', include(urlpatterns)),
+# Always wrap with /jretirewise/ prefix for Kubernetes subpath deployment
+urlpatterns = [
+    path('jretirewise/', include(core_patterns)),
 ]
-
-# Check if app is deployed at a subpath
-import os
-if os.environ.get('FORCE_SCRIPT_NAME'):
-    urlpatterns = subpath_urlpatterns
 
 # Serve media files in development
 if settings.DEBUG:
