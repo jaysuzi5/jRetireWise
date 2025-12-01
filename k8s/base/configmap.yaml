@@ -34,7 +34,7 @@ data:
   ACCOUNT_EMAIL_REQUIRED: "true"
 
   # Security
-  SECURE_SSL_REDIRECT: "true"
+  SECURE_SSL_REDIRECT: "false"
   SESSION_COOKIE_SECURE: "true"
   CSRF_COOKIE_SECURE: "true"
   SECURE_BROWSER_XSS_FILTER: "true"
