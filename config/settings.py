@@ -174,11 +174,14 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 # Email Configuration
-if DEBUG:
-    # Development: print emails to console
+# Use console backend for development and testing environments
+# For production SMTP email sending, set EMAIL_BACKEND to 'django.core.mail.backends.smtp.EmailBackend'
+# and configure EMAIL_HOST_USER and EMAIL_HOST_PASSWORD environment variables
+if DEBUG or env.bool('USE_CONSOLE_EMAIL_BACKEND', default=True):
+    # Development/Testing: print emails to console
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 else:
-    # Production: use SMTP
+    # Production SMTP: use SMTP (requires proper email credentials)
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
     EMAIL_HOST = env('EMAIL_HOST', default='smtp.gmail.com')
     EMAIL_PORT = env('EMAIL_PORT', default=587)
