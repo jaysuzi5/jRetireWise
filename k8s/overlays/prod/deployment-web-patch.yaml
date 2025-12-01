@@ -13,6 +13,12 @@ spec:
       containers:
       - name: web
         imagePullPolicy: Always
+        env:
+        - name: SECURE_SSL_REDIRECT
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: SECURE_SSL_REDIRECT
         resources:
           requests:
             memory: "256Mi"
