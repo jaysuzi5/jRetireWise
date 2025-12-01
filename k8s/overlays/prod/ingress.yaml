@@ -25,3 +25,10 @@ spec:
             name: jretirewise-web-service
             port:
               name: http
+      - path: /auth/
+        pathType: Prefix
+        backend:
+          service:
+            name: jretirewise-web-service
+            port:
+              name: http
