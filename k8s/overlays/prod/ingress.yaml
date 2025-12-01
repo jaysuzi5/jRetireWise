@@ -8,6 +8,7 @@ metadata:
     kubernetes.io/ingress.class: nginx
     cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
 spec:
   ingressClassName: nginx
   tls:
@@ -17,15 +18,15 @@ spec:
   rules:
   - http:
       paths:
-      - path: /jretirewise/
-        pathType: Prefix
+      - path: /jretirewise(/|$)(.*)
+        pathType: ImplementationSpecific
         backend:
           service:
             name: jretirewise-jretirewise-web-service
             port:
               name: http
-      - path: /auth/
-        pathType: Prefix
+      - path: /auth(/|$)(.*)
+        pathType: ImplementationSpecific
         backend:
           service:
             name: jretirewise-jretirewise-web-service
