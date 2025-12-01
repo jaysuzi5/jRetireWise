@@ -19,7 +19,18 @@ spec:
         component: postgres
     spec:
       securityContext:
+        runAsNonRoot: false
         fsGroup: 999
+        fsGroupChangePolicy: OnRootMismatch
+
+      initContainers:
+      - name: init-chmod
+        image: busybox:latest
+        command: ['sh', '-c', 'chmod 777 /var/lib/postgresql/data && ls -la /var/lib/postgresql/']
+        volumeMounts:
+        - name: postgresql-data
+          mountPath: /var/lib/postgresql/data
+          subPath: postgres
 
       containers:
       - name: postgres
@@ -82,9 +93,6 @@ spec:
 
         securityContext:
           allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-            - ALL
 
   volumeClaimTemplates:
   - metadata:

@@ -58,27 +58,27 @@ spec:
             configMapKeyRef:
               name: jretirewise-config
               key: ALLOWED_HOSTS
-        - name: DATABASE_ENGINE
+        - name: DB_ENGINE
           valueFrom:
             configMapKeyRef:
               name: jretirewise-config
               key: DATABASE_ENGINE
-        - name: DATABASE_NAME
+        - name: DB_NAME
           valueFrom:
             configMapKeyRef:
               name: jretirewise-config
               key: DATABASE_NAME
-        - name: DATABASE_USER
+        - name: DB_USER
           valueFrom:
             configMapKeyRef:
               name: jretirewise-config
               key: DATABASE_USER
-        - name: DATABASE_HOST
+        - name: DB_HOST
           valueFrom:
             configMapKeyRef:
               name: jretirewise-config
               key: DATABASE_HOST
-        - name: DATABASE_PORT
+        - name: DB_PORT
           valueFrom:
             configMapKeyRef:
               name: jretirewise-config
@@ -125,7 +125,7 @@ spec:
             secretKeyRef:
               name: jretirewise-secret
               key: SECRET_KEY
-        - name: DATABASE_PASSWORD
+        - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
               name: jretirewise-secret
@@ -226,32 +226,32 @@ spec:
             configMapKeyRef:
               name: jretirewise-config
               key: DJANGO_SETTINGS_MODULE
-        - name: DATABASE_ENGINE
+        - name: DB_ENGINE
           valueFrom:
             configMapKeyRef:
               name: jretirewise-config
               key: DATABASE_ENGINE
-        - name: DATABASE_NAME
+        - name: DB_NAME
           valueFrom:
             configMapKeyRef:
               name: jretirewise-config
               key: DATABASE_NAME
-        - name: DATABASE_USER
+        - name: DB_USER
           valueFrom:
             configMapKeyRef:
               name: jretirewise-config
               key: DATABASE_USER
-        - name: DATABASE_HOST
+        - name: DB_HOST
           valueFrom:
             configMapKeyRef:
               name: jretirewise-config
               key: DATABASE_HOST
-        - name: DATABASE_PORT
+        - name: DB_PORT
           valueFrom:
             configMapKeyRef:
               name: jretirewise-config
               key: DATABASE_PORT
-        - name: DATABASE_PASSWORD
+        - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
               name: jretirewise-secret

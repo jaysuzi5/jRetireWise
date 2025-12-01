@@ -27,6 +27,10 @@ configMapGenerator:
   - SECURE_SSL_REDIRECT=false
   - SESSION_COOKIE_SECURE=false
   - CSRF_COOKIE_SECURE=false
+  - DATABASE_HOST=prod-jretirewise-postgres-service.jretirewise.svc.cluster.local
+  - REDIS_URL=redis://prod-jretirewise-redis-service.jretirewise.svc.cluster.local:6379/0
+  - CELERY_BROKER_URL=redis://prod-jretirewise-redis-service.jretirewise.svc.cluster.local:6379/0
+  - CELERY_RESULT_BACKEND=redis://prod-jretirewise-redis-service.jretirewise.svc.cluster.local:6379/0
 
 # Image replacement for prod (Docker Hub)
 images:
