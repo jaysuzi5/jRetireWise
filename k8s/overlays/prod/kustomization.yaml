@@ -6,6 +6,9 @@ namespace: jretirewise
 bases:
 - ../../base
 
+resources:
+- ingress.yaml
+
 # Production replicas - scaled for 1-3 users
 replicas:
 - name: jretirewise-celery

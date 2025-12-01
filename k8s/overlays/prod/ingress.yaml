@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: jretirewise
+  labels:
+    app: jretirewise
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - jaycurtis.org
+    secretName: jretirewise-tls
+  rules:
+  - host: jaycurtis.org
+    http:
+      paths:
+      - path: /jretirewise/
+        pathType: Prefix
+        backend:
+          service:
+            name: jretirewise-web-service
+            port:
+              name: http
