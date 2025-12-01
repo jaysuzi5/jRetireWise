@@ -13,7 +13,6 @@ resources:
 - deployment-redis.yaml
 - deployment-celery.yaml
 - deployment-web.yaml
-- ingress.yaml
 
 namePrefix: jretirewise-
 
