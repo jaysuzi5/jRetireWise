@@ -6,12 +6,12 @@ namespace: jretirewise
 bases:
 - ../../base
 
-# Production replicas
+# Production replicas - scaled for 1-3 users
 replicas:
 - name: jretirewise-celery
-  count: 3
+  count: 1
 - name: jretirewise-web
-  count: 5
+  count: 2
 - name: postgres
   count: 1
 - name: redis
@@ -50,29 +50,9 @@ patchesStrategicMerge:
 - deployment-redis-patch.yaml
 - deployment-celery-patch.yaml
 
-# Network policies for prod
-patchesJson6902:
-- target:
-    group: apps
-    version: v1
-    kind: Deployment
-    name: jretirewise-web
-  patch: |-
-    - op: add
-      path: /spec/template/spec/affinity/podAntiAffinity
-      value:
-        requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchExpressions:
-            - key: app
-              operator: In
-              values:
-              - jretirewise
-            - key: component
-              operator: In
-              values:
-              - web
-          topologyKey: kubernetes.io/hostname
+# Network policies for prod - soft anti-affinity (preferred, not required)
+# Pods can run on same node if needed due to resource constraints
+patchesJson6902: []
 
 commonAnnotations:
   environment: production

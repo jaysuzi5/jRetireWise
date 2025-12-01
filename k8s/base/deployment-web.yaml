@@ -221,9 +221,16 @@ spec:
         image: "jaysuzi5/jretirewise:latest"
         imagePullPolicy: Always
         command:
-        - python
-        - manage.py
-        - migrate
+        - sh
+        - -c
+        - |
+          echo "Waiting for database to be ready..."
+          for i in {1..60}; do
+            pg_isready -h $DB_HOST -p $DB_PORT && break
+            echo "Attempt $i: Database not ready, waiting..."
+            sleep 2
+          done
+          python manage.py migrate
         env:
         - name: DEBUG
           valueFrom:

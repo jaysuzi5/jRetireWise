@@ -9,11 +9,11 @@ spec:
       - name: postgres
         resources:
           requests:
-            memory: "1Gi"
-            cpu: "1000m"
+            memory: "256Mi"
+            cpu: "250m"
           limits:
-            memory: "2Gi"
-            cpu: "2000m"
+            memory: "512Mi"
+            cpu: "500m"
   volumeClaimTemplates:
   - metadata:
       name: postgresql-data
@@ -23,4 +23,4 @@ spec:
       storageClassName: nfs-client
       resources:
         requests:
-          storage: 100Gi
+          storage: 10Gi

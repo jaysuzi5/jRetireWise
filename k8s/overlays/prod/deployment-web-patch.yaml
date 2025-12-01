@@ -3,21 +3,20 @@ kind: Deployment
 metadata:
   name: jretirewise-web
 spec:
-  replicas: 5
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxSurge: 2
+      maxSurge: 1
       maxUnavailable: 0
   template:
     spec:
       containers:
       - name: web
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         resources:
           requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
             memory: "512Mi"
             cpu: "500m"
-          limits:
-            memory: "1Gi"
-            cpu: "1000m"

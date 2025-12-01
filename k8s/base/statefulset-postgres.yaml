@@ -26,11 +26,21 @@ spec:
       initContainers:
       - name: init-chmod
         image: busybox:latest
-        command: ['sh', '-c', 'chmod 777 /var/lib/postgresql/data && ls -la /var/lib/postgresql/']
+        command:
+        - sh
+        - -c
+        - |
+          chmod 777 /var/lib/postgresql/data || true
+          mkdir -p /var/run/postgresql || true
+          chmod 777 /var/run/postgresql || true
+          ls -la /var/lib/postgresql/
         volumeMounts:
         - name: postgresql-data
           mountPath: /var/lib/postgresql/data
           subPath: postgres
+        securityContext:
+          runAsUser: 0
+          allowPrivilegeEscalation: true
 
       containers:
       - name: postgres
@@ -90,9 +100,15 @@ spec:
         - name: postgresql-data
           mountPath: /var/lib/postgresql/data
           subPath: postgres
+        - name: postgresql-runtime
+          mountPath: /var/run/postgresql
 
         securityContext:
           allowPrivilegeEscalation: false
+
+      volumes:
+      - name: postgresql-runtime
+        emptyDir: {}
 
   volumeClaimTemplates:
   - metadata:

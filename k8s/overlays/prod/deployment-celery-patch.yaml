@@ -3,15 +3,14 @@ kind: Deployment
 metadata:
   name: jretirewise-celery
 spec:
-  replicas: 3
   template:
     spec:
       containers:
       - name: celery
         resources:
           requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
             memory: "512Mi"
             cpu: "500m"
-          limits:
-            memory: "1Gi"
-            cpu: "1000m"
