@@ -256,26 +256,6 @@ jobs:
         curl -sf https://jretirewise.example.com/ > /dev/null
         echo "Smoke tests passed ✓"
 
-    - name: Notify Slack
-      if: always() && github.event_name == 'push'
-      continue-on-error: true
-      uses: slackapi/slack-github-action@v1
-      with:
-        webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
-        payload: |
-          {
-            "text": "Deployment to production completed",
-            "blocks": [
-              {
-                "type": "section",
-                "text": {
-                  "type": "mrkdwn",
-                  "text": "Deployment Status: ${{ job.status }}\nURL: https://jaycurtis.org/jretirewise\nCommit: ${{ github.sha }}\nAuthor: ${{ github.actor }}"
-                }
-              }
-            ]
-          }
-
     - name: Create deployment annotation
       run: |
         echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
