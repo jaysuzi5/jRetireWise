@@ -216,36 +216,15 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up ArgoCD CLI
-      if: secrets.ARGOCD_SERVER != ''
+    - name: Note on deployment
       run: |
-        curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/download/v2.8.0/argocd-linux-amd64
-        chmod +x /usr/local/bin/argocd
-
-    - name: Configure ArgoCD
-      if: secrets.ARGOCD_SERVER != ''
-      env:
-        ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
-        ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
-      run: |
-        argocd login $ARGOCD_SERVER --insecure --username admin --password $ARGOCD_AUTH_TOKEN
-
-    - name: Sync ArgoCD application
-      if: secrets.ARGOCD_SERVER != ''
-      env:
-        ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
-        ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
-      continue-on-error: true
-      run: |
-        argocd app sync jretirewise-prod --force
-        argocd app wait jretirewise-prod --sync --timeout 300
-
-    - name: Note on ArgoCD deployment
-      if: secrets.ARGOCD_SERVER == ''
-      run: |
-        echo "ℹ️  ArgoCD is configured with automated sync from GitHub."
-        echo "   Image has been pushed to Docker Hub."
-        echo "   ArgoCD will automatically detect and deploy the new image."
+        echo "✓ Docker image has been built and pushed to Docker Hub"
+        echo "✓ ArgoCD is configured with automated sync from GitHub"
+        echo "✓ ArgoCD will automatically detect and deploy the new image"
+        echo ""
+        echo "To manually sync:"
+        echo "  - Access local ArgoCD: kubectl get application -n argocd jretirewise-prod"
+        echo "  - Or trigger sync via ArgoCD UI"
 
     - name: Health check
       run: |
