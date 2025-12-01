@@ -273,12 +273,14 @@ CSRF_COOKIE_SAMESITE = 'Lax'  # Allow cross-site requests with cookies
 # Only set Secure flag for HTTPS (production) - allow HTTP for development/IP access
 CSRF_COOKIE_SECURE = env.bool('CSRF_COOKIE_SECURE', default=not DEBUG)
 
+# CSRF_COOKIE_HTTPONLY should always be set for security
+CSRF_COOKIE_HTTPONLY = True
+
 # Security settings for production
 if not DEBUG:
     SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=True)
     SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', default=True)
-    CSRF_COOKIE_SECURE = env.bool('CSRF_COOKIE_SECURE', default=True)
-    CSRF_COOKIE_HTTPONLY = True
+    # Note: CSRF_COOKIE_SECURE is already set above based on DEBUG mode
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_SECURITY_POLICY = {
         'default-src': ("'self'",),
