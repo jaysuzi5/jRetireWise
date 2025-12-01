@@ -32,3 +32,20 @@ spec:
             name: jretirewise-web-service
             port:
               name: http
+  - host: 192.168.86.229
+    http:
+      paths:
+      - path: /jretirewise/
+        pathType: Prefix
+        backend:
+          service:
+            name: jretirewise-web-service
+            port:
+              name: http
+      - path: /auth/
+        pathType: Prefix
+        backend:
+          service:
+            name: jretirewise-web-service
+            port:
+              name: http
