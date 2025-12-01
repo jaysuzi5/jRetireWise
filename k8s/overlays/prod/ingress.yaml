@@ -1,13 +1,14 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: jretirewise
+  name: jretirewise-web
   labels:
     app: jretirewise
   annotations:
     kubernetes.io/ingress.class: nginx
     cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   ingressClassName: nginx
   tls:
@@ -21,13 +22,13 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: jretirewise-web-service
+            name: jretirewise-jretirewise-web-service
             port:
               name: http
       - path: /auth/
         pathType: Prefix
         backend:
           service:
-            name: jretirewise-web-service
+            name: jretirewise-jretirewise-web-service
             port:
               name: http
