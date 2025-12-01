@@ -15,26 +15,7 @@ spec:
     - jaycurtis.org
     secretName: jretirewise-tls
   rules:
-  - host: jaycurtis.org
-    http:
-      paths:
-      - path: /jretirewise/
-        pathType: Prefix
-        backend:
-          service:
-            name: jretirewise-web-service
-            port:
-              name: http
-      - path: /auth/
-        pathType: Prefix
-        backend:
-          service:
-            name: jretirewise-web-service
-            port:
-              name: http
-  # Wildcard rule for IP address and other hosts
-  - host: "*"
-    http:
+  - http:
       paths:
       - path: /jretirewise/
         pathType: Prefix
