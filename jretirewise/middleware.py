@@ -7,23 +7,28 @@ import os
 
 class ForceScriptNameMiddleware:
     """
-    Middleware to set SCRIPT_NAME in WSGI environ based on FORCE_SCRIPT_NAME setting.
+    Middleware to set SCRIPT_NAME in WSGI environ for correct URL generation.
 
-    This is needed for Django deployments behind a reverse proxy (like Nginx Ingress)
-    that rewrites the path. The Ingress rewrites /jretirewise/* to /*, so Django
-    doesn't know it's being served at /jretirewise/. This middleware tells Django
-    about the actual base path so it can generate correct URLs.
+    When Django is deployed at a subpath (e.g., /jretirewise/), we need to tell
+    Django about this base path so it can generate correct URLs in redirects,
+    reverse() calls, and template tags. SCRIPT_NAME is used by Django to track
+    the prefix where the application is mounted.
+
+    With our current Ingress setup:
+    - Ingress routes /jretirewise/* directly to Django (no path rewriting)
+    - Django URL patterns include the /jretirewise/ prefix
+    - We also need to set SCRIPT_NAME=/jretirewise so Django knows the base path
+      for URL generation (otherwise redirects and reverse() won't include the prefix)
     """
 
     def __init__(self, get_response):
         self.get_response = get_response
-        # Get FORCE_SCRIPT_NAME from environment
-        self.script_name = os.environ.get('FORCE_SCRIPT_NAME', '')
+        # Always set SCRIPT_NAME to /jretirewise for Kubernetes subpath deployment
+        self.script_name = '/jretirewise'
 
     def __call__(self, request):
-        # If FORCE_SCRIPT_NAME is set, update SCRIPT_NAME in request
-        if self.script_name:
-            request.META['SCRIPT_NAME'] = self.script_name
+        # Set SCRIPT_NAME so Django generates URLs with the /jretirewise/ prefix
+        request.META['SCRIPT_NAME'] = self.script_name
 
         response = self.get_response(request)
         return response
