@@ -265,6 +265,10 @@ OTEL_EXPORTER_OTLP_ENDPOINT = env('OTEL_EXPORTER_OTLP_ENDPOINT', default='http:/
 OTEL_SERVICE_NAME = 'jretirewise'
 OTEL_SERVICE_VERSION = '1.0.0'
 
+# CSRF Configuration
+CSRF_TRUSTED_ORIGINS = env('CSRF_TRUSTED_ORIGINS', default='http://localhost:8000').split(',')
+CSRF_COOKIE_DOMAIN = env('CSRF_COOKIE_DOMAIN', default=None)
+
 # Security settings for production
 if not DEBUG:
     SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=True)

@@ -30,6 +30,7 @@ configMapGenerator:
   - SECURE_SSL_REDIRECT=false
   - SESSION_COOKIE_SECURE=false
   - CSRF_COOKIE_SECURE=false
+  - CSRF_TRUSTED_ORIGINS=http://192.168.86.229,http://jaycurtis.org
   - DATABASE_HOST=prod-jretirewise-postgres-service.jretirewise.svc.cluster.local
   - REDIS_URL=redis://prod-jretirewise-redis-service.jretirewise.svc.cluster.local:6379/0
   - CELERY_BROKER_URL=redis://prod-jretirewise-redis-service.jretirewise.svc.cluster.local:6379/0
