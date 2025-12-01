@@ -277,6 +277,11 @@ spec:
             secretKeyRef:
               name: jretirewise-secret
               key: SECRET_KEY
+        - name: SECURE_SSL_REDIRECT
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: SECURE_SSL_REDIRECT
 
       volumes:
       - name: static-files
