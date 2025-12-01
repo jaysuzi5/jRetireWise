@@ -1,0 +1,9 @@
+# This file tells ArgoCD which resources to ignore during sync
+# This is needed for StatefulSet which has immutable fields
+
+# Ignore PostgreSQL StatefulSet - it must be manually recreated when immutable fields change
+# See ARGOCD_STATEFULSET_FIX.md for details
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: prod-jretirewise-postgres
