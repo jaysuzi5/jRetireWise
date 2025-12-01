@@ -92,6 +92,7 @@ spec:
     spec:
       accessModes:
       - ReadWriteOnce
+      storageClassName: nfs-cluster
       resources:
         requests:
           storage: 10Gi

@@ -18,6 +18,9 @@ spec:
   - metadata:
       name: postgresql-data
     spec:
+      accessModes:
+      - ReadWriteOnce
+      storageClassName: nfs-cluster
       resources:
         requests:
           storage: 100Gi
