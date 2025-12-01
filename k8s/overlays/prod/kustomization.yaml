@@ -23,15 +23,15 @@ configMapGenerator:
   behavior: merge
   literals:
   - DEBUG=false
-  - ALLOWED_HOSTS=jretirewise.example.com,www.jretirewise.example.com
-  - SECURE_SSL_REDIRECT=true
-  - SESSION_COOKIE_SECURE=true
-  - CSRF_COOKIE_SECURE=true
+  - ALLOWED_HOSTS=jaycurtis.org
+  - SECURE_SSL_REDIRECT=false
+  - SESSION_COOKIE_SECURE=false
+  - CSRF_COOKIE_SECURE=false
 
 # Image replacement for prod (Docker Hub)
 images:
 - name: jretirewise
-  newName: yourusername/jretirewise
+  newName: jaysuzi5/jretirewise
   newTag: latest
 
 commonLabels:
