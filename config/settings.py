@@ -270,8 +270,12 @@ OTEL_SERVICE_VERSION = '1.0.0'
 CSRF_TRUSTED_ORIGINS = env('CSRF_TRUSTED_ORIGINS', default='http://localhost:8000').split(',')
 CSRF_COOKIE_DOMAIN = env('CSRF_COOKIE_DOMAIN', default=None)
 CSRF_COOKIE_SAMESITE = 'Lax'  # Allow cross-site requests with cookies
-# Only set Secure flag for HTTPS (production) - allow HTTP for development/IP access
-CSRF_COOKIE_SECURE = env.bool('CSRF_COOKIE_SECURE', default=not DEBUG)
+# Allow HTTP access via IP if ALLOW_INSECURE_CSRF_OVER_HTTP environment variable is set
+# Otherwise, only use Secure flag for HTTPS (default production behavior)
+if env.bool('ALLOW_INSECURE_CSRF_OVER_HTTP', default=False):
+    CSRF_COOKIE_SECURE = False
+else:
+    CSRF_COOKIE_SECURE = True
 
 # CSRF_COOKIE_HTTPONLY should always be set for security
 CSRF_COOKIE_HTTPONLY = True
