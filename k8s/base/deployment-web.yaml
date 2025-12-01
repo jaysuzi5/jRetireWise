@@ -209,8 +209,8 @@ spec:
       # Init container to run migrations
       initContainers:
       - name: migrate
-        image: "jretirewise:latest"
-        imagePullPolicy: IfNotPresent
+        image: "jaysuzi5/jretirewise:latest"
+        imagePullPolicy: Always
         command:
         - python
         - manage.py
