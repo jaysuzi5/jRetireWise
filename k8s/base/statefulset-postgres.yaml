@@ -5,6 +5,13 @@ metadata:
   labels:
     app: jretirewise
     component: postgres
+  annotations:
+    # Note: This StatefulSet has immutable volumeClaimTemplates
+    # If storage config needs to change, manually delete the StatefulSet first:
+    # kubectl delete statefulset -n jretirewise prod-jretirewise-postgres --cascade=orphan
+    # Then reapply: kubectl apply -k k8s/overlays/prod -n jretirewise
+    # See k8s/STATEFULSET_README.md for details
+    argocd.argoproj.io/sync-wave: "-1"
 spec:
   serviceName: postgres-service
   replicas: 1
