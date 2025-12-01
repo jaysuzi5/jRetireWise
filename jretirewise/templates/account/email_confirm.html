@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Confirm Email - jRetireWise{% endblock %}
+
+{% block content %}
+<div class="min-h-[calc(100vh-80px)] flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="w-full max-w-md">
+        <!-- Header Section -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-green-600 rounded-full mb-4">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">jRetireWise</h1>
+            <p class="text-gray-600">Plan your retirement with confidence</p>
+        </div>
+
+        <!-- Confirmation Card -->
+        <div class="bg-white rounded-2xl shadow-lg p-8 space-y-6">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-900">Verify Your Email</h2>
+                <p class="text-gray-600 text-sm mt-1">Click the link below to confirm your email address</p>
+            </div>
+
+            <!-- Message -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p class="text-blue-900 text-sm">
+                    We've sent a confirmation link to <strong>{{ confirmation.email_address.email }}</strong>.
+                    Click the button below to verify your email and activate your account.
+                </p>
+            </div>
+
+            <!-- Confirmation Button -->
+            <div>
+                <a href="{{ confirmation.get_absolute_url }}"
+                   class="w-full px-4 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition duration-200 text-center block">
+                    Confirm Email Address
+                </a>
+            </div>
+
+            <!-- Alternative Link -->
+            <div class="text-center">
+                <p class="text-gray-600 text-sm mb-2">Or copy and paste this link in your browser:</p>
+                <div class="bg-gray-50 p-3 rounded-lg break-all">
+                    <a href="{{ confirmation.get_absolute_url }}" class="text-indigo-600 hover:text-indigo-700 text-xs">
+                        {{ confirmation.get_absolute_url }}
+                    </a>
+                </div>
+            </div>
+
+            <!-- Help Text -->
+            <div class="border-t border-gray-200 pt-4">
+                <p class="text-gray-600 text-xs">
+                    This link will expire in 3 days. If you didn't sign up for a jRetireWise account, you can ignore this message.
+                </p>
+            </div>
+        </div>
+
+        <!-- Footer Info -->
+        <p class="text-center text-gray-500 text-xs mt-6">
+            By confirming your email, you agree to our Terms of Service and Privacy Policy
+        </p>
+    </div>
+</div>
+{% endblock %}
