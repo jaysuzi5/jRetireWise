@@ -257,9 +257,11 @@ jobs:
         echo "Smoke tests passed ✓"
 
     - name: Notify Slack
-      if: always()
+      if: always() && github.event_name == 'push'
+      continue-on-error: true
       uses: slackapi/slack-github-action@v1
       with:
+        webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
         payload: |
           {
             "text": "Deployment to production completed",
@@ -268,13 +270,11 @@ jobs:
                 "type": "section",
                 "text": {
                   "type": "mrkdwn",
-                  "text": "Deployment Status: ${{ job.status }}\nCommit: ${{ github.sha }}\nAuthor: ${{ github.actor }}"
+                  "text": "Deployment Status: ${{ job.status }}\nURL: https://jaycurtis.org/jretirewise\nCommit: ${{ github.sha }}\nAuthor: ${{ github.actor }}"
                 }
               }
             ]
           }
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
     - name: Create deployment annotation
       run: |
