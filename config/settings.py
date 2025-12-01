@@ -264,6 +264,9 @@ OTEL_EXPORTER_OTLP_ENDPOINT = env('OTEL_EXPORTER_OTLP_ENDPOINT', default='http:/
 OTEL_SERVICE_NAME = 'jretirewise'
 OTEL_SERVICE_VERSION = '1.0.0'
 
+# Script name for subpath deployment (e.g., /jretirewise/)
+FORCE_SCRIPT_NAME = env('FORCE_SCRIPT_NAME', default='')
+
 # Security settings for production
 if not DEBUG:
     SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=True)

@@ -48,10 +48,11 @@ data:
   OTEL_SDK_DISABLED: "false"
 
   # Application
-  STATIC_URL: "/static/"
-  MEDIA_URL: "/media/"
+  STATIC_URL: "/jretirewise/static/"
+  MEDIA_URL: "/jretirewise/media/"
   STATIC_ROOT: "/app/staticfiles"
   MEDIA_ROOT: "/app/media"
+  FORCE_SCRIPT_NAME: "/jretirewise"
 
   # Celery
   CELERY_TASK_SERIALIZER: "json"
