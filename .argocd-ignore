@@ -1,0 +1,6 @@
+# ArgoCD ignore patterns
+# StatefulSet is managed manually due to immutable volumeClaimTemplates
+# See ARGOCD_SYNC_GUIDE.md for details
+
+# Ignore PostgreSQL StatefulSet - manage manually to avoid immutability conflicts
+kind: StatefulSet
