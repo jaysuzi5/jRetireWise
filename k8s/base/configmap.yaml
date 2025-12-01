@@ -2,12 +2,13 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: jretirewise-config
-  namespace: default
+  labels:
+    app: jretirewise
 data:
   # Django settings
   DEBUG: "false"
   DJANGO_SETTINGS_MODULE: "config.settings"
-  ALLOWED_HOSTS: "jretirewise.example.com,www.jretirewise.example.com,localhost"
+  ALLOWED_HOSTS: "jaycurtis.org,localhost"
 
   # Database
   DATABASE_ENGINE: "django.db.backends.postgresql"
