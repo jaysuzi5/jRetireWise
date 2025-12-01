@@ -9,29 +9,19 @@ metadata:
     cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
 spec:
   ingressClassName: nginx
   tls:
   - hosts:
-    - jretirewise.example.com
-    - www.jretirewise.example.com
+    - jaycurtis.org
     secretName: jretirewise-tls
   rules:
-  - host: jretirewise.example.com
+  - host: jaycurtis.org
     http:
       paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: jretirewise-web-service
-            port:
-              name: http
-  - host: www.jretirewise.example.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
+      - path: /jretirewise(/|$)(.*)
+        pathType: ImplementationSpecific
         backend:
           service:
             name: jretirewise-web-service
