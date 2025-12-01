@@ -118,6 +118,11 @@ spec:
             configMapKeyRef:
               name: jretirewise-config
               key: OTEL_EXPORTER_OTLP_ENDPOINT
+        - name: FORCE_SCRIPT_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: FORCE_SCRIPT_NAME
 
         # Secret values
         - name: SECRET_KEY
@@ -282,6 +287,11 @@ spec:
             configMapKeyRef:
               name: jretirewise-config
               key: SECURE_SSL_REDIRECT
+        - name: FORCE_SCRIPT_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: FORCE_SCRIPT_NAME
 
       volumes:
       - name: static-files

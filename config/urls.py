@@ -65,6 +65,16 @@ urlpatterns = [
     path('health/live/', health_live, name='health-live'),
 ]
 
+# Support for subpath deployment (e.g., /jretirewise/)
+subpath_urlpatterns = [
+    path('jretirewise/', include(urlpatterns)),
+]
+
+# Check if app is deployed at a subpath
+import os
+if os.environ.get('FORCE_SCRIPT_NAME'):
+    urlpatterns = subpath_urlpatterns
+
 # Serve media files in development
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
