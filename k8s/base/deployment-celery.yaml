@@ -25,8 +25,8 @@ spec:
 
       containers:
       - name: celery
-        image: "jretirewise:latest"
-        imagePullPolicy: IfNotPresent
+        image: "jaysuzi5/jretirewise:latest"
+        imagePullPolicy: Always
         command:
         - celery
         - -A

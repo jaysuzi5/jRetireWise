@@ -34,8 +34,8 @@ spec:
 
       containers:
       - name: web
-        image: "jretirewise:latest"
-        imagePullPolicy: IfNotPresent
+        image: "jaysuzi5/jretirewise:latest"
+        imagePullPolicy: Always
         ports:
         - name: http
           containerPort: 8000
