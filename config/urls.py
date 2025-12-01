@@ -36,8 +36,7 @@ router.register(r'expenses', ExpenseViewSet, basename='expense')
 router.register(r'financial-profile', FinancialProfileViewSet, basename='financial-profile')
 router.register(r'scenarios', ScenarioViewSet, basename='scenario')
 
-# Core URL patterns (without subpath prefix)
-core_patterns = [
+urlpatterns = [
     # Admin
     path('admin/', admin.site.urls),
 
@@ -64,11 +63,6 @@ core_patterns = [
     # Health checks
     path('health/ready/', health_ready, name='health-ready'),
     path('health/live/', health_live, name='health-live'),
-]
-
-# Always wrap with /jretirewise/ prefix for Kubernetes subpath deployment
-urlpatterns = [
-    path('jretirewise/', include(core_patterns)),
 ]
 
 # Serve media files in development
