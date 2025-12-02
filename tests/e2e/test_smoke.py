@@ -32,11 +32,6 @@ class TestApplicationHealthy:
     """Tests that verify the application is healthy and reachable."""
 
     @pytest.fixture
-    def base_url(self):
-        """Get base URL from environment or use default."""
-        return os.environ.get("BASE_URL", "http://localhost:8000").rstrip("/")
-
-    @pytest.fixture
     def session(self):
         """Create a requests session that maintains cookies across requests."""
         return requests.Session()

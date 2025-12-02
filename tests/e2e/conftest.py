@@ -2,10 +2,21 @@
 Configuration and fixtures for E2E tests.
 """
 
+import os
 import pytest
 from playwright.sync_api import sync_playwright, Page
 from django.contrib.auth.models import User
 from django.test import Client
+
+
+@pytest.fixture(scope="session")
+def base_url():
+    """Get base URL from environment or use default.
+
+    This is a session-scoped fixture to work with pytest-base-url plugin.
+    It can be overridden with the --base-url command-line option.
+    """
+    return os.environ.get("BASE_URL", "http://localhost:8000").rstrip("/")
 
 
 @pytest.fixture(scope="session")
