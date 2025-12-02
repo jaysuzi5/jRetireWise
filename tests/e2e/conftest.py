@@ -47,16 +47,3 @@ def django_db_setup():
         setup()
 
 
-@pytest.fixture(autouse=True)
-def create_test_user():
-    """Create a test user for E2E tests."""
-    user, created = User.objects.get_or_create(
-        username='testuser',
-        defaults={
-            'email': 'testuser@example.com',
-        }
-    )
-    if created:
-        user.set_password('SecurePass123!')
-        user.save()
-    return user
