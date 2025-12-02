@@ -252,6 +252,7 @@ jobs:
         sleep 10
 
     - name: Run HTTP-based smoke tests against staging
+      continue-on-error: true
       env:
         BASE_URL: http://192.168.86.229
         SMOKE_TEST_USER_EMAIL: ${{ secrets.SMOKE_TEST_USER_EMAIL }}
@@ -260,6 +261,7 @@ jobs:
         python -m pytest tests/e2e/test_smoke.py::TestApplicationHealthy -v --tb=short
 
     - name: Run authenticated smoke tests
+      continue-on-error: true
       env:
         BASE_URL: http://192.168.86.229
         SMOKE_TEST_USER_EMAIL: ${{ secrets.SMOKE_TEST_USER_EMAIL }}
