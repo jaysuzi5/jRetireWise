@@ -244,7 +244,7 @@ jobs:
     - name: Install test dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install requests pytest
+        pip install -r requirements.txt
 
     - name: Wait for deployment to be ready
       run: |
