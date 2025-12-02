@@ -198,6 +198,11 @@ ACCOUNT_EMAIL_VERIFICATION = 'none'
 ACCOUNT_SIGNUP_EMAIL_ENTER_TWICE = False
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
+        'APP': {
+            'client_id': env('SOCIALACCOUNT_PROVIDERS__GOOGLE__CLIENT_ID', default=''),
+            'secret': env('SOCIALACCOUNT_PROVIDERS__GOOGLE__CLIENT_SECRET', default=''),
+            'key': ''
+        },
         'SCOPE': [
             'profile',
             'email',
