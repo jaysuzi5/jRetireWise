@@ -9,6 +9,16 @@ from .models import FinancialProfile, Asset, IncomeSource, Expense
 class FinancialProfileForm(forms.ModelForm):
     """Form for editing financial profile."""
 
+    def __init__(self, *args, **kwargs):
+        """Initialize form and preserve decimal formatting for age fields."""
+        super().__init__(*args, **kwargs)
+        # If we have an instance, explicitly format age fields with 2 decimal places
+        if self.instance and self.instance.pk:
+            if self.instance.current_age:
+                self.initial['current_age'] = f"{self.instance.current_age:.2f}"
+            if self.instance.retirement_age:
+                self.initial['retirement_age'] = f"{self.instance.retirement_age:.2f}"
+
     class Meta:
         model = FinancialProfile
         fields = [
