@@ -24,12 +24,12 @@ class FinancialProfileForm(forms.ModelForm):
             'current_age': forms.NumberInput(attrs={
                 'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
                 'min': '18',
-                'step': '0.01',
+                'step': '0.1',
             }),
             'retirement_age': forms.NumberInput(attrs={
                 'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
                 'min': '18',
-                'step': '0.01',
+                'step': '0.1',
             }),
             'life_expectancy': forms.NumberInput(attrs={
                 'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',

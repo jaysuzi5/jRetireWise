@@ -41,16 +41,6 @@
             </p>
         </div>
 
-        <div class="bg-white rounded-lg shadow p-6">
-            <h3 class="text-gray-500 text-sm font-medium">Final Value</h3>
-            <p class="text-2xl font-bold text-gray-900 mt-2">
-                {% if scenario.result.result_data.calculation.final_portfolio_value is not None %}
-                    ${{ scenario.result.result_data.calculation.final_portfolio_value|floatformat:0|intcomma }}
-                {% else %}
-                    —
-                {% endif %}
-            </p>
-        </div>
     {% endif %}
 </div>
 
@@ -104,14 +94,14 @@
     const ctx = document.getElementById('projectionChart').getContext('2d');
     const projections = {{ scenario.result.result_data.calculation.projections|safe }};
 
-    const years = projections.map(p => p.year);
+    const ages = projections.map(p => p.age);
     const portfolioValues = projections.map(p => p.portfolio_value);
     const withdrawals = projections.map(p => p.annual_withdrawal);
 
     new Chart(ctx, {
         type: 'line',
         data: {
-            labels: years,
+            labels: ages,
             datasets: [
                 {
                     label: 'Portfolio Value',
