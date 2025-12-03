@@ -63,3 +63,5 @@ celerybeat-schedule
 # OS
 .DS_Store
 Thumbs.db
+
+secrets_plain_text.yaml
