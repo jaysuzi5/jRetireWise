@@ -48,8 +48,31 @@ def run_scenario_calculation(sender, instance, created, **kwargs):
         life_expectancy = int(parameters.get('life_expectancy', financial_profile.life_expectancy))
 
         # Optional parameters with defaults
-        annual_return_rate = float(parameters.get('annual_return_rate', 0.07))
+        # Accept both 'annual_return' and 'annual_return_rate' for flexibility
+        annual_return_rate = float(parameters.get('annual_return_rate') or parameters.get('annual_return', 0.07))
         inflation_rate = float(parameters.get('inflation_rate', 0.03))
+
+        # Track which values came from parameters vs defaults for display
+        values_used = {
+            'portfolio_value': parameters.get('portfolio_value') is not None,
+            'annual_spending': parameters.get('annual_spending') is not None,
+            'current_age': parameters.get('current_age') is not None,
+            'retirement_age': parameters.get('retirement_age') is not None,
+            'life_expectancy': parameters.get('life_expectancy') is not None,
+            'annual_return_rate': (parameters.get('annual_return_rate') or parameters.get('annual_return')) is not None,
+            'inflation_rate': parameters.get('inflation_rate') is not None,
+        }
+
+        # Create a defaults dict showing actual values used
+        defaults_used = {
+            'portfolio_value': portfolio_value if not values_used['portfolio_value'] else None,
+            'annual_spending': annual_spending if not values_used['annual_spending'] else None,
+            'current_age': current_age if not values_used['current_age'] else None,
+            'retirement_age': retirement_age if not values_used['retirement_age'] else None,
+            'life_expectancy': life_expectancy if not values_used['life_expectancy'] else None,
+            'annual_return_rate': annual_return_rate if not values_used['annual_return_rate'] else None,
+            'inflation_rate': inflation_rate if not values_used['inflation_rate'] else None,
+        }
 
         # Time the calculation
         start_time = time.time()
@@ -85,8 +108,15 @@ def run_scenario_calculation(sender, instance, created, **kwargs):
         calculation_result = calculator.calculate()
         execution_time_ms = int((time.time() - start_time) * 1000)
 
+        # Add defaults used to result data for transparency in UI
+        result_with_context = {
+            'calculation': calculation_result,
+            'defaults_used': defaults_used,
+            'parameters_provided': {k: v for k, v in parameters.items() if k in values_used}
+        }
+
         # Save successful result
-        result.result_data = calculation_result
+        result.result_data = result_with_context
         result.status = 'completed'
         result.execution_time_ms = execution_time_ms
         result.error_message = ''
