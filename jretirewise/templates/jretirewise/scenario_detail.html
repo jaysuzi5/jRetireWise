@@ -32,8 +32,8 @@
         <div class="bg-white rounded-lg shadow p-6">
             <h3 class="text-gray-500 text-sm font-medium">Success Rate</h3>
             <p class="text-2xl font-bold text-gray-900 mt-2">
-                {% if scenario.result.result_data.success_rate %}
-                    {{ scenario.result.result_data.success_rate|floatformat:1 }}%
+                {% if scenario.result.result_data.calculation.success_rate %}
+                    {{ scenario.result.result_data.calculation.success_rate|floatformat:1 }}%
                 {% else %}
                     —
                 {% endif %}
@@ -43,8 +43,8 @@
         <div class="bg-white rounded-lg shadow p-6">
             <h3 class="text-gray-500 text-sm font-medium">Final Value</h3>
             <p class="text-2xl font-bold text-gray-900 mt-2">
-                {% if scenario.result.result_data.final_portfolio_value %}
-                    ${{ scenario.result.result_data.final_portfolio_value|floatformat:0 }}
+                {% if scenario.result.result_data.calculation.final_portfolio_value %}
+                    ${{ scenario.result.result_data.calculation.final_portfolio_value|floatformat:0 }}
                 {% else %}
                     —
                 {% endif %}
@@ -54,7 +54,7 @@
 </div>
 
 <!-- Chart -->
-{% if scenario.result and scenario.result.result_data.projections %}
+{% if scenario.result and scenario.result.result_data.calculation.projections %}
 <div class="bg-white rounded-lg shadow p-6 mb-8">
     <h2 class="text-xl font-bold text-gray-900 mb-6">Portfolio Projection</h2>
     <div style="position: relative; height: 400px;">
@@ -64,7 +64,7 @@
 
 <script>
     const ctx = document.getElementById('projectionChart').getContext('2d');
-    const projections = {{ scenario.result.result_data.projections|safe }};
+    const projections = {{ scenario.result.result_data.calculation.projections|safe }};
 
     const years = projections.map(p => p.year);
     const portfolioValues = projections.map(p => p.portfolio_value);
