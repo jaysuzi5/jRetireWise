@@ -76,7 +76,7 @@ class FinancialProfileFormTestCase(TestCase):
         }
         form = FinancialProfileForm(data=form_data)
         assert not form.is_valid()
-        assert 'Retirement age must be greater than current age' in str(form.errors)
+        assert 'Retirement age must be greater than or equal to current age' in str(form.errors)
 
     def test_profile_form_life_expectancy_validation(self):
         """Test that life_expectancy must be greater than retirement_age."""

@@ -11,8 +11,8 @@ class FinancialProfile(models.Model):
     """User's financial profile with retirement planning parameters."""
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='financial_profile')
-    current_age = models.IntegerField(validators=[MinValueValidator(18)])
-    retirement_age = models.IntegerField(validators=[MinValueValidator(18)])
+    current_age = models.DecimalField(max_digits=5, decimal_places=2, validators=[MinValueValidator(18)])
+    retirement_age = models.DecimalField(max_digits=5, decimal_places=2, validators=[MinValueValidator(18)])
     life_expectancy = models.IntegerField(validators=[MinValueValidator(1)], default=95)
     annual_spending = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     social_security_annual = models.DecimalField(max_digits=12, decimal_places=2, default=0)

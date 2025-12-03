@@ -24,12 +24,12 @@ class FinancialProfileForm(forms.ModelForm):
             'current_age': forms.NumberInput(attrs={
                 'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
                 'min': '18',
-                'step': '1',
+                'step': '0.01',
             }),
             'retirement_age': forms.NumberInput(attrs={
                 'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
                 'min': '18',
-                'step': '1',
+                'step': '0.01',
             }),
             'life_expectancy': forms.NumberInput(attrs={
                 'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
@@ -65,8 +65,8 @@ class FinancialProfileForm(forms.ModelForm):
         retirement_age = cleaned_data.get('retirement_age')
         life_expectancy = cleaned_data.get('life_expectancy')
 
-        if current_age and retirement_age and current_age >= retirement_age:
-            raise forms.ValidationError('Retirement age must be greater than current age.')
+        if current_age and retirement_age and current_age > retirement_age:
+            raise forms.ValidationError('Retirement age must be greater than or equal to current age.')
 
         if retirement_age and life_expectancy and retirement_age >= life_expectancy:
             raise forms.ValidationError('Life expectancy must be greater than retirement age.')

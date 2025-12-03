@@ -42,6 +42,10 @@
                     <td class="px-6 py-4 text-sm space-x-2">
                         <a href="{% url 'scenario-detail' scenario.id %}" class="text-indigo-600 hover:text-indigo-900">View</a>
                         <a href="{% url 'scenario-edit' scenario.id %}" class="text-blue-600 hover:text-blue-900">Edit</a>
+                        <form method="post" action="{% url 'scenario-delete' scenario.id %}" style="display: inline;" onclick="return confirm('Are you sure you want to delete this scenario? This action cannot be undone.');">
+                            {% csrf_token %}
+                            <button type="submit" class="text-red-600 hover:text-red-900">Delete</button>
+                        </form>
                     </td>
                 </tr>
                 {% endfor %}
