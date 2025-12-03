@@ -4,7 +4,7 @@ Views for scenario management.
 
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
-from django.views.generic import DetailView, ListView, CreateView, UpdateView
+from django.views.generic import DetailView, ListView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.shortcuts import get_object_or_404
@@ -84,3 +84,18 @@ class ScenarioUpdateView(LoginRequiredMixin, UpdateView):
         """Show success message."""
         messages.success(self.request, f'Scenario "{form.instance.name}" updated successfully!')
         return super().form_valid(form)
+
+
+class ScenarioDeleteView(LoginRequiredMixin, DeleteView):
+    """Delete a retirement scenario."""
+    model = RetirementScenario
+    success_url = reverse_lazy('scenarios')
+
+    def get_queryset(self):
+        return RetirementScenario.objects.filter(user=self.request.user)
+
+    def delete(self, request, *args, **kwargs):
+        """Show success message on deletion."""
+        scenario = self.get_object()
+        messages.success(request, f'Scenario "{scenario.name}" deleted successfully!')
+        return super().delete(request, *args, **kwargs)

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load humanize %}
 
 {% block title %}{{ scenario.name }} - jRetireWise{% endblock %}
 
@@ -32,29 +33,56 @@
         <div class="bg-white rounded-lg shadow p-6">
             <h3 class="text-gray-500 text-sm font-medium">Success Rate</h3>
             <p class="text-2xl font-bold text-gray-900 mt-2">
-                {% if scenario.result.result_data.success_rate %}
-                    {{ scenario.result.result_data.success_rate|floatformat:1 }}%
+                {% if scenario.result.result_data.calculation.success_rate is not None %}
+                    {{ scenario.result.result_data.calculation.success_rate|floatformat:0 }}%
                 {% else %}
                     —
                 {% endif %}
             </p>
         </div>
 
-        <div class="bg-white rounded-lg shadow p-6">
-            <h3 class="text-gray-500 text-sm font-medium">Final Value</h3>
-            <p class="text-2xl font-bold text-gray-900 mt-2">
-                {% if scenario.result.result_data.final_portfolio_value %}
-                    ${{ scenario.result.result_data.final_portfolio_value|floatformat:0 }}
-                {% else %}
-                    —
-                {% endif %}
-            </p>
-        </div>
     {% endif %}
 </div>
 
+<!-- Scenario Summary -->
+{% if scenario.result and scenario.result.result_data.calculation.projections %}
+<div class="bg-white rounded-lg shadow p-6 mb-8">
+    <h2 class="text-xl font-bold text-gray-900 mb-6">Scenario Summary</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+            <p class="text-gray-600 text-sm font-medium">Initial Portfolio Balance</p>
+            <p class="text-2xl font-bold text-gray-900 mt-2">
+                ${{ scenario.result.result_data.calculation.projections.0.portfolio_value|floatformat:0|intcomma }}
+            </p>
+        </div>
+        <div>
+            <p class="text-gray-600 text-sm font-medium">Final Portfolio Balance</p>
+            <p class="text-2xl font-bold text-gray-900 mt-2">
+                {% with scenario.result.result_data.calculation.projections|last as last_projection %}
+                    ${{ last_projection.portfolio_value|floatformat:0|intcomma }}
+                {% endwith %}
+            </p>
+        </div>
+        <div>
+            <p class="text-gray-600 text-sm font-medium">Initial Annual Withdrawal</p>
+            <p class="text-2xl font-bold text-gray-900 mt-2">
+                ${{ scenario.result.result_data.calculation.projections.0.annual_withdrawal|floatformat:0|intcomma }}
+            </p>
+        </div>
+        <div>
+            <p class="text-gray-600 text-sm font-medium">Final Annual Withdrawal</p>
+            <p class="text-2xl font-bold text-gray-900 mt-2">
+                {% with scenario.result.result_data.calculation.projections|last as last_projection %}
+                    ${{ last_projection.annual_withdrawal|floatformat:0|intcomma }}
+                {% endwith %}
+            </p>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Chart -->
-{% if scenario.result and scenario.result.result_data.projections %}
+{% if scenario.result and scenario.result.result_data.calculation.projections %}
 <div class="bg-white rounded-lg shadow p-6 mb-8">
     <h2 class="text-xl font-bold text-gray-900 mb-6">Portfolio Projection</h2>
     <div style="position: relative; height: 400px;">
@@ -64,16 +92,16 @@
 
 <script>
     const ctx = document.getElementById('projectionChart').getContext('2d');
-    const projections = {{ scenario.result.result_data.projections|safe }};
+    const projections = {{ scenario.result.result_data.calculation.projections|safe }};
 
-    const years = projections.map(p => p.year);
+    const ages = projections.map(p => p.age);
     const portfolioValues = projections.map(p => p.portfolio_value);
     const withdrawals = projections.map(p => p.annual_withdrawal);
 
     new Chart(ctx, {
         type: 'line',
         data: {
-            labels: years,
+            labels: ages,
             datasets: [
                 {
                     label: 'Portfolio Value',
@@ -140,13 +168,53 @@
 <div class="bg-white rounded-lg shadow p-6 mb-8">
     <h2 class="text-xl font-bold text-gray-900 mb-6">Scenario Parameters</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- User-provided parameters -->
         {% for key, value in scenario.parameters.items %}
         <div>
             <label class="block text-sm font-medium text-gray-700">{{ key|title }}</label>
-            <p class="mt-1 text-lg text-gray-900">{{ value }}</p>
+            <p class="mt-1 text-lg text-gray-900">
+                {% if key in 'annual_return_rate,inflation_rate,annual_return' %}
+                    {{ value|floatformat:0 }}%
+                {% elif key in 'portfolio_value,annual_spending' %}
+                    ${{ value|floatformat:0|intcomma }}
+                {% else %}
+                    {{ value }}
+                {% endif %}
+            </p>
+            <p class="text-xs text-gray-500 mt-1">User-provided</p>
         </div>
         {% endfor %}
+
+        <!-- Default values that were used -->
+        {% if scenario.result.result_data.defaults_used %}
+            {% for key, value in scenario.result.result_data.defaults_used.items %}
+                {% if value is not None %}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">{{ key|title }}</label>
+                    <p class="mt-1 text-lg text-gray-900">
+                        {% if key in 'annual_return_rate,inflation_rate,annual_return' %}
+                            {{ value|floatformat:0 }}%
+                        {% elif key in 'portfolio_value,annual_spending' %}
+                            ${{ value|floatformat:0|intcomma }}
+                        {% else %}
+                            {{ value }}
+                        {% endif %}
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">Default value</p>
+                </div>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
     </div>
+
+    <!-- Display note if using defaults -->
+    {% if scenario.result.result_data.defaults_used %}
+        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
+            <p class="text-sm text-blue-700">
+                <span class="font-medium">ℹ Note:</span> Some parameters were not specified and were filled in with default values from your financial profile.
+            </p>
+        </div>
+    {% endif %}
 </div>
 
 <!-- Actions -->

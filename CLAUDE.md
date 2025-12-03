@@ -311,11 +311,114 @@ Details: `documents/plan.md` - **CI/CD Pipeline**
 
 - Container: Non-root user, read-only filesystem where possible
 - Network: NetworkPolicy, TLS at Ingress, HTTPS-only
-- Secrets: Kubernetes Secrets (encrypted), never in git
+- Secrets: Sealed Secrets (SealedSecret CRD), never plaintext in git
 - RBAC: ServiceAccount with minimal permissions
 - OAuth: Google OAuth 2.0 for user authentication
 
 See `documents/plan.md` - **Security Best Practices** for details.
+
+### Kubernetes Secrets Management
+
+**CRITICAL RULE**: Never commit plaintext Kubernetes Secrets to the repository. Always use Sealed Secrets.
+
+#### What are Sealed Secrets?
+
+Sealed Secrets encrypt sensitive data with a cluster-specific sealing key, allowing you to safely commit encrypted secrets to git while keeping the actual values secure.
+
+#### Workflow for Managing Secrets
+
+1. **Install kubeseal** on your local machine:
+   ```bash
+   # macOS
+   brew install kubeseal
+
+   # Or download from: https://github.com/bitnami-labs/sealed-secrets/releases
+   ```
+
+2. **Create or update a secret:**
+   ```bash
+   # Create a temporary plaintext secret file (temp.yaml)
+   cat > temp.yaml << 'EOF'
+   apiVersion: v1
+   kind: Secret
+   metadata:
+     name: jretirewise-secret
+   type: Opaque
+   stringData:
+     SECRET_KEY: "your-actual-secret-key"
+     DATABASE_PASSWORD: "your-actual-db-password"
+     # ... other secrets
+   EOF
+   ```
+
+3. **Seal the secret:**
+   ```bash
+   kubeseal --controller-namespace kube-system --format yaml < temp.yaml > secret.yaml
+   ```
+
+   This command:
+   - Reads the plaintext secret from `temp.yaml`
+   - Encrypts it using the cluster's sealing key (from `kube-system` namespace)
+   - Outputs the encrypted SealedSecret to `secret.yaml`
+
+4. **Clean up and commit:**
+   ```bash
+   rm temp.yaml  # Delete the plaintext version
+   git add k8s/base/secret.yaml
+   git commit -m "chore: Update sealed secrets"
+   git push origin main
+   ```
+
+5. **Deploy to cluster:**
+   ```bash
+   kubectl apply -f k8s/base/secret.yaml
+
+   # Verify the sealed secret was decrypted correctly
+   kubectl get secret jretirewise-secret -o yaml
+   ```
+
+#### Viewing Secrets in the Cluster
+
+Only the cluster with the matching sealing key can decrypt sealed secrets:
+
+```bash
+# View encrypted (sealed) version in git - safe to commit
+cat k8s/base/secret.yaml
+
+# View decrypted (plaintext) version on the cluster - only works in-cluster
+kubectl get secret jretirewise-secret -o yaml
+```
+
+#### Updating Individual Secrets
+
+If you need to update just one secret value:
+
+```bash
+# Create a temp secret with ONLY the value you want to update
+cat > temp.yaml << 'EOF'
+apiVersion: v1
+kind: Secret
+metadata:
+  name: jretirewise-secret
+type: Opaque
+stringData:
+  SECRET_KEY: "new-secret-key-value"
+EOF
+
+# Seal it
+kubeseal --controller-namespace kube-system --format yaml < temp.yaml > secret.yaml
+
+# Replace the encryptedData value in k8s/base/secret.yaml with the new encrypted value
+rm temp.yaml
+```
+
+#### Important Notes
+
+- **Sealing key location**: `kube-system` namespace (standard for kubeseal)
+- **Format flag**: Always use `--format yaml` for YAML output
+- **Cluster-specific**: Each cluster has its own sealing key - sealed secrets from one cluster cannot be decrypted on another
+- **Never commit plaintext**: The `temp.yaml` file should NEVER be committed to git
+- **Local development**: For local development, use an unencrypted local k8s/base/secret.yaml (add to .gitignore)
 
 ## Documentation Reference
 

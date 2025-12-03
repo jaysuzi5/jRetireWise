@@ -62,14 +62,17 @@ class UserProfileView(APIView):
         user = request.user
         profile = user.profile
 
-        # Update profile
-        profile.full_name = request.data.get('full_name', profile.full_name)
-        profile.theme_preference = request.data.get('theme_preference', profile.theme_preference)
-        profile.notification_email = request.data.get('notification_email', profile.notification_email)
-        profile.save()
+        # Validate using serializer
+        serializer = UserProfileSerializer(profile, data=request.data, partial=True)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = UserSerializer(user)
-        return Response(serializer.data)
+        # Save the validated data
+        serializer.save()
+
+        # Return updated user data
+        user_serializer = UserSerializer(user)
+        return Response(user_serializer.data)
 
 
 class DashboardView(LoginRequiredMixin, TemplateView):

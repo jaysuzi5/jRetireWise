@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',
     'whitenoise.runserver_nostatic',
 
     # Third party apps
@@ -161,7 +162,7 @@ SPECTACULAR_SETTINGS = {
     'TITLE': 'jRetireWise API',
     'DESCRIPTION': 'Retirement Planning Calculator API',
     'VERSION': '1.0.0',
-    'SERVE_PERMISSIONS': ['rest_framework.permissions.IsAuthenticated'],
+    'SERVE_PERMISSIONS': ['rest_framework.permissions.AllowAny'],
 }
 
 # CORS Configuration
@@ -198,6 +199,11 @@ ACCOUNT_EMAIL_VERIFICATION = 'none'
 ACCOUNT_SIGNUP_EMAIL_ENTER_TWICE = False
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
+        'APP': {
+            'client_id': env('SOCIALACCOUNT_PROVIDERS__GOOGLE__CLIENT_ID', default=''),
+            'secret': env('SOCIALACCOUNT_PROVIDERS__GOOGLE__CLIENT_SECRET', default=''),
+            'key': ''
+        },
         'SCOPE': [
             'profile',
             'email',

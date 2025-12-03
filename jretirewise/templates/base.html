@@ -1,11 +1,24 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" {% if user.is_authenticated %}data-user-theme="{{ user.profile.theme_preference }}"{% endif %}>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}jRetireWise - Retirement Planning Calculator{% endblock %}</title>
     {% load static %}
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'dark-bg': '#111827',
+                        'dark-surface': '#1f2937',
+                    }
+                }
+            }
+        }
+    </script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -17,9 +30,9 @@
     </style>
     {% block extra_css %}{% endblock %}
 </head>
-<body class="bg-gray-50">
+<body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
     <!-- Navigation -->
-    <nav class="bg-white border-b border-gray-200 shadow-sm">
+    <nav class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm dark:shadow-lg">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center space-x-3">
@@ -28,19 +41,29 @@
                             <path d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                         </svg>
                     </div>
-                    <h1 class="text-2xl font-bold text-gray-900">jRetireWise</h1>
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">jRetireWise</h1>
                 </div>
                 <div class="hidden md:flex space-x-8">
-                    <a href="{% url 'dashboard' %}" class="text-gray-700 hover:text-indigo-600 font-medium transition duration-200">Dashboard</a>
-                    <a href="{% url 'financial-profile' %}" class="text-gray-700 hover:text-indigo-600 font-medium transition duration-200">Profile</a>
-                    <a href="{% url 'scenarios' %}" class="text-gray-700 hover:text-indigo-600 font-medium transition duration-200">Scenarios</a>
+                    <a href="{% url 'dashboard' %}" class="text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition duration-200">Dashboard</a>
+                    <a href="{% url 'financial-profile' %}" class="text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition duration-200">Profile</a>
+                    <a href="{% url 'scenarios' %}" class="text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition duration-200">Scenarios</a>
                 </div>
                 <div class="flex items-center space-x-4">
+                    <!-- Theme Toggle Button -->
+                    <button id="theme-toggle-btn" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition duration-200" title="Toggle theme">
+                        <svg class="w-5 h-5 dark:hidden" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+                        </svg>
+                        <svg class="w-5 h-5 hidden dark:block" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.536l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.121-10.607a1 1 0 010 1.414l-.707.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zm5.657-9.193a1 1 0 00-1.414 0l-.707.707A1 1 0 005.05 6.464l.707-.707a1 1 0 001.414-1.414l-.707-.707zM5 11a1 1 0 100-2H4a1 1 0 100 2h1z" clip-rule="evenodd"></path>
+                        </svg>
+                    </button>
+
                     {% if user.is_authenticated %}
                         <div class="text-sm">
-                            <p class="text-gray-600">{{ user.email }}</p>
+                            <p class="text-gray-600 dark:text-gray-400">{{ user.email }}</p>
                         </div>
-                        <a href="{% url 'api-logout' %}" class="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 font-medium transition duration-200">Sign Out</a>
+                        <a href="{% url 'api-logout' %}" class="px-4 py-2 bg-red-50 dark:bg-red-900 dark:bg-opacity-20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900 dark:hover:bg-opacity-30 font-medium transition duration-200">Sign Out</a>
                     {% else %}
                         <a href="{% url 'api-login' %}" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium transition duration-200">Sign In</a>
                     {% endif %}
@@ -54,20 +77,31 @@
         <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
             {% if messages %}
                 {% for message in messages %}
-                    <div class="mb-4 p-4 bg-{{ message.tags }}-100 border border-{{ message.tags }}-400 text-{{ message.tags }}-700 rounded-lg shadow-sm">
-                        <div class="flex items-center">
-                            {% if message.tags == 'success' %}
+                    {% if message.tags == 'success' %}
+                        <div class="mb-4 p-4 bg-green-100 dark:bg-green-900 dark:bg-opacity-20 border border-green-400 dark:border-green-700 text-green-700 dark:text-green-400 rounded-lg shadow-sm">
+                            <div class="flex items-center">
                                 <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
                                 </svg>
-                            {% elif message.tags == 'error' %}
+                                {{ message }}
+                            </div>
+                        </div>
+                    {% elif message.tags == 'error' %}
+                        <div class="mb-4 p-4 bg-red-100 dark:bg-red-900 dark:bg-opacity-20 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-400 rounded-lg shadow-sm">
+                            <div class="flex items-center">
                                 <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
                                 </svg>
-                            {% endif %}
-                            {{ message }}
+                                {{ message }}
+                            </div>
                         </div>
-                    </div>
+                    {% else %}
+                        <div class="mb-4 p-4 bg-blue-100 dark:bg-blue-900 dark:bg-opacity-20 border border-blue-400 dark:border-blue-700 text-blue-700 dark:text-blue-400 rounded-lg shadow-sm">
+                            <div class="flex items-center">
+                                {{ message }}
+                            </div>
+                        </div>
+                    {% endif %}
                 {% endfor %}
             {% endif %}
 
@@ -76,37 +110,112 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-white border-t border-gray-200 mt-16">
+    <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-16">
         <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
                 <div>
-                    <h3 class="text-lg font-bold text-gray-900 mb-4">jRetireWise</h3>
-                    <p class="text-gray-600 text-sm">Professional retirement planning calculator for informed financial decisions.</p>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">jRetireWise</h3>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm">Professional retirement planning calculator for informed financial decisions.</p>
                 </div>
                 <div>
-                    <h4 class="font-semibold text-gray-900 mb-4">Product</h4>
+                    <h4 class="font-semibold text-gray-900 dark:text-white mb-4">Product</h4>
                     <ul class="space-y-2 text-sm">
-                        <li><a href="#" class="text-gray-600 hover:text-indigo-600">Features</a></li>
-                        <li><a href="#" class="text-gray-600 hover:text-indigo-600">Pricing</a></li>
-                        <li><a href="#" class="text-gray-600 hover:text-indigo-600">Documentation</a></li>
+                        <li><a href="#" class="text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400">Features</a></li>
+                        <li><a href="#" class="text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400">Pricing</a></li>
+                        <li><a href="#" class="text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400">Documentation</a></li>
                     </ul>
                 </div>
                 <div>
-                    <h4 class="font-semibold text-gray-900 mb-4">Legal</h4>
+                    <h4 class="font-semibold text-gray-900 dark:text-white mb-4">Legal</h4>
                     <ul class="space-y-2 text-sm">
-                        <li><a href="#" class="text-gray-600 hover:text-indigo-600">Privacy Policy</a></li>
-                        <li><a href="#" class="text-gray-600 hover:text-indigo-600">Terms of Service</a></li>
-                        <li><a href="#" class="text-gray-600 hover:text-indigo-600">Contact</a></li>
+                        <li><a href="#" class="text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400">Privacy Policy</a></li>
+                        <li><a href="#" class="text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400">Terms of Service</a></li>
+                        <li><a href="#" class="text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400">Contact</a></li>
                     </ul>
                 </div>
             </div>
-            <div class="border-t border-gray-200 pt-8">
-                <p class="text-center text-gray-500 text-sm">
+            <div class="border-t border-gray-200 dark:border-gray-700 pt-8">
+                <p class="text-center text-gray-500 dark:text-gray-400 text-sm">
                     &copy; 2025 jRetireWise. All rights reserved.
                 </p>
             </div>
         </div>
     </footer>
+
+    <script>
+        // Theme preference management
+        (function() {
+            // Get user's theme preference
+            const userTheme = document.documentElement.dataset.userTheme || 'light';
+
+            // Apply theme on page load
+            function applyTheme(theme) {
+                const htmlElement = document.documentElement;
+                if (theme === 'dark') {
+                    htmlElement.classList.add('dark');
+                    document.body.classList.remove('bg-gray-50');
+                    document.body.classList.add('dark:bg-gray-900');
+                } else {
+                    htmlElement.classList.remove('dark');
+                    document.body.classList.add('bg-gray-50');
+                    document.body.classList.remove('dark:bg-gray-900');
+                }
+                localStorage.setItem('theme-preference', theme);
+            }
+
+            // Check for saved preference or use default
+            const savedTheme = localStorage.getItem('theme-preference') || userTheme;
+            applyTheme(savedTheme);
+
+            // Handle theme toggle button click
+            const themeToggleBtn = document.getElementById('theme-toggle-btn');
+            if (themeToggleBtn) {
+                themeToggleBtn.addEventListener('click', function() {
+                    const htmlElement = document.documentElement;
+                    const currentTheme = htmlElement.classList.contains('dark') ? 'dark' : 'light';
+                    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+                    // Apply theme immediately
+                    applyTheme(newTheme);
+
+                    // Save to server if user is authenticated
+                    const userEmail = document.querySelector('p.text-gray-600.dark\\:text-gray-400');
+                    if (userEmail) {
+                        // User is authenticated, save preference to server
+                        fetch('/auth/profile/', {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                            },
+                            body: JSON.stringify({
+                                theme_preference: newTheme
+                            })
+                        }).catch(err => console.log('Theme save to server failed, but local preference applied'));
+                    }
+                });
+            }
+
+            // Listen for HTMX theme change requests
+            document.body.addEventListener('htmx:afterRequest', function(event) {
+                if (event.detail.xhr.status === 200) {
+                    // Check if this was a theme update request
+                    const themePref = event.detail.xhr.responseText;
+                    if (themePref.includes('theme_preference')) {
+                        // Parse response to get the new theme preference
+                        try {
+                            const response = JSON.parse(themePref);
+                            if (response.profile && response.profile.theme_preference) {
+                                applyTheme(response.profile.theme_preference);
+                            }
+                        } catch (e) {
+                            // Response might not be JSON, that's okay
+                        }
+                    }
+                }
+            });
+        })();
+    </script>
 
     {% block extra_js %}{% endblock %}
 </body>

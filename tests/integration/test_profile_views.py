@@ -101,7 +101,7 @@ class ProfileViewIntegrationTestCase(TestCase):
         assert response.status_code == 200
         # Form should be re-displayed with errors
         content = response.content.decode()
-        assert 'Retirement age must be greater than current age' in content
+        assert 'Retirement age must be greater than or equal to current age' in content
 
     def test_profile_required_fields_validation(self):
         """Test that required fields are validated."""

@@ -1,28 +1,29 @@
 {% extends "base.html" %}
+{% load humanize %}
 
 {% block title %}Dashboard - jRetireWise{% endblock %}
 
 {% block content %}
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
     <!-- Quick Stats -->
-    <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-gray-500 text-sm font-medium">Portfolio Value</h3>
-        <p class="text-3xl font-bold text-gray-900 mt-2">
-            {% if financial_profile %}${{ financial_profile.current_portfolio_value|floatformat:0 }}{% else %}—{% endif %}
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h3 class="text-gray-500 dark:text-gray-400 text-sm font-medium">Portfolio Value</h3>
+        <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+            {% if financial_profile %}${{ financial_profile.current_portfolio_value|floatformat:0|intcomma }}{% else %}—{% endif %}
         </p>
     </div>
 
-    <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-gray-500 text-sm font-medium">Retirement Age</h3>
-        <p class="text-3xl font-bold text-gray-900 mt-2">
-            {% if financial_profile %}{{ financial_profile.retirement_age }}{% else %}—{% endif %}
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h3 class="text-gray-500 dark:text-gray-400 text-sm font-medium">Retirement Age</h3>
+        <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+            {% if financial_profile %}{{ financial_profile.retirement_age|floatformat:1 }}{% else %}—{% endif %}
         </p>
     </div>
 
-    <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-gray-500 text-sm font-medium">Annual Spending</h3>
-        <p class="text-3xl font-bold text-gray-900 mt-2">
-            {% if financial_profile %}${{ financial_profile.annual_spending|floatformat:0 }}{% else %}—{% endif %}
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h3 class="text-gray-500 dark:text-gray-400 text-sm font-medium">Annual Spending</h3>
+        <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+            {% if financial_profile %}${{ financial_profile.annual_spending|floatformat:0|intcomma }}{% else %}—{% endif %}
         </p>
     </div>
 </div>

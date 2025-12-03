@@ -236,6 +236,27 @@ spec:
             sleep 2
           done
           python manage.py migrate
+
+          # Create superuser if credentials are provided via environment variables
+          if [ -n "$DJANGO_SUPERUSER_USERNAME" ] && [ -n "$DJANGO_SUPERUSER_PASSWORD" ] && [ -n "$DJANGO_SUPERUSER_EMAIL" ]; then
+            echo "Checking for existing superuser..."
+            python manage.py shell << EOF
+from django.contrib.auth.models import User
+import os
+
+username = os.environ.get('DJANGO_SUPERUSER_USERNAME')
+email = os.environ.get('DJANGO_SUPERUSER_EMAIL')
+password = os.environ.get('DJANGO_SUPERUSER_PASSWORD')
+
+if not User.objects.filter(username=username).exists():
+    User.objects.create_superuser(username, email, password)
+    print(f"✓ Superuser '{username}' created successfully")
+else:
+    print(f"✓ Superuser '{username}' already exists")
+EOF
+          else
+            echo "ℹ DJANGO_SUPERUSER_USERNAME, DJANGO_SUPERUSER_PASSWORD, and DJANGO_SUPERUSER_EMAIL not set - skipping superuser creation"
+          fi
         env:
         - name: DEBUG
           valueFrom:
@@ -292,6 +313,25 @@ spec:
             configMapKeyRef:
               name: jretirewise-config
               key: FORCE_SCRIPT_NAME
+        # Optional superuser credentials from Kubernetes Secret
+        - name: DJANGO_SUPERUSER_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: jretirewise-secret
+              key: DJANGO_SUPERUSER_USERNAME
+              optional: true
+        - name: DJANGO_SUPERUSER_EMAIL
+          valueFrom:
+            secretKeyRef:
+              name: jretirewise-secret
+              key: DJANGO_SUPERUSER_EMAIL
+              optional: true
+        - name: DJANGO_SUPERUSER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: jretirewise-secret
+              key: DJANGO_SUPERUSER_PASSWORD
+              optional: true
 
       volumes:
       - name: static-files
