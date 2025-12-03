@@ -314,25 +314,22 @@ spec:
             configMapKeyRef:
               name: jretirewise-config
               key: FORCE_SCRIPT_NAME
-        # Optional superuser credentials from Kubernetes Secret
+        # Superuser credentials from Kubernetes Secret
         - name: DJANGO_SUPERUSER_USERNAME
           valueFrom:
             secretKeyRef:
               name: jretirewise-secret
               key: DJANGO_SUPERUSER_USERNAME
-              optional: true
         - name: DJANGO_SUPERUSER_EMAIL
           valueFrom:
             secretKeyRef:
               name: jretirewise-secret
               key: DJANGO_SUPERUSER_EMAIL
-              optional: true
         - name: DJANGO_SUPERUSER_PASSWORD
           valueFrom:
             secretKeyRef:
               name: jretirewise-secret
               key: DJANGO_SUPERUSER_PASSWORD
-              optional: true
 
       volumes:
       - name: static-files
