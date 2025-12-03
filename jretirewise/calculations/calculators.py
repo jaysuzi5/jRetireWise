@@ -40,13 +40,14 @@ class RetirementCalculator:
             annual_return_rate: Expected annual investment return
             inflation_rate: Expected inflation rate
         """
-        self.portfolio_value = float(portfolio_value)
-        self.annual_spending = float(annual_spending)
+        # Use Decimal for monetary values to ensure precision
+        self.portfolio_value = Decimal(str(portfolio_value))
+        self.annual_spending = Decimal(str(annual_spending))
         self.current_age = current_age
         self.retirement_age = retirement_age
         self.life_expectancy = life_expectancy
-        self.annual_return_rate = annual_return_rate
-        self.inflation_rate = inflation_rate
+        self.annual_return_rate = Decimal(str(annual_return_rate))
+        self.inflation_rate = Decimal(str(inflation_rate))
 
     def calculate(self) -> Dict:
         """Calculate and return retirement projection."""
@@ -67,7 +68,7 @@ class FourPercentCalculator(RetirementCalculator):
         current_portfolio = self.portfolio_value
 
         # Initial 4% withdrawal
-        initial_withdrawal = self.portfolio_value * 0.04
+        initial_withdrawal = self.portfolio_value * Decimal('0.04')
 
         years_in_retirement = self.life_expectancy - self.retirement_age
 
@@ -80,7 +81,7 @@ class FourPercentCalculator(RetirementCalculator):
                 portfolio_start = self.portfolio_value
             else:
                 # Withdrawal increases with inflation
-                withdrawal = initial_withdrawal * ((1 + self.inflation_rate) ** year)
+                withdrawal = initial_withdrawal * ((Decimal(1) + self.inflation_rate) ** year)
                 portfolio_start = current_portfolio
 
             # Investment return
@@ -88,15 +89,15 @@ class FourPercentCalculator(RetirementCalculator):
 
             # Ending balance
             ending_balance = portfolio_start + investment_return - withdrawal
-            current_portfolio = max(0, ending_balance)
+            current_portfolio = max(Decimal(0), ending_balance)
 
             projections.append(YearProjection(
                 year=year,
                 age=age,
-                portfolio_value=Decimal(str(portfolio_start)),
-                annual_withdrawal=Decimal(str(withdrawal)),
-                investment_return=Decimal(str(investment_return)),
-                ending_balance=Decimal(str(ending_balance)),
+                portfolio_value=portfolio_start,
+                annual_withdrawal=withdrawal,
+                investment_return=investment_return,
+                ending_balance=ending_balance,
             ))
 
         # Calculate success metrics
@@ -154,7 +155,7 @@ class FourPointSevenPercentCalculator(RetirementCalculator):
         current_portfolio = self.portfolio_value
 
         # Initial 4.7% withdrawal
-        initial_withdrawal = self.portfolio_value * 0.047
+        initial_withdrawal = self.portfolio_value * Decimal('0.047')
 
         years_in_retirement = self.life_expectancy - self.retirement_age
 
@@ -167,7 +168,7 @@ class FourPointSevenPercentCalculator(RetirementCalculator):
                 portfolio_start = self.portfolio_value
             else:
                 # Withdrawal increases with inflation
-                withdrawal = initial_withdrawal * ((1 + self.inflation_rate) ** year)
+                withdrawal = initial_withdrawal * ((Decimal(1) + self.inflation_rate) ** year)
                 portfolio_start = current_portfolio
 
             # Investment return
@@ -175,15 +176,15 @@ class FourPointSevenPercentCalculator(RetirementCalculator):
 
             # Ending balance
             ending_balance = portfolio_start + investment_return - withdrawal
-            current_portfolio = max(0, ending_balance)
+            current_portfolio = max(Decimal(0), ending_balance)
 
             projections.append(YearProjection(
                 year=year,
                 age=age,
-                portfolio_value=Decimal(str(portfolio_start)),
-                annual_withdrawal=Decimal(str(withdrawal)),
-                investment_return=Decimal(str(investment_return)),
-                ending_balance=Decimal(str(ending_balance)),
+                portfolio_value=portfolio_start,
+                annual_withdrawal=withdrawal,
+                investment_return=investment_return,
+                ending_balance=ending_balance,
             ))
 
         # Calculate success metrics
