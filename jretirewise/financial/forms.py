@@ -12,12 +12,12 @@ class FinancialProfileForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         """Initialize form and preserve decimal formatting for age fields."""
         super().__init__(*args, **kwargs)
-        # If we have an instance, explicitly format age fields with 2 decimal places
+        # If we have an instance, explicitly format age fields with 1 decimal place
         if self.instance and self.instance.pk:
             if self.instance.current_age:
-                self.initial['current_age'] = f"{self.instance.current_age:.2f}"
+                self.initial['current_age'] = f"{self.instance.current_age:.1f}"
             if self.instance.retirement_age:
-                self.initial['retirement_age'] = f"{self.instance.retirement_age:.2f}"
+                self.initial['retirement_age'] = f"{self.instance.retirement_age:.1f}"
 
     class Meta:
         model = FinancialProfile
@@ -35,13 +35,13 @@ class FinancialProfileForm(forms.ModelForm):
                 'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
                 'type': 'number',
                 'min': '18',
-                'step': '0.01',
+                'step': '0.1',
             }),
             'retirement_age': forms.NumberInput(attrs={
                 'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
                 'type': 'number',
                 'min': '18',
-                'step': '0.01',
+                'step': '0.1',
             }),
             'life_expectancy': forms.NumberInput(attrs={
                 'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
