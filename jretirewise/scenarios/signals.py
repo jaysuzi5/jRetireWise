@@ -30,14 +30,22 @@ def run_scenario_calculation(sender, instance, created, **kwargs):
 
         # Extract parameters from scenario
         parameters = instance.parameters or {}
-        user_profile = instance.user.profile
+
+        # Get financial profile - required for fallback values
+        try:
+            financial_profile = instance.user.financial_profile
+        except:
+            result.status = 'failed'
+            result.error_message = 'User has not completed their financial profile. Please fill out your financial profile first.'
+            result.save()
+            return
 
         # Use scenario parameters or fall back to user's financial profile
-        portfolio_value = float(parameters.get('portfolio_value', user_profile.current_portfolio_value))
-        annual_spending = float(parameters.get('annual_spending', user_profile.annual_spending))
-        current_age = int(parameters.get('current_age', user_profile.current_age))
-        retirement_age = int(parameters.get('retirement_age', user_profile.retirement_age))
-        life_expectancy = int(parameters.get('life_expectancy', user_profile.life_expectancy))
+        portfolio_value = float(parameters.get('portfolio_value', financial_profile.current_portfolio_value))
+        annual_spending = float(parameters.get('annual_spending', financial_profile.annual_spending))
+        current_age = int(parameters.get('current_age', financial_profile.current_age))
+        retirement_age = int(parameters.get('retirement_age', financial_profile.retirement_age))
+        life_expectancy = int(parameters.get('life_expectancy', financial_profile.life_expectancy))
 
         # Optional parameters with defaults
         annual_return_rate = float(parameters.get('annual_return_rate', 0.07))
