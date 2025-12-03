@@ -161,7 +161,7 @@ SPECTACULAR_SETTINGS = {
     'TITLE': 'jRetireWise API',
     'DESCRIPTION': 'Retirement Planning Calculator API',
     'VERSION': '1.0.0',
-    'SERVE_PERMISSIONS': ['rest_framework.permissions.IsAuthenticated'],
+    'SERVE_PERMISSIONS': ['rest_framework.permissions.AllowAny'],
 }
 
 # CORS Configuration
