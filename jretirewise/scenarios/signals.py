@@ -16,11 +16,9 @@ logger = logging.getLogger(__name__)
 @receiver(post_save, sender=RetirementScenario)
 def run_scenario_calculation(sender, instance, created, **kwargs):
     """
-    Automatically run calculation when a scenario is created or calculator_type changes.
+    Automatically run calculation when a scenario is created or updated.
     """
-    # Only run for new scenarios
-    if not created:
-        return
+    # Always run calculation (for both creation and updates)
 
     try:
         # Get or create calculation result
