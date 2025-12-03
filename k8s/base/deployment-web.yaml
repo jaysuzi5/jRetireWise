@@ -228,7 +228,36 @@ spec:
         command:
         - sh
         - -c
-        - echo "Waiting for database to be ready..."; for i in {1..60}; do pg_isready -h $DB_HOST -p $DB_PORT && break; echo "Attempt $i: Database not ready, waiting..."; sleep 2; done; python manage.py migrate; if [ -n "$DJANGO_SUPERUSER_USERNAME" ] && [ -n "$DJANGO_SUPERUSER_PASSWORD" ] && [ -n "$DJANGO_SUPERUSER_EMAIL" ]; then echo "Checking for existing superuser..."; python manage.py shell -c "from django.contrib.auth.models import User; import os; username = os.environ.get('DJANGO_SUPERUSER_USERNAME'); email = os.environ.get('DJANGO_SUPERUSER_EMAIL'); password = os.environ.get('DJANGO_SUPERUSER_PASSWORD'); User.objects.filter(username=username).exists() or User.objects.create_superuser(username, email, password); print('OK')"; else echo "DJANGO_SUPERUSER credentials not set - skipping superuser creation"; fi
+        - |
+          echo "Waiting for database to be ready..."
+          for i in {1..60}; do
+            pg_isready -h $DB_HOST -p $DB_PORT && break
+            echo "Attempt $i: Database not ready, waiting..."
+            sleep 2
+          done
+          echo "Database ready, running migrations..."
+          python manage.py migrate
+
+          # Create superuser if credentials are provided
+          if [ -n "$DJANGO_SUPERUSER_USERNAME" ] && [ -n "$DJANGO_SUPERUSER_PASSWORD" ] && [ -n "$DJANGO_SUPERUSER_EMAIL" ]; then
+            echo "Creating superuser..."
+            python manage.py shell << 'EOF'
+          from django.contrib.auth.models import User
+          import os
+
+          username = os.environ.get('DJANGO_SUPERUSER_USERNAME')
+          email = os.environ.get('DJANGO_SUPERUSER_EMAIL')
+          password = os.environ.get('DJANGO_SUPERUSER_PASSWORD')
+
+          if not User.objects.filter(username=username).exists():
+              User.objects.create_superuser(username, email, password)
+              print(f"✓ Superuser '{username}' created successfully")
+          else:
+              print(f"✓ Superuser '{username}' already exists")
+          EOF
+          else
+            echo "ℹ Superuser credentials not set - skipping superuser creation"
+          fi
         env:
         - name: DEBUG
           valueFrom:
