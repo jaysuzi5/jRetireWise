@@ -314,3 +314,108 @@ class GoogleOAuthConfigurationTestCase(TestCase):
                 break
             except Exception:
                 continue
+
+
+class ThemePreferenceTestCase(TestCase):
+    """Test theme preference functionality."""
+
+    def setUp(self):
+        """Set up test user and client."""
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='TestPass123!'
+        )
+        self.client = Client()
+        self.client.login(username='testuser', password='TestPass123!')
+
+    def test_user_profile_includes_theme_preference(self):
+        """Test that user profile includes theme_preference field."""
+        response = self.client.get('/auth/profile/')
+
+        # Should return 200 OK
+        assert response.status_code == 200
+
+        # Should return JSON with theme_preference
+        data = response.json()
+        assert 'profile' in data
+        assert 'theme_preference' in data['profile']
+        assert data['profile']['theme_preference'] in ['light', 'dark']
+
+    def test_theme_preference_defaults_to_light(self):
+        """Test that new users have light theme as default."""
+        response = self.client.get('/auth/profile/')
+        data = response.json()
+
+        # Default theme should be light
+        assert data['profile']['theme_preference'] == 'light'
+
+    def test_update_theme_preference_to_dark(self):
+        """Test updating theme preference to dark."""
+        response = self.client.put(
+            '/auth/profile/',
+            data={'theme_preference': 'dark'},
+            content_type='application/json'
+        )
+
+        # Should return 200 OK
+        assert response.status_code == 200
+
+        # Should return updated preference
+        data = response.json()
+        assert data['profile']['theme_preference'] == 'dark'
+
+        # Verify preference was saved in database
+        self.user.refresh_from_db()
+        assert self.user.profile.theme_preference == 'dark'
+
+    def test_update_theme_preference_back_to_light(self):
+        """Test updating theme preference back to light."""
+        # First set to dark
+        self.user.profile.theme_preference = 'dark'
+        self.user.profile.save()
+
+        # Now update back to light
+        response = self.client.put(
+            '/auth/profile/',
+            data={'theme_preference': 'light'},
+            content_type='application/json'
+        )
+
+        # Should return 200 OK
+        assert response.status_code == 200
+
+        # Should return updated preference
+        data = response.json()
+        assert data['profile']['theme_preference'] == 'light'
+
+        # Verify preference was saved in database
+        self.user.refresh_from_db()
+        assert self.user.profile.theme_preference == 'light'
+
+    def test_invalid_theme_preference_rejected(self):
+        """Test that invalid theme preference is rejected."""
+        response = self.client.put(
+            '/auth/profile/',
+            data={'theme_preference': 'invalid-theme'},
+            content_type='application/json'
+        )
+
+        # Should return 400 Bad Request
+        assert response.status_code == 400
+
+        # Original preference should be unchanged
+        self.user.refresh_from_db()
+        assert self.user.profile.theme_preference == 'light'
+
+    def test_theme_preference_requires_authentication(self):
+        """Test that updating theme preference requires authentication."""
+        client = Client()
+        response = client.put(
+            '/auth/profile/',
+            data={'theme_preference': 'dark'},
+            content_type='application/json'
+        )
+
+        # Should return 403 Forbidden
+        assert response.status_code == 403

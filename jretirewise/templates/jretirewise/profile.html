@@ -21,7 +21,32 @@
                 </div>
 
                 <div class="pt-4 border-t border-gray-200">
-                    <a href="#" class="text-indigo-600 hover:text-indigo-900 text-sm">Edit Profile</a>
+                    <label class="block text-sm font-medium text-gray-700 mb-3">Theme Preference</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="radio" name="theme" value="light" class="h-4 w-4 text-indigo-600"
+                                   {% if user.profile.theme_preference == 'light' %}checked{% endif %}
+                                   hx-put="/auth/profile/" hx-include="[name='notification_email']"
+                                   hx-vals='{"theme_preference": "light"}'>
+                            <span class="ml-3 text-sm text-gray-700">Light</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="theme" value="dark" class="h-4 w-4 text-indigo-600"
+                                   {% if user.profile.theme_preference == 'dark' %}checked{% endif %}
+                                   hx-put="/auth/profile/" hx-include="[name='notification_email']"
+                                   hx-vals='{"theme_preference": "dark"}'>
+                            <span class="ml-3 text-sm text-gray-700">Dark</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="pt-4">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="notification_email"
+                               {% if user.profile.notification_email %}checked{% endif %}
+                               class="h-4 w-4 text-indigo-600 rounded">
+                        <span class="ml-3 text-sm text-gray-700">Email notifications</span>
+                    </label>
                 </div>
             </div>
         </div>
