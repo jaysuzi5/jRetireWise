@@ -3,8 +3,12 @@ Custom middleware for jRetireWise application.
 """
 
 import os
+import logging
+import time
 from urllib.parse import urlparse
 from django.conf import settings
+
+logger = logging.getLogger('jretirewise')
 
 
 class ForceScriptNameMiddleware:
@@ -80,4 +84,34 @@ class CSRFRefererMiddleware:
                             request.META['HTTP_REFERER'] = corrected_referer
 
         response = self.get_response(request)
+        return response
+
+
+class RequestLoggingMiddleware:
+    """
+    Middleware to log HTTP requests and responses.
+
+    Logs INFO level message for each request/response with:
+    - HTTP method
+    - Request path
+    - Response status code
+    - Execution time
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        start_time = time.time()
+
+        response = self.get_response(request)
+
+        elapsed_time = (time.time() - start_time) * 1000  # Convert to milliseconds
+
+        # Skip logging for static files and health checks to reduce noise
+        if not request.path.startswith('/static/') and not request.path.startswith('/health/'):
+            logger.info(
+                f"{request.method} {request.path} - Status: {response.status_code} - {elapsed_time:.2f}ms"
+            )
+
         return response
