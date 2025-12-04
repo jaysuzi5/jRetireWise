@@ -35,6 +35,7 @@ configMapGenerator:
   - REDIS_URL=redis://prod-jretirewise-redis-service.jretirewise.svc.cluster.local:6379/0
   - CELERY_BROKER_URL=redis://prod-jretirewise-redis-service.jretirewise.svc.cluster.local:6379/0
   - CELERY_RESULT_BACKEND=redis://prod-jretirewise-redis-service.jretirewise.svc.cluster.local:6379/0
+  - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector-collector.monitoring.svc.cluster.local:4318
 
 # Image replacement for prod (Docker Hub)
 images:
