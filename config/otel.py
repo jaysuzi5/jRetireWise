@@ -4,7 +4,6 @@ OpenTelemetry initialization and configuration for jRetireWise.
 
 import os
 from opentelemetry import trace, metrics
-from opentelemetry.sdk import trace as sdk_trace, metrics as sdk_metrics, logs as sdk_logs
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.sdk.metrics import MeterProvider
@@ -87,7 +86,8 @@ def initialize_otel():
     # Also add console exporter for debugging
     logger_provider.add_log_record_processor(BatchLogRecordProcessor(ConsoleLogExportHandler()))
 
-    sdk_logs.set_logger_provider(logger_provider)
+    # Note: LoggerProvider is set directly in SDK, not via global API like trace/metrics
+    # This is the correct way in this version of OpenTelemetry
 
     # Enable automatic instrumentation
     DjangoInstrumentor().instrument()
@@ -97,7 +97,7 @@ def initialize_otel():
     Psycopg2Instrumentor().instrument()
     LoggingInstrumentor().instrument()
 
-    return tracer_provider, meter_provider
+    return tracer_provider, meter_provider, logger_provider
 
 
 def initialize_otel_for_celery():
