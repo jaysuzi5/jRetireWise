@@ -10,6 +10,16 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 
 app = Celery('jretirewise')
 
+# Initialize OpenTelemetry after Celery app is created
+# This prevents initialization issues during collectstatic
+try:
+    from config.otel import initialize_otel_for_celery
+    initialize_otel_for_celery()
+except Exception as e:
+    # Don't fail if OTEL initialization fails during app creation
+    import sys
+    print(f"Warning: Failed to initialize OpenTelemetry: {e}", file=sys.stderr)
+
 # Load configuration from Django settings
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
