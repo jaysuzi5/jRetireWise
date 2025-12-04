@@ -67,6 +67,7 @@ Upgraded to `latest` to ensure filelog receiver is available. You can also use a
 filelog:
   include:                                  # ✅ Correct field name
     - /var/log/containers/*jretirewise*.log
+    - /var/log/containers/prod-jretirewise-jretirewise-web_jretirewise_web-*.log
     - /var/log/containers/*todo*.log
     - /var/log/containers/*emporia*.log
   exclude:                                  # ✅ Correct field name
@@ -87,6 +88,9 @@ filelog:
 Key updates:
 - `include` replaces `include_paths` (simpler field name)
 - `exclude` replaces `exclude_paths` (simpler field name)
+- **CRITICAL FIX**: Added explicit pattern for jretirewise web container: `/var/log/containers/prod-jretirewise-jretirewise-web_jretirewise_web-*.log`
+  - The jretirewise web pods have container name `web` (not `jretirewise`), so they weren't matched by the wildcard pattern
+  - This explicit pattern ensures the application logs are captured
 - `multiline` is a nested block with `line_start_pattern` inside
 - `operators` array with `json_parser` type extracts timestamp and severity fields from JSON logs
 

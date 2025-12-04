@@ -23,6 +23,7 @@ spec:
       filelog:
         include:
           - /var/log/containers/*jretirewise*.log
+          - /var/log/containers/prod-jretirewise-jretirewise-web_jretirewise_web-*.log
           - /var/log/containers/*todo*.log
           - /var/log/containers/*emporia*.log
         exclude:
