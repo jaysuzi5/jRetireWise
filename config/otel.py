@@ -24,18 +24,25 @@ from opentelemetry.sdk.metrics.export import ConsoleMetricExporter
 
 def initialize_otel():
     """
-    Initialize OpenTelemetry SDK with OTLP exporters.
-    This sets up tracing, metrics, and automatic log instrumentation.
+    Initialize OpenTelemetry SDK with OTLP exporters for traces and metrics.
 
-    The LoggingInstrumentor automatically:
-    - Captures all Python logs via the logging module
-    - Injects trace context (trace_id, span_id) into each log record
-    - Outputs logs as JSON to stdout with trace context for OTEL collection
+    This sets up:
+    - Distributed tracing via OTLP to OTEL collector (gRPC port 4317)
+    - Metrics export via OTLP to OTEL collector (gRPC port 4317)
+    - Automatic log instrumentation with trace context injection
 
-    Logs are then:
-    - Collected by pod stdout/stderr logging
-    - Ingested by OTEL collector via Splunk HEC or other log receivers
-    - Available in Splunk and other observability platforms
+    Logging Pattern (current):
+    - LoggingInstrumentor automatically captures all Python logs via logging module
+    - Injects trace context (trace_id, span_id) into each log record as JSON fields
+    - Outputs logs as JSON to stdout with full trace context
+    - Pod logs are collected by Kubernetes container logging
+    - Logs should be ingested to OTEL collector via file/stdout receiver configured
+      in the collector YAML (see home-lab repository for logs receiver configuration)
+
+    Note on Log Export:
+    - Direct SDK log export to OTEL collector requires OpenTelemetry logs API (v0.47b0+)
+    - Current approach (v0.46b0) only captures logs with trace context to stdout
+    - Stdout-based collection is reliable and works well with pod logging systems
     """
 
     # Get configuration from environment
