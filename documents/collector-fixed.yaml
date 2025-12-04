@@ -29,9 +29,8 @@ spec:
           - /var/log/containers/*_kube-system_*.log
           - /var/log/containers/*_kube-public_*.log
           - /var/log/containers/*_kube-node-lease_*.log
-        multiline_parser:
-          type: json
-          parse_from: body
+        multiline_type: json
+        multiline_line_start_pattern: '^\{'
     processors:
       batch:
         send_batch_size: 100
@@ -71,9 +70,6 @@ spec:
         verbosity: detailed
     service:
       telemetry:
-        metrics:
-          level: detailed
-          address: "0.0.0.0:8889"
         logs:
           level: "debug"
       pipelines:
