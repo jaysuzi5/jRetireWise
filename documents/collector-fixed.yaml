@@ -52,7 +52,6 @@ spec:
             action: insert
       resourcedetection:
         detectors:
-          - k8s
           - env
         override: false
         timeout: 5s
@@ -90,7 +89,7 @@ spec:
           exporters: [otlp]
         logs:
           receivers: [otlp, filelog]
-          processors: [batch, attributes, resourcedetection]
+          processors: [batch, attributes]
           exporters: [splunk_hec, debug]
   volumes:
     - name: splunk-secret
