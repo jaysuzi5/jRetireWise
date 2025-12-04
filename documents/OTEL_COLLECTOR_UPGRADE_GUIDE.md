@@ -8,23 +8,23 @@ This guide provides the corrected OpenTelemetry Collector configuration with the
 
 Your current configuration had two critical issues:
 
-### Issue 1: Incorrect Filelog Configuration (Legacy Syntax)
+### Issue 1: Incorrect Filelog Configuration (Field Names)
 ```yaml
-# WRONG - Old/incorrect syntax
+# WRONG - Using incorrect field names
 filelog:
-  include_paths:
+  include_paths:    # ❌ WRONG
     - /var/log/containers/*jretirewise*.log
-  exclude_paths:
+  exclude_paths:    # ❌ WRONG
     - /var/log/containers/*_kube-system_*.log
-  multiline_parser:
+  multiline_parser: # ❌ WRONG
     type: json
-    parse_from: body
 ```
 
-The older OTEL Collector versions used different field names. The current contrib version requires:
-- `include` instead of `include_paths`
-- `exclude` instead of `exclude_paths`
-- `multiline_type` and `multiline_line_start_pattern` instead of `multiline_parser`
+The OTEL Collector filelog receiver requires:
+- `include` (not `include_paths`)
+- `exclude` (not `exclude_paths`)
+- `multiline` block with `line_start_pattern` (not `multiline_parser`)
+- `operators` array with `json_parser` type for JSON log parsing
 
 ### Issue 2: Wrong Processor Name
 ```yaml
@@ -61,25 +61,34 @@ image: otel/opentelemetry-collector-contrib:latest
 
 Upgraded to `latest` to ensure filelog receiver is available. You can also use a specific version like `0.97.0` or higher.
 
-### 2. Filelog Receiver Fixed (Latest Syntax)
+### 2. Filelog Receiver Fixed (Correct Syntax)
 ```yaml
-# NOW CORRECT - Updated syntax for latest contrib version
+# NOW CORRECT - Proper syntax for OTEL Collector filelog receiver
 filelog:
-  include_paths:
+  include:                                  # ✅ Correct field name
     - /var/log/containers/*jretirewise*.log
     - /var/log/containers/*todo*.log
     - /var/log/containers/*emporia*.log
-  exclude_paths:
+  exclude:                                  # ✅ Correct field name
     - /var/log/containers/*_kube-system_*.log
     - /var/log/containers/*_kube-public_*.log
     - /var/log/containers/*_kube-node-lease_*.log
-  multiline_type: json
-  multiline_line_start_pattern: '^\{'
+  multiline:                                # ✅ Nested block (not root field)
+    line_start_pattern: '^\{'               # ✅ Correct pattern syntax
+  operators:                                # ✅ Added operators for JSON parsing
+    - type: json_parser
+      timestamp:
+        parse_from: attributes.asctime
+        layout: '%Y-%m-%d %H:%M:%S,%f'
+      severity:
+        parse_from: attributes.levelname
 ```
 
 Key updates:
-- `multiline_type: json` replaces the old `multiline_parser.type` field
-- `multiline_line_start_pattern: '^\{'` detects JSON log lines (starts with `{` character)
+- `include` replaces `include_paths` (simpler field name)
+- `exclude` replaces `exclude_paths` (simpler field name)
+- `multiline` is a nested block with `line_start_pattern` inside
+- `operators` array with `json_parser` type extracts timestamp and severity fields from JSON logs
 
 ### 3. Processor Name Fixed
 ```yaml
@@ -200,12 +209,14 @@ Once deployed, you'll have:
 - Verify the configuration syntax is correct (no extra spaces, proper YAML)
 - Check that filelog uses correct field names: `multiline_type` and `multiline_line_start_pattern` (not `multiline_parser`)
 
-### Pod crashing with "has invalid keys: exclude_paths, include_paths, multiline_parser"
-- This error means you're using old filelog syntax
-- Update to new syntax:
-  - `include` instead of `include_paths`
-  - `exclude` instead of `exclude_paths`
-  - `multiline_type: json` and `multiline_line_start_pattern: '^\{'` instead of `multiline_parser`
+### Pod crashing with "has invalid keys: exclude_paths, include_paths, multiline_type, multiline_line_start_pattern"
+- This error means the filelog receiver configuration syntax is incorrect
+- The collector is rejecting these field names because they don't exist in the current schema
+- Update to correct syntax:
+  - `include` instead of `include_paths` (simpler field name)
+  - `exclude` instead of `exclude_paths` (simpler field name)
+  - `multiline:` nested block with `line_start_pattern: '^\{'` inside (not `multiline_type` or `multiline_line_start_pattern`)
+  - Add `operators:` array with `type: json_parser` for JSON parsing
 - Use the corrected `collector-fixed.yaml` from this repository
 
 ### Pod crashing with "has invalid keys: address" in service.telemetry
