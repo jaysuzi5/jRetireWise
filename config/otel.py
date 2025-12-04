@@ -8,12 +8,9 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
-from opentelemetry.sdk.logs import LoggerProvider
-from opentelemetry.sdk.logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
-from opentelemetry.exporter.otlp.proto.http.log_exporter import OTLPLogExporter
 from opentelemetry.instrumentation.django import DjangoInstrumentor
 from opentelemetry.instrumentation.celery import CeleryInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
@@ -22,7 +19,6 @@ from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
 from opentelemetry.instrumentation.logging import LoggingInstrumentor
 from opentelemetry.sdk.trace.export import ConsoleSpanExporter
 from opentelemetry.sdk.metrics.export import ConsoleMetricExporter
-from opentelemetry.sdk.logs.export import ConsoleLogExportHandler
 
 
 def initialize_otel():
@@ -76,19 +72,6 @@ def initialize_otel():
 
     metrics.set_meter_provider(meter_provider)
 
-    # Initialize Logger Provider
-    log_exporter = OTLPLogExporter(
-        endpoint=f"{otel_endpoint}/v1/logs",
-    )
-    logger_provider = LoggerProvider(resource=resource)
-    logger_provider.add_log_record_processor(BatchLogRecordProcessor(log_exporter))
-
-    # Also add console exporter for debugging
-    logger_provider.add_log_record_processor(BatchLogRecordProcessor(ConsoleLogExportHandler()))
-
-    # Note: LoggerProvider is set directly in SDK, not via global API like trace/metrics
-    # This is the correct way in this version of OpenTelemetry
-
     # Enable automatic instrumentation
     DjangoInstrumentor().instrument()
     CeleryInstrumentor().instrument()
@@ -97,7 +80,7 @@ def initialize_otel():
     Psycopg2Instrumentor().instrument()
     LoggingInstrumentor().instrument()
 
-    return tracer_provider, meter_provider, logger_provider
+    return tracer_provider, meter_provider
 
 
 def initialize_otel_for_celery():
