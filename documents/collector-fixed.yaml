@@ -21,16 +21,23 @@ spec:
           http:
             endpoint: "0.0.0.0:4318"
       filelog:
-        include_paths:
+        include:
           - /var/log/containers/*jretirewise*.log
           - /var/log/containers/*todo*.log
           - /var/log/containers/*emporia*.log
-        exclude_paths:
+        exclude:
           - /var/log/containers/*_kube-system_*.log
           - /var/log/containers/*_kube-public_*.log
           - /var/log/containers/*_kube-node-lease_*.log
-        multiline_type: json
-        multiline_line_start_pattern: '^\{'
+        multiline:
+          line_start_pattern: '^\{'
+        operators:
+          - type: json_parser
+            timestamp:
+              parse_from: attributes.asctime
+              layout: '%Y-%m-%d %H:%M:%S,%f'
+            severity:
+              parse_from: attributes.levelname
     processors:
       batch:
         send_batch_size: 100
