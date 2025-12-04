@@ -3,7 +3,8 @@ OpenTelemetry initialization and configuration for jRetireWise.
 """
 
 import os
-from opentelemetry import trace, metrics, logs
+from opentelemetry import trace, metrics
+from opentelemetry.sdk import trace as sdk_trace, metrics as sdk_metrics, logs as sdk_logs
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.sdk.metrics import MeterProvider
@@ -86,7 +87,7 @@ def initialize_otel():
     # Also add console exporter for debugging
     logger_provider.add_log_record_processor(BatchLogRecordProcessor(ConsoleLogExportHandler()))
 
-    logs.set_logger_provider(logger_provider)
+    sdk_logs.set_logger_provider(logger_provider)
 
     # Enable automatic instrumentation
     DjangoInstrumentor().instrument()
