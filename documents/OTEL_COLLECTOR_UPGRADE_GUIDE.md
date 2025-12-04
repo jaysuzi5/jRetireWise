@@ -8,15 +8,23 @@ This guide provides the corrected OpenTelemetry Collector configuration with the
 
 Your current configuration had two critical issues:
 
-### Issue 1: Incorrect Filelog Configuration
+### Issue 1: Incorrect Filelog Configuration (Legacy Syntax)
 ```yaml
-# WRONG - resource_detection is not a filelog parameter
+# WRONG - Old/incorrect syntax
 filelog:
-  resource_detection:
-    enabled: true
+  include_paths:
+    - /var/log/containers/*jretirewise*.log
+  exclude_paths:
+    - /var/log/containers/*_kube-system_*.log
+  multiline_parser:
+    type: json
+    parse_from: body
 ```
 
-The `resource_detection` parameter doesn't exist in the filelog receiver. This should be a separate processor.
+The older OTEL Collector versions used different field names. The current contrib version requires:
+- `include` instead of `include_paths`
+- `exclude` instead of `exclude_paths`
+- `multiline_type` and `multiline_line_start_pattern` instead of `multiline_parser`
 
 ### Issue 2: Wrong Processor Name
 ```yaml
@@ -27,6 +35,18 @@ resource_detection:
 ```
 
 The correct processor name is `resourcedetection` (no underscore, one word).
+
+### Issue 3: Invalid Telemetry Configuration
+```yaml
+# WRONG - metrics.address syntax
+service:
+  telemetry:
+    metrics:
+      level: detailed
+      address: "0.0.0.0:8889"
+```
+
+Remove the invalid telemetry.metrics section - it causes configuration validation errors.
 
 ## Key Changes Made
 
@@ -41,9 +61,9 @@ image: otel/opentelemetry-collector-contrib:latest
 
 Upgraded to `latest` to ensure filelog receiver is available. You can also use a specific version like `0.97.0` or higher.
 
-### 2. Filelog Receiver Fixed
+### 2. Filelog Receiver Fixed (Latest Syntax)
 ```yaml
-# NOW CORRECT - resource_detection removed from receiver
+# NOW CORRECT - Updated syntax for latest contrib version
 filelog:
   include_paths:
     - /var/log/containers/*jretirewise*.log
@@ -53,10 +73,13 @@ filelog:
     - /var/log/containers/*_kube-system_*.log
     - /var/log/containers/*_kube-public_*.log
     - /var/log/containers/*_kube-node-lease_*.log
-  multiline_parser:
-    type: json
-    parse_from: body
+  multiline_type: json
+  multiline_line_start_pattern: '^\{'
 ```
+
+Key updates:
+- `multiline_type: json` replaces the old `multiline_parser.type` field
+- `multiline_line_start_pattern: '^\{'` detects JSON log lines (starts with `{` character)
 
 ### 3. Processor Name Fixed
 ```yaml
@@ -172,9 +195,22 @@ Once deployed, you'll have:
 
 ## Troubleshooting
 
-### Pod still crashing with "invalid keys: filelog"
+### Pod crashing with "invalid keys: filelog"
 - Ensure image is upgraded: `otel/opentelemetry-collector-contrib:latest` or 0.97.0+
 - Verify the configuration syntax is correct (no extra spaces, proper YAML)
+- Check that filelog uses correct field names: `multiline_type` and `multiline_line_start_pattern` (not `multiline_parser`)
+
+### Pod crashing with "has invalid keys: exclude_paths, include_paths, multiline_parser"
+- This error means you're using old filelog syntax
+- Update to new syntax:
+  - `include` instead of `include_paths`
+  - `exclude` instead of `exclude_paths`
+  - `multiline_type: json` and `multiline_line_start_pattern: '^\{'` instead of `multiline_parser`
+- Use the corrected `collector-fixed.yaml` from this repository
+
+### Pod crashing with "has invalid keys: address" in service.telemetry
+- Remove the `service.telemetry.metrics` section entirely
+- The collector doesn't need explicit metrics telemetry configuration
 
 ### Pod crashing with "unknown type: resource_detection"
 - Verify processor name is `resourcedetection` (no underscore)
