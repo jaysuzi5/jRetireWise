@@ -51,8 +51,10 @@ def initialize_otel():
     tracer_provider = TracerProvider(resource=resource)
     tracer_provider.add_span_processor(BatchSpanProcessor(trace_exporter))
 
-    # Also add console exporter for debugging
-    tracer_provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+    # Add console exporter for debugging in development only
+    debug_mode = os.environ.get('DEBUG', 'False').lower() == 'true'
+    if debug_mode:
+        tracer_provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
 
     # Only set if not already set
     try:
@@ -67,12 +69,15 @@ def initialize_otel():
     )
     metric_reader = PeriodicExportingMetricReader(metric_exporter)
 
-    # Also add console exporter for debugging
-    console_metric_reader = PeriodicExportingMetricReader(ConsoleMetricExporter())
+    # Add console exporter for debugging in development only
+    metric_readers = [metric_reader]
+    if debug_mode:
+        console_metric_reader = PeriodicExportingMetricReader(ConsoleMetricExporter())
+        metric_readers.append(console_metric_reader)
 
     meter_provider = MeterProvider(
         resource=resource,
-        metric_readers=[metric_reader, console_metric_reader],
+        metric_readers=metric_readers,
     )
 
     metrics.set_meter_provider(meter_provider)
