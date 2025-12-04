@@ -3,6 +3,7 @@ OpenTelemetry initialization and configuration for jRetireWise.
 """
 
 import os
+import logging
 from opentelemetry import trace, metrics
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
@@ -24,12 +25,17 @@ from opentelemetry.sdk.metrics.export import ConsoleMetricExporter
 def initialize_otel():
     """
     Initialize OpenTelemetry SDK with OTLP exporters.
-    This sets up tracing, metrics, and logging instrumentation.
+    This sets up tracing, metrics, and automatic log instrumentation.
 
-    NOTE: Logs export disabled due to SDK version constraints.
-    The LoggingInstrumentor still captures Python logs, which are visible
-    in pod stderr and can be scraped by log collection systems.
-    Structured log export to OTEL will require SDK v1.27.0+ with separate logs package.
+    The LoggingInstrumentor automatically:
+    - Captures all Python logs via the logging module
+    - Injects trace context (trace_id, span_id) into each log record
+    - Outputs logs as JSON to stdout with trace context for OTEL collection
+
+    Logs are then:
+    - Collected by pod stdout/stderr logging
+    - Ingested by OTEL collector via Splunk HEC or other log receivers
+    - Available in Splunk and other observability platforms
     """
 
     # Get configuration from environment
