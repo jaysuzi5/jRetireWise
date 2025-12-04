@@ -10,8 +10,8 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
 from opentelemetry.instrumentation.django import DjangoInstrumentor
 from opentelemetry.instrumentation.celery import CeleryInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
@@ -59,7 +59,7 @@ def initialize_otel():
 
     # Initialize Tracer Provider
     trace_exporter = OTLPSpanExporter(
-        endpoint=f"{otel_endpoint}/v1/traces",
+        endpoint=otel_endpoint,
     )
     tracer_provider = TracerProvider(resource=resource)
     tracer_provider.add_span_processor(BatchSpanProcessor(trace_exporter))
@@ -78,7 +78,7 @@ def initialize_otel():
 
     # Initialize Meter Provider
     metric_exporter = OTLPMetricExporter(
-        endpoint=f"{otel_endpoint}/v1/metrics",
+        endpoint=otel_endpoint,
     )
     metric_reader = PeriodicExportingMetricReader(metric_exporter)
 
