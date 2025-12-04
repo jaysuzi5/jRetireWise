@@ -3,7 +3,8 @@ OpenTelemetry initialization and configuration for jRetireWise.
 """
 
 import os
-from opentelemetry import trace, metrics, logs
+from opentelemetry import trace, metrics
+from opentelemetry.sdk import logs
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.sdk.metrics import MeterProvider
