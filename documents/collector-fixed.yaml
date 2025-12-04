@@ -52,7 +52,7 @@ spec:
             action: insert
       resourcedetection:
         detectors:
-          - kubernetes
+          - k8s
           - env
         override: false
         timeout: 5s

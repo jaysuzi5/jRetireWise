@@ -90,16 +90,21 @@ Key updates:
 - `multiline` is a nested block with `line_start_pattern` inside
 - `operators` array with `json_parser` type extracts timestamp and severity fields from JSON logs
 
-### 3. Processor Name Fixed
+### 3. Resource Detection Processor Fixed
 ```yaml
-# NOW CORRECT - one word, no underscore
+# NOW CORRECT - detector is "k8s" (not "kubernetes")
 resourcedetection:
   detectors:
-    - kubernetes
-    - env
+    - k8s        # ✅ Correct - Kubernetes node metadata detector
+    - env        # ✅ Correct - Environment variables detector
   override: false
   timeout: 5s
 ```
+
+Key points:
+- Processor name is `resourcedetection` (one word, no underscore)
+- Detector key is `k8s` (not `kubernetes`)
+- This detects Kubernetes node metadata automatically from the environment
 
 ### 4. Logs Pipeline Updated
 ```yaml
@@ -223,8 +228,23 @@ Once deployed, you'll have:
 - Remove the `service.telemetry.metrics` section entirely
 - The collector doesn't need explicit metrics telemetry configuration
 
+### Pod crashing with "invalid detector key: kubernetes"
+- Error: `failed to create "resourcedetection" processor, in pipeline "logs": invalid detector key: kubernetes`
+- Fix: Change the detector from `kubernetes` to `k8s`
+```yaml
+# WRONG
+resourcedetection:
+  detectors:
+    - kubernetes  # ❌ Invalid
+
+# CORRECT
+resourcedetection:
+  detectors:
+    - k8s         # ✅ Valid - Kubernetes detector
+```
+
 ### Pod crashing with "unknown type: resource_detection"
-- Verify processor name is `resourcedetection` (no underscore)
+- Verify processor name is `resourcedetection` (one word, no underscore)
 - Check it's listed in the logs pipeline: `processors: [batch, attributes, resourcedetection]`
 
 ### Filelog receiver not reading logs
