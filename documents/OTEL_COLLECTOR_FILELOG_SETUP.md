@@ -1,8 +1,8 @@
-# OTEL Collector Filelog Receiver Setup
+# Application Log Collection Setup for jRetireWise
 
 ## Overview
 
-This document explains how to configure your OpenTelemetry Collector to receive and process logs from Kubernetes pod containers using the filelog receiver. This enables collection of application logs written to stdout/stderr with full trace context.
+This document explains how to collect application logs from jRetireWise that are written to stdout with full OpenTelemetry trace context. It provides multiple approaches depending on your infrastructure.
 
 ## Current State
 
@@ -10,7 +10,7 @@ This document explains how to configure your OpenTelemetry Collector to receive 
 - ✅ Logs are being written to stdout as JSON with full trace context
 - ✅ Each log includes: `otelTraceID`, `otelSpanID`, `otelServiceName`
 - ✅ Traces and metrics are flowing to OTEL collector via OTLP (gRPC port 4317)
-- ❌ Logs are NOT being collected from pod stdout
+- ❌ Pod stdout logs are NOT being collected to OTEL/Splunk
 
 **Example Log Entry:**
 ```json
@@ -26,291 +26,267 @@ This document explains how to configure your OpenTelemetry Collector to receive 
 }
 ```
 
-## Solution: Add Filelog Receiver to OTEL Collector
+## Solution Approaches
 
-The filelog receiver is part of OpenTelemetry Collector Contrib and reads log files from the container filesystem, making it perfect for collecting Kubernetes pod logs.
+### Option 1: Splunk Native Kubernetes Logging (RECOMMENDED - Simplest)
 
-### Step 1: Update OTEL Collector ConfigMap
+Use Splunk's native Kubernetes logging to collect pod container logs. This requires no changes to your OTEL collector.
 
-Edit your OTEL collector configuration file in your home-lab repository (`cluster/infrastructure/monitoring/opentelementry-collector/collector.yaml`) and add the filelog receiver to the receivers section:
+**Advantages:**
+- ✅ No collector configuration needed
+- ✅ Works immediately with current setup
+- ✅ Logs arrive in Splunk with full trace context
+- ✅ No additional components to maintain
 
-```yaml
-receivers:
-  otlp:
-    protocols:
-      grpc:
-        endpoint: 0.0.0.0:4317
-      http:
-        endpoint: 0.0.0.0:4318
+**Implementation Steps:**
 
-  # ADD THIS SECTION - Filelog receiver for Kubernetes pod logs
-  filelog:
-    include_paths:
-      - /var/log/containers/*jretirewise*.log
-      - /var/log/containers/*todo*.log
-      - /var/log/containers/*emporia*.log
-    exclude_paths:
-      - /var/log/containers/*_kube-system_*.log
-      - /var/log/containers/*_kube-public_*.log
-      - /var/log/containers/*_kube-node-lease_*.log
-    multiline_parser:
-      type: json
-      parse_from: body
-    resource_detection:
-      enabled: true
-```
+1. **Install Splunk Add-on for Kubernetes** (if not already installed)
+   - Splunk Web > Settings > Manage Apps > Browse more apps
+   - Search for "Kubernetes" and install the official Splunk Add-on
 
-### Step 2: Update Service Pipelines
+2. **Configure Kubernetes data input**
+   - Settings > Data inputs > HTTP Event Collector
+   - Create new HEC token with sourcetype `json`
 
-Add the filelog receiver to your service pipelines section:
+3. **Enable container logs collection**
+   - Settings > Add data > Monitor Kubernetes
+   - Configure to collect pod logs from your cluster
+   - Map to your HEC token
 
-```yaml
-service:
-  pipelines:
-    traces:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [tempo]
+4. **Search in Splunk**
+   ```
+   source="kubernetes" sourcetype="json" service="jretirewise"
+   | stats count by levelname, message
+   ```
 
-    metrics:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [prometheus]
+**References:**
+- [Splunk Add-on for Kubernetes](https://splunkbase.splunk.com/app/3877)
+- [Splunk Kubernetes Logging](https://docs.splunk.com/Documentation/AddOnforKubernetes/latest/)
 
-    # ADD THIS PIPELINE - Process logs from filelog receiver
-    logs:
-      receivers: [otlp, filelog]
-      processors: [batch, attributes]
-      exporters: [splunk_hec, debug]
-```
-
-### Step 3: Configure Log Processors (Optional but Recommended)
-
-Add an attributes processor to enrich logs with Kubernetes metadata:
-
-```yaml
-processors:
-  batch:
-    send_batch_size: 100
-    timeout: 10s
-
-  # Optional: Attributes processor to add custom attributes to logs
-  attributes:
-    actions:
-      - key: environment
-        value: production
-        action: insert
-      - key: cluster
-        value: home-lab
-        action: insert
-
-  # Add this if you want to parse trace context from logs
-  resource_detection:
-    detectors:
-      - kubernetes
-```
-
-### Step 4: Deployment Requirements
-
-The OTEL Collector pod needs permission to read Kubernetes container logs. Ensure your collector deployment has:
-
-1. **Volume mounts for Kubernetes logs:**
-```yaml
-volumes:
-  - name: varlog
-    hostPath:
-      path: /var/log
-  - name: varlibdockercontainers
-    hostPath:
-      path: /var/lib/docker/containers
-
-volumeMounts:
-  - name: varlog
-    mountPath: /var/log
-    readOnly: true
-  - name: varlibdockercontainers
-    mountPath: /var/lib/docker/containers
-    readOnly: true
-```
-
-2. **Appropriate RBAC permissions** (if using containerd or other runtimes):
-```yaml
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: otel-collector-logs
-rules:
-  - apiGroups: [""]
-    resources: ["pods", "nodes"]
-    verbs: ["get", "list", "watch"]
-  - apiGroups: [""]
-    resources: ["pods/log"]
-    verbs: ["get"]
 ---
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: otel-collector-logs
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: otel-collector-logs
-subjects:
-  - kind: ServiceAccount
-    name: otel-collector
-    namespace: monitoring
-```
 
-## Configuration Options Explained
+### Option 2: Fluent Bit / Fluentd for Log Collection
 
-### Filelog Receiver Options
+Deploy Fluent Bit as a DaemonSet to collect pod logs and forward to Splunk HEC.
 
-- **include_paths**: Glob patterns for log files to include
-  - Pattern: `/var/log/containers/*jretirewise*.log` captures all jretirewise pod logs
-  - Use wildcards to match pod names and multiple services
+**Advantages:**
+- ✅ Lightweight (Fluent Bit) or feature-rich (Fluentd)
+- ✅ Flexible log parsing and enrichment
+- ✅ Direct integration with Splunk HEC
+- ✅ Works with existing OTEL collector
 
-- **exclude_paths**: Glob patterns for log files to exclude
-  - Exclude system namespaces to reduce noise
-  - Common patterns: kube-system, kube-public, kube-node-lease
+**Implementation:**
 
-- **multiline_parser**: Handles JSON parsing
-  - `type: json` automatically detects and parses JSON log lines
-  - Works perfectly with your pythonjsonlogger output
+1. **Deploy Fluent Bit DaemonSet**
+   ```yaml
+   apiVersion: v1
+   kind: ConfigMap
+   metadata:
+     name: fluent-bit-config
+     namespace: monitoring
+   data:
+     fluent-bit.conf: |
+       [SERVICE]
+           Flush 5
+           Daemon Off
+           Log_Level info
+           Parsers_File parsers.conf
 
-- **resource_detection**: Automatically detects Kubernetes resource attributes
-  - Adds pod name, namespace, container name, etc. to log records
+       [INPUT]
+           Name tail
+           Path /var/log/containers/*jretirewise*.log
+           Parser json
+           Tag kube.*
 
-### Splunk HEC Exporter Configuration
+       [OUTPUT]
+           Name splunk
+           Match *
+           Host splunk.example.com
+           Port 8088
+           Token ${SPLUNK_HEC_TOKEN}
+           Send_Raw on
+   ---
+   apiVersion: apps/v1
+   kind: DaemonSet
+   metadata:
+     name: fluent-bit
+     namespace: monitoring
+   spec:
+     selector:
+       matchLabels:
+         app: fluent-bit
+     template:
+       metadata:
+         labels:
+           app: fluent-bit
+       spec:
+         containers:
+         - name: fluent-bit
+           image: fluent/fluent-bit:latest
+           volumeMounts:
+           - name: varlog
+             mountPath: /var/log
+             readOnly: true
+           - name: varlibdockercontainers
+             mountPath: /var/lib/docker/containers
+             readOnly: true
+           - name: config
+             mountPath: /fluent-bit/etc/
+         volumes:
+         - name: varlog
+           hostPath:
+             path: /var/log
+         - name: varlibdockercontainers
+           hostPath:
+             path: /var/lib/docker/containers
+         - name: config
+           configMap:
+             name: fluent-bit-config
+   ```
 
-Ensure your splunk_hec exporter is properly configured to receive logs:
+2. **Configure Splunk HEC endpoint in values**
 
-```yaml
-exporters:
-  splunk_hec:
-    endpoint: "https://your-splunk-instance:8088"
-    token: "${SPLUNK_HEC_TOKEN}"
-    source: "otel-collector"
-    sourcetype: "json"
-    ca_file: "/path/to/ca-cert.pem"  # if using self-signed cert
-    skip_tls_verify: false
-    max_content_length_logs: 100000
-```
+3. **Verify logs in Splunk**
+
+**References:**
+- [Fluent Bit Documentation](https://docs.fluentbit.io/)
+- [Fluent Bit Splunk Output](https://docs.fluentbit.io/manual/pipeline/outputs/splunk)
+
+---
+
+### Option 3: Upgrade OTEL Collector to Support Filelog Receiver
+
+If you want to use the OTEL Collector's filelog receiver, you need to upgrade to a version that includes it.
+
+**Issue with Current Setup:**
+- Your collector image (0.96.0) doesn't have `filelog` receiver compiled in
+- Error: `has invalid keys: filelog`
+
+**Solution:**
+
+1. **Upgrade OTEL Collector image to contrib version with filelog support**
+
+   In your `collector.yaml`, update the image:
+   ```yaml
+   image: otel/opentelemetry-collector-contrib:latest  # or specific version like 0.97.0+
+   ```
+
+2. **Fix processor name in configuration**
+
+   Change `resource_detection` to `resourcedetection` (one word):
+   ```yaml
+   processors:
+     batch:
+       send_batch_size: 100
+       timeout: 10s
+     resourcedetection:  # Changed from resource_detection
+       detectors: [kubernetes]
+     attributes:
+       actions:
+         - key: environment
+           value: production
+           action: insert
+   ```
+
+3. **Add filelog receiver configuration**
+   ```yaml
+   receivers:
+     otlp:
+       protocols:
+         grpc:
+           endpoint: 0.0.0.0:4317
+         http:
+           endpoint: 0.0.0.0:4318
+
+     filelog:
+       include_paths:
+         - /var/log/containers/*jretirewise*.log
+         - /var/log/containers/*todo*.log
+         - /var/log/containers/*emporia*.log
+       exclude_paths:
+         - /var/log/containers/*_kube-system_*.log
+         - /var/log/containers/*_kube-public_*.log
+   ```
+
+4. **Update service pipeline to include filelog**
+   ```yaml
+   service:
+     pipelines:
+       logs:
+         receivers: [otlp, filelog]
+         processors: [batch, attributes]
+         exporters: [splunk_hec, debug]
+   ```
+
+5. **Restart collector**
+   ```bash
+   kubectl rollout restart deployment/otel-collector-collector -n monitoring
+   ```
+
+**Note:** This approach requires upgrading your collector image, which may impact other parts of your monitoring setup.
+
+---
+
+## Recommendation
+
+**Use Option 1 (Splunk Native Kubernetes Logging)** because:
+- ✅ Simplest implementation
+- ✅ No changes to existing OTEL collector
+- ✅ Splunk has native support for Kubernetes logs
+- ✅ Works immediately with current setup
+- ✅ Logs already have trace context in JSON fields
+
+**Only use Option 2 or 3 if you need:**
+- Advanced log filtering/transformation before sending to Splunk
+- Specific parsing not available in Splunk's native collector
+- Use of OTEL collector as single log collection point
+
+---
 
 ## Verification Steps
 
-After updating your OTEL collector configuration:
+### For Option 1 (Splunk Native):
+1. In Splunk, search: `source="kubernetes" service="jretirewise"`
+2. Verify you see JSON logs with trace context fields
+3. Check that fields like `otelTraceID`, `otelSpanID` are searchable
 
-1. **Restart the OTEL Collector:**
-```bash
-kubectl rollout restart deployment/otel-collector-collector -n monitoring
-kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=otel-collector -n monitoring --timeout=60s
-```
+### For Option 2 (Fluent Bit):
+1. Check DaemonSet is running: `kubectl get ds -n monitoring`
+2. Verify logs flowing: `kubectl logs -n monitoring -l app=fluent-bit`
+3. Search in Splunk: `source="fluent-bit" service="jretirewise"`
 
-2. **Check collector logs for filelog receiver startup:**
-```bash
-kubectl logs -n monitoring -l app.kubernetes.io/name=otel-collector -f | grep -i "filelog\|receiver"
-```
+### For Option 3 (Upgraded Collector):
+1. Check collector is running: `kubectl get pods -n monitoring`
+2. Verify filelog receiver: `kubectl logs -n monitoring otel-collector-collector-* | grep filelog`
+3. Search in Splunk: `source="otel-collector" service="jretirewise"`
 
-3. **Generate test logs from jretirewise:**
-```bash
-curl -s http://192.168.86.229/jretirewise/ > /dev/null
-```
-
-4. **Check OTEL collector logs for ingested logs:**
-```bash
-kubectl logs -n monitoring otel-collector-collector-XXXXX --tail=100 | grep -i "jretirewise\|filelog"
-```
-
-5. **Verify logs appear in Splunk:**
-- Search in Splunk: `source="otel-collector" sourcetype="json" service="jretirewise"`
-- Look for logs with trace context fields: `otelTraceID`, `otelSpanID`
-
-## Expected Result
-
-Once filelog receiver is configured, you should see:
-
-1. **In OTEL Collector logs:**
-   - Filelog receiver successfully reading pod log files
-   - Logs being parsed as JSON
-   - Batched and sent to Splunk HEC
-
-2. **In Splunk:**
-   - jretirewise logs appearing in real-time
-   - Full trace context available for correlation
-   - Ability to search by trace ID and correlate with traces/metrics
-
-3. **Example Splunk Query:**
-```
-source="otel-collector" service="jretirewise" | stats count by levelname, message
-```
+---
 
 ## Troubleshooting
 
-### Logs not appearing in OTEL collector
-
-1. **Check file permissions:**
-   - OTEL collector pod needs read access to `/var/log/containers/`
-   - Verify volume mounts are correct
-   - Check pod is running with appropriate permissions
-
-2. **Verify include_paths pattern:**
-```bash
-# List available pod log files
-ls -la /var/log/containers/ | grep jretirewise
-```
-
-3. **Check OTEL collector configuration:**
-```bash
-kubectl describe configmap otel-collector-collector -n monitoring
-```
-
 ### Logs not appearing in Splunk
+1. Verify Splunk HEC is accepting data from collector pods
+2. Check HEC token has correct permissions
+3. Verify sourcetype is set to `json` for proper parsing
+4. Search with broader criteria: `service="jretirewise"` (without source filter)
 
-1. **Verify Splunk HEC is configured:**
-```bash
-# Check Splunk HEC token is set in secrets
-kubectl get secret -n monitoring otel-collector-secrets -o yaml | grep SPLUNK_HEC_TOKEN
-```
+### Wrong processor name error
+- Error: `unknown type: "resource_detection"`
+- Fix: Change to `resourcedetection` (no underscore)
 
-2. **Test Splunk connectivity from collector:**
-```bash
-kubectl exec -it deployment/otel-collector-collector -n monitoring -- \
-  curl -v -H "Authorization: Splunk ${SPLUNK_HEC_TOKEN}" \
-  -X POST https://splunk-instance:8088/services/collector \
-  -d '{"event":"test"}'
-```
+### Filelog receiver not recognized
+- Error: `has invalid keys: filelog`
+- Cause: Current collector image doesn't include filelog
+- Fix: Use Option 1 or upgrade collector image to contrib version
 
-3. **Check Splunk HEC configuration:**
-   - Verify token has correct permissions
-   - Check HEC is accepting data from collector pod IP
-   - Review Splunk indexes configuration
+---
 
-### Multiline or duplicate logs
+## Summary
 
-1. **JSON parsing issues:**
-   - Ensure logs are valid JSON format
-   - Check pythonjsonlogger is properly configured
-   - Verify no extra output is being written to stdout
+| Approach | Effort | Reliability | Recommended |
+|----------|--------|-------------|------------|
+| **Option 1: Splunk Native** | Low | High | ✅ Yes |
+| **Option 2: Fluent Bit** | Medium | High | For advanced filtering |
+| **Option 3: Upgrade Collector** | Medium | High | If centralizing all collection |
 
-2. **Adjust batch size if needed:**
-```yaml
-processors:
-  batch:
-    send_batch_size: 50  # Reduce for more frequent batches
-    timeout: 5s          # Reduce timeout for lower latency
-```
-
-## Next Steps
-
-1. Update your home-lab OTEL collector configuration with filelog receiver
-2. Redeploy OTEL collector
-3. Generate logs from jretirewise
-4. Verify logs appear in OTEL collector logs
-5. Verify logs appear in Splunk
-6. Update any monitoring/alerting rules to include application logs
-
-## References
-
-- [OpenTelemetry Filelog Receiver Documentation](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/filelogreceiver/README.md)
-- [Kubernetes Container Log Paths](https://kubernetes.io/docs/concepts/cluster-administration/logging/)
-- [Splunk HEC Exporter Documentation](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/splunkhecexporter/README.md)
+Start with **Option 1** - it requires no infrastructure changes and works with your current setup immediately.
