@@ -33,8 +33,10 @@ class ForceScriptNameMiddleware:
         self.script_name = '/jretirewise'
 
     def __call__(self, request):
-        # Set SCRIPT_NAME so Django generates URLs with the /jretirewise/ prefix
-        request.META['SCRIPT_NAME'] = self.script_name
+        # Don't override SCRIPT_NAME for static files - let WhiteNoise handle them
+        if not request.path.startswith('/static/') and not request.path.startswith('/media/'):
+            # Set SCRIPT_NAME so Django generates URLs with the /jretirewise/ prefix
+            request.META['SCRIPT_NAME'] = self.script_name
 
         response = self.get_response(request)
         return response
