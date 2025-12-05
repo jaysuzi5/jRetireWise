@@ -22,7 +22,16 @@ SECRET_KEY = env('SECRET_KEY', default='django-insecure-dev-key-change-in-produc
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG')
 
-ALLOWED_HOSTS = env('ALLOWED_HOSTS')
+# ALLOWED_HOSTS = env('ALLOWED_HOSTS')
+# In settings.py
+ALLOWED_HOSTS = [
+    'jretirewise.jaycurtis.org',
+    '192.168.86.229',
+    'localhost',
+    '127.0.0.1',
+    # Optional: accept everything behind Cloudflare (safe for homelab)
+    '*',
+]
 # Add testserver for Django test client
 if 'testserver' not in ALLOWED_HOSTS:
     ALLOWED_HOSTS = list(ALLOWED_HOSTS) + ['testserver']
