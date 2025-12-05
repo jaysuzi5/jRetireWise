@@ -14,15 +14,15 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
+# Collect static files as root (before switching to appuser)
+RUN python manage.py collectstatic --noinput
+
 # Create non-root user
 RUN useradd -m -u 1000 appuser && \
-    mkdir -p /app/staticfiles /app/media && \
+    mkdir -p /app/media && \
     chown -R appuser:appuser /app
 
 USER appuser
-
-# Collect static files
-RUN python manage.py collectstatic --noinput
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
