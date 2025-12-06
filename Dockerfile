@@ -31,5 +31,9 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 # Expose port
 EXPOSE 8000
 
-# Run application
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "4", "--timeout", "120"]
+# Run application with OpenTelemetry instrumentation
+CMD ["opentelemetry-instrument", \
+     "--logs_exporter", "otlp", \
+     "--traces_exporter", "otlp", \
+     "--metrics_exporter", "otlp", \
+     "gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "4", "--timeout", "120"]

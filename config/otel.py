@@ -106,10 +106,10 @@ def initialize_otel():
     metrics.set_meter_provider(meter_provider)
     logger.info("Global meter provider set successfully")
 
-    # Note on Logs API: v0.47b0 has the Logs API but it's still in beta and doesn't expose
-    # set_logger_provider() publicly. LoggingInstrumentor is already capturing logs with
-    # trace context injected. Container logs are being collected by the filelog receiver.
-    # The proper OTEL Logs API will be available in a future stable release.
+    # Note on Logs API: LoggingInstrumentor captures logs with trace context injected.
+    # When using opentelemetry-instrument CLI with --logs_exporter otlp, logs are automatically
+    # exported to the OTEL collector via OTLP protocol on port 4317 (gRPC).
+    # This is handled by the opentelemetry-instrument wrapper, not by our manual initialization.
 
     # Enable automatic instrumentation
     logger.info("Enabling automatic instrumentation for Django, Celery, Requests, SQLAlchemy, Psycopg2, Logging")

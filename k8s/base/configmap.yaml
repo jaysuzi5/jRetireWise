@@ -44,7 +44,9 @@ data:
   LOG_LEVEL: "INFO"
 
   # OpenTelemetry
-  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector-collector.monitoring.svc.cluster.local:4317"
+  OTEL_SERVICE_NAME: "jretirewise"
+  OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED: "true"
   OTEL_SDK_DISABLED: "false"
 
   # Application

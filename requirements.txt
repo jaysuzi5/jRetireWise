@@ -22,6 +22,7 @@ drf-spectacular==0.27.0
 # Observability
 opentelemetry-api>=0.47b0
 opentelemetry-sdk>=0.47b0
+opentelemetry-instrumentation>=0.47b0
 opentelemetry-instrumentation-django>=0.47b0
 opentelemetry-instrumentation-celery>=0.47b0
 opentelemetry-instrumentation-requests>=0.47b0
