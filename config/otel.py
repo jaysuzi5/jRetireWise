@@ -39,10 +39,9 @@ def initialize_otel():
 
     Logging Pattern:
     - LoggingInstrumentor captures all Python logs via logging module
-    - Injects trace context (trace_id, span_id) into each log record as JSON fields
-    - Logs output to stdout as JSON with full trace context
-    - Pod container logs collected by Kubernetes container logging
-    - Logs ingested to OTEL collector via filelog receiver configured in collector YAML
+    - Injects trace context (trace_id, span_id) into each log record
+    - Logs exported via OTLP to collector (gRPC port 4317)
+    - Collector processes and stores logs in observability backend
     """
     global _otel_initialized, _tracer_provider, _meter_provider
 
@@ -107,9 +106,8 @@ def initialize_otel():
     logger.info("Global meter provider set successfully")
 
     # Note on Logs API: LoggingInstrumentor captures logs with trace context injected.
-    # When using opentelemetry-instrument CLI with --logs_exporter otlp, logs are automatically
-    # exported to the OTEL collector via OTLP protocol on port 4317 (gRPC).
-    # This is handled by the opentelemetry-instrument wrapper, not by our manual initialization.
+    # Logs are exported via OTLP to the collector on port 4317 (gRPC)
+    # by the opentelemetry-instrument CLI wrapper.
 
     # Check if running with opentelemetry-instrument CLI
     # If yes, instrumentors are already enabled via bootstrap mechanism
