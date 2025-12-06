@@ -32,9 +32,10 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 EXPOSE 8000
 
 # Run application with OpenTelemetry auto instrumentation
-# Sends traces and metrics to OTLP collector via environment variable OTEL_EXPORTER_OTLP_ENDPOINT
-# Logs are sent via LoggingInstrumentor in application code
+# Sends traces, metrics, and logs to OTLP collector via environment variable OTEL_EXPORTER_OTLP_ENDPOINT
+# All telemetry flows through OTLP protocol on port 4317
 CMD ["opentelemetry-instrument", \
      "--traces_exporter", "otlp", \
      "--metrics_exporter", "otlp", \
+     "--logs_exporter", "otlp", \
      "gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "4", "--timeout", "120"]
