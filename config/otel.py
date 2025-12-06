@@ -111,15 +111,22 @@ def initialize_otel():
     # exported to the OTEL collector via OTLP protocol on port 4317 (gRPC).
     # This is handled by the opentelemetry-instrument wrapper, not by our manual initialization.
 
-    # Enable automatic instrumentation
-    logger.info("Enabling automatic instrumentation for Django, Celery, Requests, SQLAlchemy, Psycopg2, Logging")
-    DjangoInstrumentor().instrument()
-    CeleryInstrumentor().instrument()
-    RequestsInstrumentor().instrument()
-    SQLAlchemyInstrumentor().instrument()
-    Psycopg2Instrumentor().instrument()
-    LoggingInstrumentor().instrument()
-    logger.info("All instrumentors enabled successfully")
+    # Check if running with opentelemetry-instrument CLI
+    # If yes, instrumentors are already enabled via bootstrap mechanism
+    otel_cli_enabled = os.environ.get('OTEL_SDK_DISABLED') is None and os.environ.get('OTEL_TRACES_EXPORTER') is not None
+
+    if not otel_cli_enabled:
+        # Only enable manual instrumentation if NOT using opentelemetry-instrument CLI
+        logger.info("Enabling automatic instrumentation for Django, Celery, Requests, SQLAlchemy, Psycopg2, Logging")
+        DjangoInstrumentor().instrument()
+        CeleryInstrumentor().instrument()
+        RequestsInstrumentor().instrument()
+        SQLAlchemyInstrumentor().instrument()
+        Psycopg2Instrumentor().instrument()
+        LoggingInstrumentor().instrument()
+        logger.info("All instrumentors enabled successfully")
+    else:
+        logger.info("Running with opentelemetry-instrument CLI - instrumentors already enabled via bootstrap")
 
     # Register shutdown hook to flush spans/metrics/logs on exit
     atexit.register(_shutdown_otel)
