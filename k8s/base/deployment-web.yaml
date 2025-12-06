@@ -133,6 +133,21 @@ spec:
             configMapKeyRef:
               name: jretirewise-config
               key: FORCE_SCRIPT_NAME
+        - name: CSRF_TRUSTED_ORIGINS
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: CSRF_TRUSTED_ORIGINS
+        - name: CSRF_COOKIE_SECURE
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: CSRF_COOKIE_SECURE
+        - name: SESSION_COOKIE_SECURE
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: SESSION_COOKIE_SECURE
 
         # Secret values
         - name: SECRET_KEY
@@ -324,6 +339,21 @@ spec:
             configMapKeyRef:
               name: jretirewise-config
               key: FORCE_SCRIPT_NAME
+        - name: CSRF_TRUSTED_ORIGINS
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: CSRF_TRUSTED_ORIGINS
+        - name: CSRF_COOKIE_SECURE
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: CSRF_COOKIE_SECURE
+        - name: SESSION_COOKIE_SECURE
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: SESSION_COOKIE_SECURE
         # Superuser credentials from Kubernetes Secret
         - name: DJANGO_SUPERUSER_USERNAME
           valueFrom:
