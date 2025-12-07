@@ -46,8 +46,8 @@ data:
   # OpenTelemetry
   OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector-collector.monitoring.svc.cluster.local:4317"
   OTEL_SERVICE_NAME: "jretirewise"
-  OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED: "true"
-  OTEL_SDK_DISABLED: "false"
+  OTEL_RESOURCE_ATTRIBUTES: "service.name=jretirewise"
+  OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
 
   # Application
   STATIC_URL: "/static/"

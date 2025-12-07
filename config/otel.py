@@ -1,170 +1,46 @@
-"""
-OpenTelemetry initialization and configuration for jRetireWise.
-"""
-
 import os
 import logging
-import atexit
-from opentelemetry import trace, metrics
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.sdk.metrics import MeterProvider
-from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
-from opentelemetry.sdk.resources import SERVICE_NAME, Resource
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
-from opentelemetry.instrumentation.django import DjangoInstrumentor
-from opentelemetry.instrumentation.celery import CeleryInstrumentor
-from opentelemetry.instrumentation.requests import RequestsInstrumentor
-from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
-from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
+
 from opentelemetry.instrumentation.logging import LoggingInstrumentor
-from opentelemetry.sdk.trace.export import ConsoleSpanExporter
-from opentelemetry.sdk.metrics.export import ConsoleMetricExporter
-logger = logging.getLogger(__name__)
+from opentelemetry.sdk.resources import Resource
+from opentelemetry._logs import set_logger_provider, get_logger_provider
+from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+from opentelemetry.sdk._logs.export import BatchLogRecordProcessor, ConsoleLogExporter
+from opentelemetry.exporter.otlp.proto.grpc._log_exporter import OTLPLogExporter
 
-_otel_initialized = False
-_tracer_provider = None
-_meter_provider = None
+def setup_opentelemetry():
+    logger = logging.getLogger()
 
+    # Check if LoggerProvider already exists (e.g., from opentelemetry-instrument)
+    logger_provider = get_logger_provider()
+    
+    if logger_provider is None:
+        # No provider exists, create a new one
+        otlp_export_endpoint = os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT")
+        if not otlp_export_endpoint:
+            logger.warning("OTEL_EXPORTER_OTLP_ENDPOINT not set, skipping OpenTelemetry log setup")
+            return
 
-def initialize_otel():
-    """
-    Initialize OpenTelemetry SDK with OTLP exporters for traces and metrics.
+        # add resource metadata to logs
+        resource = Resource.create(attributes={
+            "service.name": "jRetireWise"
+        })
+        logger_provider = LoggerProvider(resource=resource)
+        set_logger_provider(logger_provider)
 
-    This sets up:
-    - Distributed tracing via OTLP to OTEL collector (gRPC port 4317)
-    - Metrics export via OTLP to OTEL collector (gRPC port 4317)
-    - Automatic instrumentation with trace context injection
+        # define the exporter to send logs to the observability backend 
+        log_exporter = OTLPLogExporter(endpoint=otlp_export_endpoint)
+        # register it with the global provider
+        logger_provider.add_log_record_processor(
+            BatchLogRecordProcessor(log_exporter)
+        )
 
-    Logging Pattern:
-    - LoggingInstrumentor captures all Python logs via logging module
-    - Injects trace context (trace_id, span_id) into each log record
-    - Logs exported via OTLP to collector (gRPC port 4317)
-    - Collector processes and stores logs in observability backend
-    """
-    global _otel_initialized, _tracer_provider, _meter_provider
+    # configure the python logging module to support OTel by registering the handler
+    handler = LoggingHandler(level="INFO", logger_provider=logger_provider)
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
 
-    # Skip if already initialized
-    if _otel_initialized:
-        return _tracer_provider, _meter_provider
+    # inject trace context into logs
+    LoggingInstrumentor().instrument(set_logging_format=True)
 
-    # Get configuration from environment
-    otel_endpoint = os.environ.get('OTEL_EXPORTER_OTLP_ENDPOINT', 'http://localhost:4318')
-    service_name = os.environ.get('OTEL_SERVICE_NAME', 'jretirewise')
-    service_version = os.environ.get('OTEL_SERVICE_VERSION', '1.0.0')
-
-    logger.info(f"Initializing OpenTelemetry with endpoint: {otel_endpoint}, service: {service_name}")
-
-    # Create resource with service information
-    resource = Resource.create({
-        SERVICE_NAME: service_name,
-        "service.version": service_version,
-        "service.namespace": "jretirewise",
-    })
-
-    # Initialize Tracer Provider
-    logger.info("Creating gRPC OTLP span exporter...")
-    trace_exporter = OTLPSpanExporter(
-        endpoint=otel_endpoint,
-    )
-    tracer_provider = TracerProvider(resource=resource)
-    tracer_provider.add_span_processor(BatchSpanProcessor(trace_exporter))
-    logger.info("gRPC OTLP span exporter created and added to tracer provider")
-
-    # Add console exporter for debugging in development only
-    debug_mode = os.environ.get('DEBUG', 'False').lower() == 'true'
-    if debug_mode:
-        logger.info("DEBUG mode enabled, adding console span exporter")
-        tracer_provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
-
-    # Set tracer provider globally
-    trace.set_tracer_provider(tracer_provider)
-    logger.info("Global tracer provider set successfully")
-
-    # Initialize Meter Provider
-    logger.info("Creating gRPC OTLP metric exporter...")
-    metric_exporter = OTLPMetricExporter(
-        endpoint=otel_endpoint,
-    )
-    metric_reader = PeriodicExportingMetricReader(metric_exporter)
-    logger.info("gRPC OTLP metric exporter created")
-
-    # Add console exporter for debugging in development only
-    metric_readers = [metric_reader]
-    if debug_mode:
-        logger.info("DEBUG mode enabled, adding console metric exporter")
-        console_metric_reader = PeriodicExportingMetricReader(ConsoleMetricExporter())
-        metric_readers.append(console_metric_reader)
-
-    meter_provider = MeterProvider(
-        resource=resource,
-        metric_readers=metric_readers,
-    )
-
-    metrics.set_meter_provider(meter_provider)
-    logger.info("Global meter provider set successfully")
-
-    # Note on Logs API: LoggingInstrumentor captures logs with trace context injected.
-    # Logs are exported via OTLP to the collector on port 4317 (gRPC)
-    # by the opentelemetry-instrument CLI wrapper.
-
-    # Check if running with opentelemetry-instrument CLI
-    # If yes, instrumentors are already enabled via bootstrap mechanism
-    otel_cli_enabled = os.environ.get('OTEL_SDK_DISABLED') is None and os.environ.get('OTEL_TRACES_EXPORTER') is not None
-
-    if not otel_cli_enabled:
-        # Only enable manual instrumentation if NOT using opentelemetry-instrument CLI
-        logger.info("Enabling automatic instrumentation for Django, Celery, Requests, SQLAlchemy, Psycopg2, Logging")
-        DjangoInstrumentor().instrument()
-        CeleryInstrumentor().instrument()
-        RequestsInstrumentor().instrument()
-        SQLAlchemyInstrumentor().instrument()
-        Psycopg2Instrumentor().instrument()
-        LoggingInstrumentor().instrument()
-        logger.info("All instrumentors enabled successfully")
-    else:
-        logger.info("Running with opentelemetry-instrument CLI - instrumentors already enabled via bootstrap")
-
-    # Register shutdown hook to flush spans/metrics/logs on exit
-    atexit.register(_shutdown_otel)
-    logger.info("Registered shutdown hook for graceful OTEL shutdown")
-
-    _tracer_provider = tracer_provider
-    _meter_provider = meter_provider
-    _otel_initialized = True
-
-    logger.info("OpenTelemetry initialization completed successfully")
-    return tracer_provider, meter_provider
-
-
-def _shutdown_otel():
-    """
-    Graceful shutdown of OpenTelemetry providers.
-    Ensures all spans and metrics are flushed before shutdown.
-    """
-    global _tracer_provider, _meter_provider
-
-    try:
-        if _tracer_provider is not None:
-            logger.info("Flushing OpenTelemetry trace provider...")
-            _tracer_provider.force_flush(timeout_millis=5000)
-            logger.info("OpenTelemetry trace provider flushed")
-    except Exception as e:
-        logger.error(f"Error flushing trace provider: {e}", exc_info=True)
-
-    try:
-        if _meter_provider is not None:
-            logger.info("Flushing OpenTelemetry meter provider...")
-            _meter_provider.force_flush(timeout_millis=5000)
-            logger.info("OpenTelemetry meter provider flushed")
-    except Exception as e:
-        logger.error(f"Error flushing meter provider: {e}", exc_info=True)
-
-
-def initialize_otel_for_celery():
-    """
-    Initialize OpenTelemetry for Celery worker processes.
-    Called from Celery worker initialization.
-    """
-    return initialize_otel()
+    logger.info("OpenTelemetry logging is configured.")

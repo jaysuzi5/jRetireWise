@@ -123,11 +123,16 @@ spec:
             configMapKeyRef:
               name: jretirewise-config
               key: OTEL_SERVICE_NAME
-        - name: OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED
+        - name: OTEL_RESOURCE_ATTRIBUTES
           valueFrom:
             configMapKeyRef:
               name: jretirewise-config
-              key: OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED
+              key: OTEL_RESOURCE_ATTRIBUTES
+        - name: OTEL_EXPORTER_OTLP_PROTOCOL
+          valueFrom:
+            configMapKeyRef:
+              name: jretirewise-config
+              key: OTEL_EXPORTER_OTLP_PROTOCOL
         - name: FORCE_SCRIPT_NAME
           valueFrom:
             configMapKeyRef:

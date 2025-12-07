@@ -12,6 +12,10 @@ from django.contrib import messages
 from .models import RetirementScenario
 from .forms import ScenarioForm
 import json
+import logging
+
+# Get a logger instance
+logger = logging.getLogger(__name__)
 
 
 class ScenarioViewSet(viewsets.ModelViewSet):
@@ -30,6 +34,7 @@ class ScenarioListView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
+        logger.info("List all scenarios for the current user.")
         return RetirementScenario.objects.filter(user=self.request.user).order_by('-updated_at')
 
 

@@ -20,17 +20,12 @@ redis==5.0.1
 drf-spectacular==0.27.0
 
 # Observability
-opentelemetry-api>=0.47b0
-opentelemetry-sdk>=0.47b0
-opentelemetry-instrumentation>=0.47b0
-opentelemetry-instrumentation-django>=0.47b0
-opentelemetry-instrumentation-celery>=0.47b0
-opentelemetry-instrumentation-requests>=0.47b0
-opentelemetry-instrumentation-sqlalchemy>=0.47b0
-opentelemetry-instrumentation-psycopg2>=0.47b0
-opentelemetry-instrumentation-logging>=0.47b0
-opentelemetry-exporter-otlp>=0.47b0
-opentelemetry-exporter-otlp-proto-grpc>=0.47b0
+opentelemetry-distro
+opentelemetry-exporter-otlp
+opentelemetry-instrumentation-fastapi
+opentelemetry-instrumentation-logging
+opentelemetry-instrumentation-requests
+opentelemetry-instrumentation-sqlalchemy
 python-json-logger==2.0.7
 sqlalchemy==2.0.23
 
