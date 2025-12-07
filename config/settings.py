@@ -67,7 +67,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
-    'jretirewise.middleware.ForceScriptNameMiddleware',
+    # 'jretirewise.middleware.ForceScriptNameMiddleware',  # Disabled - not needed when app is at root domain
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -244,7 +244,7 @@ CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
 
 
 # CSRF Configuration
-CSRF_TRUSTED_ORIGINS = env('CSRF_TRUSTED_ORIGINS', default='http://localhost:8000').split(',')
+CSRF_TRUSTED_ORIGINS = env('CSRF_TRUSTED_ORIGINS', default='http://localhost:8000,https://jretirewise.jaycurtis.org').split(',')
 CSRF_COOKIE_DOMAIN = env('CSRF_COOKIE_DOMAIN', default=None)
 CSRF_COOKIE_SAMESITE = 'Lax'  # Allow cross-site requests with cookies
 # Allow HTTP access via IP if ALLOW_INSECURE_CSRF_OVER_HTTP environment variable is set
