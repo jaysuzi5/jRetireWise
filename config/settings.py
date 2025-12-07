@@ -56,9 +56,6 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
 
-    # OpenTelemetry
-    'opentelemetry.instrumentation.django',
-
     # Local apps
     'jretirewise.authentication',
     'jretirewise.financial',
