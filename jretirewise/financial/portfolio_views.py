@@ -199,13 +199,24 @@ class AccountCreateView(LoginRequiredMixin, CreateView):
         return context
 
     def form_valid(self, form):
-        """Set portfolio and user."""
+        """Set portfolio and user, and set defaults for omitted fields."""
         portfolio_id = self.kwargs.get('portfolio_id')
         portfolio = get_object_or_404(
             Portfolio.objects.filter(user=self.request.user),
             pk=portfolio_id
         )
         form.instance.portfolio = portfolio
+
+        # Set default values for required fields not in form
+        form.instance.inflation_adjustment = 0.0
+        form.instance.expected_contribution_rate = 0.0
+        form.instance.investment_allocation = '{}'  # Empty JSON object
+        form.instance.withdrawal_priority = 0
+        form.instance.withdrawal_restrictions = ''
+        form.instance.rmd_age = 72
+        form.instance.rmd_percentage = 0.0
+        form.instance.data_source = 'manual'
+
         messages.success(self.request, f'Account "{form.instance.account_name}" created successfully!')
         return super().form_valid(form)
 
