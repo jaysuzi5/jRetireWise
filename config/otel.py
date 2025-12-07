@@ -8,7 +8,7 @@ from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor, ConsoleLogExporter
 from opentelemetry.exporter.otlp.proto.grpc._log_exporter import OTLPLogExporter
 
-def setup_opentelemetry():
+def initialize_otel():
     logger = logging.getLogger()
 
     # Check if LoggerProvider already exists (e.g., from opentelemetry-instrument)
