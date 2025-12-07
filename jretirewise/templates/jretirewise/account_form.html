@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}{% if form.instance.pk %}Edit{% else %}Create{% endif %} Account - jRetireWise{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="mb-8">
+        <a href="{% url 'financial:portfolio-detail' portfolio.id %}" class="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium">
+            ← Back to {{ portfolio.name }}
+        </a>
+    </div>
+
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">
+        {% if form.instance.pk %}Edit Account{% else %}Add Account to Portfolio{% endif %}
+    </h1>
+
+    {% if form.non_field_errors %}
+        <div class="mb-4 p-4 bg-red-100 dark:bg-red-900 dark:bg-opacity-20 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-400 rounded">
+            {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <form method="post" class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 space-y-6">
+        {% csrf_token %}
+
+        <!-- Account Name -->
+        <div>
+            <label for="{{ form.account_name.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Account Name *</label>
+            {{ form.account_name }}
+            {% if form.account_name.errors %}
+                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.account_name.errors.0 }}</p>
+            {% endif %}
+        </div>
+
+        <!-- Account Type -->
+        <div>
+            <label for="{{ form.account_type.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Account Type *</label>
+            {{ form.account_type }}
+            {% if form.account_type.errors %}
+                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.account_type.errors.0 }}</p>
+            {% endif %}
+            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Choose from 19 account types including retirement, investment, and savings accounts</p>
+        </div>
+
+        <!-- Institution Name -->
+        <div>
+            <label for="{{ form.institution_name.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Institution Name</label>
+            {{ form.institution_name }}
+            {% if form.institution_name.errors %}
+                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.institution_name.errors.0 }}</p>
+            {% endif %}
+        </div>
+
+        <!-- Account Number -->
+        <div>
+            <label for="{{ form.account_number.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Account Number</label>
+            {{ form.account_number }}
+            {% if form.account_number.errors %}
+                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.account_number.errors.0 }}</p>
+            {% endif %}
+        </div>
+
+        <!-- Current Value -->
+        <div>
+            <label for="{{ form.current_value.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Current Value *</label>
+            {{ form.current_value }}
+            {% if form.current_value.errors %}
+                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.current_value.errors.0 }}</p>
+            {% endif %}
+        </div>
+
+        <!-- Growth Rate -->
+        <div>
+            <label for="{{ form.default_growth_rate.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Expected Growth Rate (Annual %)</label>
+            {{ form.default_growth_rate }}
+            {% if form.default_growth_rate.errors %}
+                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.default_growth_rate.errors.0 }}</p>
+            {% endif %}
+        </div>
+
+        <!-- Tax Treatment -->
+        <div>
+            <label for="{{ form.tax_treatment.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tax Treatment</label>
+            {{ form.tax_treatment }}
+            {% if form.tax_treatment.errors %}
+                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.tax_treatment.errors.0 }}</p>
+            {% endif %}
+        </div>
+
+        <!-- Status -->
+        <div>
+            <label for="{{ form.status.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+            {{ form.status }}
+            {% if form.status.errors %}
+                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.status.errors.0 }}</p>
+            {% endif %}
+        </div>
+
+        <!-- Description -->
+        <div>
+            <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+            {{ form.description }}
+            {% if form.description.errors %}
+                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.description.errors.0 }}</p>
+            {% endif %}
+        </div>
+
+        <!-- Form Actions -->
+        <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <a href="{% url 'financial:portfolio-detail' portfolio.id %}" class="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition duration-200">
+                Cancel
+            </a>
+            <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition duration-200">
+                {% if form.instance.pk %}Update{% else %}Create{% endif %} Account
+            </button>
+        </div>
+    </form>
+</div>
+
+<style>
+    input[type="text"],
+    input[type="number"],
+    select,
+    textarea {
+        @apply w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent;
+    }
+</style>
+{% endblock %}

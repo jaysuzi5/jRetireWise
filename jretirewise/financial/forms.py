@@ -3,7 +3,7 @@ Forms for financial app.
 """
 
 from django import forms
-from .models import FinancialProfile, Asset, IncomeSource, Expense
+from .models import FinancialProfile, Asset, IncomeSource, Expense, Portfolio, Account, AccountValueHistory
 
 
 class FinancialProfileForm(forms.ModelForm):
@@ -108,3 +108,119 @@ class ExpenseForm(forms.ModelForm):
     class Meta:
         model = Expense
         fields = ['name', 'expense_type', 'amount', 'frequency', 'start_age', 'end_age', 'is_active']
+
+
+class PortfolioForm(forms.ModelForm):
+    """Form for creating and updating portfolios."""
+
+    class Meta:
+        model = Portfolio
+        fields = ['name', 'description']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+                'placeholder': 'My Portfolio'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+                'placeholder': 'Portfolio description...',
+                'rows': 3
+            }),
+        }
+
+
+class AccountForm(forms.ModelForm):
+    """Form for creating and updating accounts."""
+
+    class Meta:
+        model = Account
+        fields = [
+            'account_name', 'account_type', 'institution_name', 'account_number',
+            'current_value', 'default_growth_rate', 'inflation_adjustment',
+            'expected_contribution_rate', 'withdrawal_priority', 'tax_treatment',
+            'rmd_age', 'status', 'description'
+        ]
+        widgets = {
+            'account_name': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+                'placeholder': 'My Savings Account'
+            }),
+            'account_type': forms.Select(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white'
+            }),
+            'institution_name': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+                'placeholder': 'Bank of America'
+            }),
+            'account_number': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+                'placeholder': '****1234'
+            }),
+            'current_value': forms.NumberInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+                'placeholder': '0.00',
+                'step': '0.01'
+            }),
+            'default_growth_rate': forms.NumberInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+                'placeholder': '7.0',
+                'step': '0.01'
+            }),
+            'inflation_adjustment': forms.NumberInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+                'placeholder': '0.0',
+                'step': '0.01'
+            }),
+            'expected_contribution_rate': forms.NumberInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+                'placeholder': '0.0',
+                'step': '0.01'
+            }),
+            'withdrawal_priority': forms.NumberInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+                'placeholder': '0'
+            }),
+            'tax_treatment': forms.Select(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white'
+            }),
+            'rmd_age': forms.NumberInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+                'min': '59',
+                'max': '100'
+            }),
+            'status': forms.Select(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+                'placeholder': 'Account description...',
+                'rows': 3
+            }),
+        }
+
+
+class AccountValueHistoryForm(forms.ModelForm):
+    """Form for recording account values."""
+
+    class Meta:
+        model = AccountValueHistory
+        fields = ['value', 'recorded_date', 'source', 'notes']
+        widgets = {
+            'value': forms.NumberInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+                'placeholder': '0.00',
+                'step': '0.01'
+            }),
+            'recorded_date': forms.DateInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+                'type': 'date'
+            }),
+            'source': forms.Select(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white'
+            }),
+            'notes': forms.Textarea(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+                'placeholder': 'Notes about this value recording...',
+                'rows': 3
+            }),
+        }
