@@ -11,8 +11,8 @@ from rest_framework.routers import DefaultRouter
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from jretirewise.authentication.views import LoginView, LogoutView, UserProfileView
 from jretirewise.financial.views import (
-    AssetViewSet, IncomeSourceViewSet, ExpenseViewSet,
-    FinancialProfileViewSet
+    AssetViewSet, IncomeSourceViewSet, ExpenseViewSet, FinancialProfileViewSet,
+    PortfolioViewSet, AccountViewSet, AccountValueHistoryViewSet, PortfolioSnapshotViewSet,
 )
 from jretirewise.scenarios.views import ScenarioViewSet
 from jretirewise.calculations.views import CalculationView
@@ -30,11 +30,17 @@ def health_live(request):
 
 # API Router
 router = DefaultRouter()
+# Phase 1 endpoints
 router.register(r'assets', AssetViewSet, basename='asset')
 router.register(r'income-sources', IncomeSourceViewSet, basename='income-source')
 router.register(r'expenses', ExpenseViewSet, basename='expense')
 router.register(r'financial-profile', FinancialProfileViewSet, basename='financial-profile')
 router.register(r'scenarios', ScenarioViewSet, basename='scenario')
+# Phase 2.0 endpoints
+router.register(r'portfolios', PortfolioViewSet, basename='portfolio')
+router.register(r'accounts', AccountViewSet, basename='account')
+router.register(r'account-history', AccountValueHistoryViewSet, basename='account-history')
+router.register(r'portfolio-snapshots', PortfolioSnapshotViewSet, basename='portfolio-snapshot')
 
 urlpatterns = [
     # Admin

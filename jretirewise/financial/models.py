@@ -1,10 +1,13 @@
 """
 Financial data models for jRetireWise.
+Includes Phase 1 assets, income, expenses and Phase 2 advanced portfolio management.
 """
 
+from decimal import Decimal
 from django.db import models
 from django.contrib.auth.models import User
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
+import json
 
 
 class FinancialProfile(models.Model):
@@ -159,3 +162,288 @@ class Expense(models.Model):
             return float(self.amount)
         else:
             return float(self.amount)
+
+
+# ============================================================================
+# Phase 2.0 - Advanced Portfolio Management Models
+# ============================================================================
+
+
+class Portfolio(models.Model):
+    """User's investment portfolio container."""
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='portfolio')
+    name = models.CharField(max_length=255, default='My Portfolio')
+    description = models.TextField(blank=True, null=True)
+    created_date = models.DateTimeField(auto_now_add=True)
+    updated_date = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'portfolio'
+        verbose_name = 'Portfolio'
+        verbose_name_plural = 'Portfolios'
+
+    def __str__(self):
+        return f"Portfolio: {self.name}"
+
+    def get_total_value(self):
+        """Calculate total portfolio value across all accounts."""
+        return sum(
+            account.current_value for account in self.accounts.filter(status='active')
+        ) or Decimal('0.00')
+
+    def get_accounts_by_type(self):
+        """Group accounts by type with totals."""
+        accounts_by_type = {}
+        for account in self.accounts.filter(status='active'):
+            account_type = account.get_account_type_display()
+            if account_type not in accounts_by_type:
+                accounts_by_type[account_type] = {
+                    'accounts': [],
+                    'total_value': Decimal('0.00')
+                }
+            accounts_by_type[account_type]['accounts'].append(account)
+            accounts_by_type[account_type]['total_value'] += account.current_value
+
+        return accounts_by_type
+
+
+class Account(models.Model):
+    """Individual investment account with detailed properties."""
+
+    # Account type choices
+    ACCOUNT_TYPES = [
+        # Retirement Accounts
+        ('trad_401k', 'Traditional 401(k)'),
+        ('roth_401k', 'Roth 401(k)'),
+        ('trad_ira', 'Traditional IRA'),
+        ('roth_ira', 'Roth IRA'),
+        ('sep_ira', 'SEP IRA'),
+        ('solo_401k', 'Solo 401(k)'),
+
+        # Investment Accounts
+        ('taxable_brokerage', 'Taxable Brokerage'),
+        ('joint_account', 'Joint Investment Account'),
+        ('partnership', 'Partnership Account'),
+
+        # Savings Accounts
+        ('savings', 'Savings Account'),
+        ('hysa', 'High-Yield Savings Account'),
+        ('money_market', 'Money Market Account'),
+
+        # Health-Related
+        ('hsa', 'Health Savings Account'),
+        ('msa', 'Medical Savings Account'),
+
+        # Other
+        ('529_plan', 'College 529 Plan'),
+        ('certificate_cd', 'Certificate of Deposit'),
+        ('bonds', 'Bonds'),
+        ('treasuries', 'Treasury Securities'),
+        ('custom', 'Custom Account Type'),
+    ]
+
+    # Tax treatment choices
+    TAX_TREATMENT = [
+        ('pre_tax', 'Pre-Tax'),
+        ('post_tax', 'Post-Tax'),
+        ('tax_exempt', 'Tax-Exempt'),
+    ]
+
+    # Account status choices
+    STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('closed', 'Closed'),
+        ('merged', 'Merged'),
+    ]
+
+    # Account-to-portfolio relationship
+    portfolio = models.ForeignKey(Portfolio, on_delete=models.CASCADE, related_name='accounts')
+
+    # Basic Information
+    account_type = models.CharField(max_length=50, choices=ACCOUNT_TYPES)
+    account_name = models.CharField(max_length=255, help_text='User-friendly account name')
+    account_number = models.CharField(max_length=50, blank=True, null=True, help_text='Account reference/number')
+    institution_name = models.CharField(max_length=255, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+
+    # Financial Data
+    current_value = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        validators=[MinValueValidator(Decimal('0.00'))]
+    )
+    default_growth_rate = models.DecimalField(
+        max_digits=5,
+        decimal_places=4,
+        default=Decimal('0.07'),
+        help_text='Annual % return (e.g., 0.07 for 7%)',
+        validators=[MinValueValidator(Decimal('-1.00')), MaxValueValidator(Decimal('10.00'))]
+    )
+    inflation_adjustment = models.DecimalField(
+        max_digits=5,
+        decimal_places=4,
+        default=Decimal('0.00'),
+        help_text='Inflation adjustment applied to growth rate',
+        validators=[MinValueValidator(Decimal('0.00')), MaxValueValidator(Decimal('1.00'))]
+    )
+    expected_contribution_rate = models.DecimalField(
+        max_digits=5,
+        decimal_places=4,
+        default=Decimal('0.00'),
+        help_text='Expected annual contributions as % of current value'
+    )
+
+    # Investment Allocation (JSON: {stocks: %, bonds: %, other: %})
+    investment_allocation = models.JSONField(
+        default=dict,
+        help_text='Investment allocation: {"stocks": 60, "bonds": 30, "other": 10}'
+    )
+
+    # Withdrawal Rules
+    withdrawal_priority = models.IntegerField(
+        default=0,
+        help_text='Order to withdraw from this account (lower = first)'
+    )
+    withdrawal_restrictions = models.JSONField(
+        default=dict,
+        help_text='Withdrawal restrictions: {"min_age": 59.5, "penalty_free_date": "2030-01-01"}'
+    )
+    tax_treatment = models.CharField(max_length=20, choices=TAX_TREATMENT, default='pre_tax')
+
+    # RMD (Required Minimum Distribution)
+    rmd_age = models.IntegerField(
+        default=72,
+        help_text='Age at which RMD begins',
+        validators=[MinValueValidator(50), MaxValueValidator(100)]
+    )
+    rmd_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=4,
+        default=Decimal('0.00'),
+        help_text='RMD percentage (calculated as 1/life_expectancy_divisor)'
+    )
+
+    # Metadata
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+    data_source = models.CharField(
+        max_length=50,
+        choices=[
+            ('manual', 'Manual Entry'),
+            ('import', 'CSV Import'),
+            ('api', 'API Sync'),
+        ],
+        default='manual'
+    )
+
+    created_date = models.DateTimeField(auto_now_add=True)
+    updated_date = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'account'
+        verbose_name = 'Account'
+        verbose_name_plural = 'Accounts'
+        indexes = [
+            models.Index(fields=['portfolio']),
+            models.Index(fields=['account_type']),
+            models.Index(fields=['status']),
+            models.Index(fields=['withdrawal_priority']),
+        ]
+        ordering = ['withdrawal_priority', 'account_name']
+
+    def __str__(self):
+        return f"{self.account_name} ({self.get_account_type_display()})"
+
+    def get_effective_growth_rate(self):
+        """Calculate effective growth rate after inflation adjustment."""
+        return self.default_growth_rate - self.inflation_adjustment
+
+    def get_annual_contribution(self):
+        """Calculate expected annual contribution in dollars."""
+        return self.current_value * self.expected_contribution_rate
+
+    def is_penalty_free_withdrawal_age(self, age):
+        """Check if account allows penalty-free withdrawals at given age."""
+        restrictions = self.withdrawal_restrictions or {}
+        min_age = restrictions.get('min_age')
+        if min_age:
+            return age >= float(min_age)
+        return False
+
+
+class AccountValueHistory(models.Model):
+    """Historical snapshots of account values over time."""
+
+    account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='value_history')
+    value = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.00'))]
+    )
+    recorded_date = models.DateField(help_text='Date the value snapshot was recorded')
+    recorded_timestamp = models.DateTimeField(auto_now_add=True)
+    recorded_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='account_history_entries'
+    )
+    source = models.CharField(
+        max_length=50,
+        choices=[
+            ('manual', 'Manual Entry'),
+            ('import', 'CSV Import'),
+            ('system', 'System Generated'),
+        ],
+        default='manual'
+    )
+    notes = models.TextField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'account_value_history'
+        verbose_name = 'Account Value History'
+        verbose_name_plural = 'Account Value History'
+        indexes = [
+            models.Index(fields=['account']),
+            models.Index(fields=['recorded_date']),
+        ]
+        ordering = ['-recorded_date']
+
+    def __str__(self):
+        return f"{self.account.account_name} - ${self.value:,.2f} on {self.recorded_date}"
+
+
+class PortfolioSnapshot(models.Model):
+    """Full portfolio snapshot at a point in time."""
+
+    portfolio = models.ForeignKey(Portfolio, on_delete=models.CASCADE, related_name='snapshots')
+    total_value = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.00'))]
+    )
+    snapshot_date = models.DateField(help_text='Date of the snapshot')
+    created_timestamp = models.DateTimeField(auto_now_add=True)
+    calculated_from = models.CharField(
+        max_length=50,
+        choices=[
+            ('all_accounts', 'All Accounts'),
+            ('last_snapshot', 'Last Snapshot'),
+        ],
+        default='all_accounts'
+    )
+    notes = models.TextField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'portfolio_snapshot'
+        verbose_name = 'Portfolio Snapshot'
+        verbose_name_plural = 'Portfolio Snapshots'
+        indexes = [
+            models.Index(fields=['portfolio']),
+            models.Index(fields=['snapshot_date']),
+        ]
+        ordering = ['-snapshot_date']
+
+    def __str__(self):
+        return f"Portfolio Snapshot - ${self.total_value:,.2f} on {self.snapshot_date}"
