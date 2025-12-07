@@ -230,30 +230,70 @@ class UserProfileViewIntegrationTestCase(TestCase):
 class GoogleOAuthConfigurationTestCase(TestCase):
     """Test Google OAuth 2.0 configuration."""
 
+    def setUp(self):
+        """Set up Google OAuth app in database for testing."""
+        from allauth.socialaccount.models import SocialApp
+        from django.contrib.sites.models import Site
+
+        # Ensure site exists
+        site, _ = Site.objects.get_or_create(
+            pk=1,
+            defaults={'domain': 'example.com', 'name': 'Example'}
+        )
+
+        # Create Google OAuth app
+        self.google_app, _ = SocialApp.objects.get_or_create(
+            provider='google',
+            defaults={
+                'name': 'Google',
+                'client_id': 'test-client-id-123.apps.googleusercontent.com',
+                'secret': 'test-secret-key-123',
+            }
+        )
+
+        # Link app to site
+        self.google_app.sites.add(site)
+
     def test_oauth_providers_configured(self):
         """Test that SOCIALACCOUNT_PROVIDERS is configured."""
         assert 'google' in settings.SOCIALACCOUNT_PROVIDERS, \
             "Google provider should be configured in SOCIALACCOUNT_PROVIDERS"
 
-    def test_oauth_google_has_app_config(self):
-        """Test that Google OAuth app configuration exists."""
+    def test_oauth_google_has_scope_config(self):
+        """Test that Google OAuth SCOPE configuration exists."""
         google_provider = settings.SOCIALACCOUNT_PROVIDERS.get('google', {})
-        assert 'APP' in google_provider, \
-            "Google provider should have 'APP' configuration"
+        assert 'SCOPE' in google_provider, \
+            "Google provider should have 'SCOPE' configuration"
 
-    def test_oauth_google_app_has_client_id(self):
-        """Test that Google OAuth client_id can be configured."""
-        google_provider = settings.SOCIALACCOUNT_PROVIDERS.get('google', {})
-        app_config = google_provider.get('APP', {})
-        assert 'client_id' in app_config, \
-            "Google APP config should have 'client_id' key"
+    def test_oauth_google_app_stored_in_database(self):
+        """Test that Google OAuth credentials are stored in the SocialApp database model."""
+        from allauth.socialaccount.models import SocialApp
 
-    def test_oauth_google_app_has_secret(self):
-        """Test that Google OAuth secret can be configured."""
-        google_provider = settings.SOCIALACCOUNT_PROVIDERS.get('google', {})
-        app_config = google_provider.get('APP', {})
-        assert 'secret' in app_config, \
-            "Google APP config should have 'secret' key"
+        google_app = SocialApp.objects.filter(provider='google').first()
+        assert google_app is not None, \
+            "Google OAuth app should be stored in SocialApp database model"
+        assert google_app.client_id, \
+            "Google SocialApp should have client_id"
+        assert google_app.secret, \
+            "Google SocialApp should have secret"
+
+    def test_oauth_google_database_app_has_client_id(self):
+        """Test that Google OAuth SocialApp has client_id in database."""
+        from allauth.socialaccount.models import SocialApp
+
+        google_app = SocialApp.objects.filter(provider='google').first()
+        assert google_app is not None
+        assert google_app.client_id, \
+            "Google SocialApp database entry should have 'client_id'"
+
+    def test_oauth_google_database_app_has_secret(self):
+        """Test that Google OAuth SocialApp has secret in database."""
+        from allauth.socialaccount.models import SocialApp
+
+        google_app = SocialApp.objects.filter(provider='google').first()
+        assert google_app is not None
+        assert google_app.secret, \
+            "Google SocialApp database entry should have 'secret'"
 
     def test_oauth_scopes_configured(self):
         """Test that OAuth scopes are properly configured."""
@@ -269,20 +309,18 @@ class GoogleOAuthConfigurationTestCase(TestCase):
         assert auth_params.get('access_type') == 'online', \
             "OAuth should use 'online' access_type"
 
-    @override_settings(
-        SOCIALACCOUNT_PROVIDERS__GOOGLE__CLIENT_ID='test-client-id',
-        SOCIALACCOUNT_PROVIDERS__GOOGLE__CLIENT_SECRET='test-client-secret'
-    )
-    def test_oauth_with_env_credentials(self):
-        """Test that OAuth works with environment variable credentials."""
-        # This test verifies the structure - in production, credentials
-        # would come from environment variables during settings loading
-        google_provider = settings.SOCIALACCOUNT_PROVIDERS.get('google', {})
-        app_config = google_provider.get('APP', {})
+    def test_oauth_with_database_credentials(self):
+        """Test that OAuth uses credentials from SocialApp database model."""
+        from allauth.socialaccount.models import SocialApp
 
-        # Verify client_id and secret are present (even if empty strings)
-        assert 'client_id' in app_config
-        assert 'secret' in app_config
+        # Verify that credentials come from the database, not settings
+        google_app = SocialApp.objects.filter(provider='google').first()
+        assert google_app is not None, \
+            "Google OAuth credentials should be stored in SocialApp database"
+        assert len(google_app.client_id) > 0, \
+            "Google SocialApp should have non-empty client_id from database"
+        assert len(google_app.secret) > 0, \
+            "Google SocialApp should have non-empty secret from database"
 
     def test_allauth_authentication_backends_configured(self):
         """Test that allauth authentication backend is configured."""
