@@ -40,6 +40,17 @@ class PortfolioListView(LoginRequiredMixin, ListView):
                     accounts_by_type[acc_type] = {'count': 0, 'total_value': 0}
                 accounts_by_type[acc_type]['count'] += 1
                 accounts_by_type[acc_type]['total_value'] += float(account.current_value)
+
+            # Calculate percentage of portfolio for each account type
+            if portfolio.total_value > 0:
+                for acc_type in accounts_by_type:
+                    accounts_by_type[acc_type]['percentage'] = round(
+                        (accounts_by_type[acc_type]['total_value'] / portfolio.total_value) * 100, 1
+                    )
+            else:
+                for acc_type in accounts_by_type:
+                    accounts_by_type[acc_type]['percentage'] = 0
+
             portfolio.accounts_by_type = accounts_by_type
 
         return context
@@ -78,6 +89,17 @@ class PortfolioDetailView(LoginRequiredMixin, DetailView):
                 accounts_by_type[acc_type] = {'count': 0, 'total_value': 0}
             accounts_by_type[acc_type]['count'] += 1
             accounts_by_type[acc_type]['total_value'] += float(account.current_value)
+
+        # Calculate percentage of portfolio for each account type
+        if portfolio.total_value > 0:
+            for acc_type in accounts_by_type:
+                accounts_by_type[acc_type]['percentage'] = round(
+                    (accounts_by_type[acc_type]['total_value'] / portfolio.total_value) * 100, 1
+                )
+        else:
+            for acc_type in accounts_by_type:
+                accounts_by_type[acc_type]['percentage'] = 0
+
         portfolio.accounts_by_type = accounts_by_type
 
         return context
@@ -170,8 +192,21 @@ class AccountDetailView(LoginRequiredMixin, DetailView):
         account = context['account']
 
         # Get value history (newest first)
-        value_history = account.value_history.all().order_by('-recorded_date')[:10]
-        context['value_history'] = value_history
+        value_history_list = list(account.value_history.all().order_by('-recorded_date')[:10])
+
+        # Calculate change from previous record for each entry
+        for i, history in enumerate(value_history_list):
+            if i < len(value_history_list) - 1:
+                # There's a previous entry (older entry since ordered by -recorded_date)
+                previous_value = value_history_list[i + 1].value
+                history.change_amount = history.value - previous_value
+                history.change_percent = (history.change_amount / previous_value * 100) if previous_value != 0 else 0
+            else:
+                # No previous entry, can't calculate change
+                history.change_amount = None
+                history.change_percent = None
+
+        context['value_history'] = value_history_list
 
         return context
 
@@ -208,8 +243,7 @@ class AccountCreateView(LoginRequiredMixin, CreateView):
         form.instance.portfolio = portfolio
 
         # Set default values for required fields not in form
-        form.instance.inflation_adjustment = 0.0
-        form.instance.expected_contribution_rate = 0.0
+        # inflation_adjustment and expected_contribution_rate are now in form, so they'll be set from form data
         form.instance.investment_allocation = '{}'  # Empty JSON object
         form.instance.withdrawal_priority = 0
         form.instance.withdrawal_restrictions = ''

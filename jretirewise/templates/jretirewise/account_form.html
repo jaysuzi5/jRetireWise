@@ -80,6 +80,26 @@
             {% endif %}
         </div>
 
+        <!-- Inflation Adjustment -->
+        <div>
+            <label for="{{ form.inflation_adjustment.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Inflation Adjustment (Annual %)</label>
+            {{ form.inflation_adjustment }}
+            {% if form.inflation_adjustment.errors %}
+                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.inflation_adjustment.errors.0 }}</p>
+            {% endif %}
+            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Amount to adjust contributions annually for inflation</p>
+        </div>
+
+        <!-- Annual Contribution -->
+        <div>
+            <label for="{{ form.expected_contribution_rate.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Annual Contribution Rate (%)</label>
+            {{ form.expected_contribution_rate }}
+            {% if form.expected_contribution_rate.errors %}
+                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.expected_contribution_rate.errors.0 }}</p>
+            {% endif %}
+            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Annual contribution as a percentage of current value</p>
+        </div>
+
         <!-- Tax Treatment -->
         <div>
             <label for="{{ form.tax_treatment.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tax Treatment</label>

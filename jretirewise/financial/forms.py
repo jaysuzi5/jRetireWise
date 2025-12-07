@@ -136,7 +136,8 @@ class AccountForm(forms.ModelForm):
         model = Account
         fields = [
             'account_name', 'account_type', 'institution_name', 'account_number',
-            'current_value', 'default_growth_rate', 'tax_treatment', 'status', 'description'
+            'current_value', 'default_growth_rate', 'inflation_adjustment',
+            'expected_contribution_rate', 'tax_treatment', 'status', 'description'
         ]
         widgets = {
             'account_name': forms.TextInput(attrs={
