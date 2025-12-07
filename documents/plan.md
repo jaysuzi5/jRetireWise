@@ -1,5 +1,20 @@
 # jRetireWise - Retirement Calculator Platform Plan
 
+## Project Status
+
+**Phase 1 MVP**: ✅ **COMPLETE** as of 2025-12-07
+- Google OAuth authentication fully working
+- 4% and 4.7% rule calculators implemented and tested
+- Scenario management with full CRUD operations
+- Django templates with Tailwind CSS UI
+- Kubernetes deployment on home cluster
+- OpenTelemetry integration with Splunk HEC (gRPC endpoint configuration working)
+- GitHub Actions CI/CD pipeline with automated Docker builds and deployments
+- Comprehensive test coverage (unit, integration, E2E)
+- All tests passing, application deployed to production at https://jretirewise.jaycurtis.org
+
+**Current Focus**: Phase 4 improvements identified for DevOps automation, logging, and UI polish.
+
 ## Project Overview
 
 jRetireWise is a professional retirement planning application that enables users to track financial information, model retirement scenarios, and make data-driven retirement decisions. The application will support advanced retirement calculation methodologies including deterministic rules (4% rule, 4.7% rule) and sophisticated stochastic simulations (Monte Carlo, sensitivity analysis, historical period analysis).
@@ -405,6 +420,77 @@ CalculationTask (for async jobs)
 - Enhanced observability and analytics
 - Polished UI/UX
 - Complete user documentation
+
+---
+
+### Phase 4: DevOps, Observability & UI Polish - 3-4 weeks
+
+**Goal**: Improve deployment automation, logging consistency, and fix UI/UX issues discovered during MVP.
+
+**Status**: Planned for implementation after Phase 1 MVP completion.
+
+#### 4.1 Improved Logging & Observability
+- **Structured JSON Logging**: Implement formatted JSON logging across all application components
+  - Replace unstructured log messages with JSON format for better machine parsing
+  - Include context fields (request_id, user_id, duration, module, level)
+  - All logs sent to OpenTelemetry collector and Splunk HEC with consistent format
+  - Better debugging and log aggregation in Splunk dashboards
+  - Application startup and shutdown logs with clear context
+
+#### 4.2 Deployment Automation Improvements
+- **ArgoCD/Kubernetes Manifest Triggers**:
+  - Configure ArgoCD to trigger deployments on Docker image changes alone (not just manifest changes)
+  - Implement image tag tracking and automatic manifest updates
+  - Enable automatic rollback on failed Kubernetes readiness probes
+  - Improve deployment visibility with ArgoCD UI and notifications
+  - Consider Flux CD as alternative for GitOps automation
+
+#### 4.3 GitHub Actions Pipeline Cleanup & Enhancement
+- **Lint Step Enablement**:
+  - Enable and fix code quality checks (Black, isort, flake8) in CI/CD
+  - Add linting as blocking step (fail build if quality standards not met)
+  - Add type checking with mypy as pre-merge check
+
+- **End-to-End Testing Review**:
+  - Consolidate E2E tests to focus on critical smoke test scenarios
+  - Test login flow with actual Google OAuth
+  - Test primary calculation (4% rule) end-to-end
+  - Test scenario creation and retrieval
+  - Ensure all tests pass before deployment proceeds
+
+- **Automated Rollback Strategy**:
+  - Implement post-deployment health checks in GitHub Actions
+  - Auto-rollback deployment if smoke tests fail
+  - Add rollback notifications (Slack, email)
+  - Document rollback procedures and testing
+
+#### 4.4 UI/UX Fixes
+- **Sign-In Page Navigation**:
+  - Remove or hide navigation links (Dashboard, Profile, Scenarios, Theme, Sign In) when user is on sign-in page
+  - Show only logo/branding and sign-in form
+  - Fix "Sign In" button click error (currently shows 500 error)
+  - Improve error messages on sign-in failures
+  - Add loading state indicator during OAuth redirect
+
+- **General UI Improvements**:
+  - Improve mobile responsiveness
+  - Add loading spinners for long-running operations
+  - Better error message display (inline validation, clear error text)
+  - Improved form validation feedback
+
+#### 4.5 Documentation & Runbooks
+- **Deployment Runbooks**: Step-by-step procedures for manual deployments and rollbacks
+- **Troubleshooting Guide**: Common issues and solutions for DevOps team
+- **Logging Guide**: How to query and understand structured JSON logs in Splunk
+- **ArgoCD Setup**: Detailed guide for ArgoCD configuration and sync strategies
+
+**Phase 4 Deliverables**:
+- Structured JSON logging across all application components
+- ArgoCD image change automation and rollback capability
+- Enhanced GitHub Actions pipeline with linting and rollback
+- Fixed sign-in page UI with improved navigation
+- Comprehensive DevOps and troubleshooting documentation
+- All E2E tests passing with minimal smoke test suite
 
 ---
 
