@@ -13,8 +13,8 @@ app = Celery('jretirewise')
 # Initialize OpenTelemetry after Celery app is created
 # This prevents initialization issues during collectstatic
 try:
-    from config.otel import initialize_otel_for_celery
-    initialize_otel_for_celery()
+    from config.otel import initialize_otel
+    initialize_otel()
 except Exception as e:
     # Don't fail if OTEL initialization fails during app creation
     import sys
