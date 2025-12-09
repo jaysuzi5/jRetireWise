@@ -13,6 +13,7 @@ class RetirementScenario(models.Model):
     CALCULATOR_TYPES = [
         ('4_percent', '4% Rule'),
         ('4_7_percent', '4.7% Rule'),
+        ('bucketed_withdrawal', 'Bucketed Withdrawal'),
         ('monte_carlo', 'Monte Carlo'),
         ('historical', 'Historical Analysis'),
     ]
@@ -80,3 +81,218 @@ class CalculationResult(models.Model):
 
     def __str__(self):
         return f"Result for {self.scenario.name} ({self.status})"
+
+
+class WithdrawalBucket(models.Model):
+    """
+    A withdrawal bucket for dynamic bucketed withdrawal rate calculations.
+
+    Each bucket represents a time period (age range) with specific withdrawal
+    parameters, account constraints, and special considerations.
+    """
+
+    scenario = models.ForeignKey(
+        RetirementScenario,
+        on_delete=models.CASCADE,
+        related_name='withdrawal_buckets'
+    )
+
+    # Basic properties
+    bucket_name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    order = models.IntegerField(default=0)
+
+    # Time period (age range OR year range)
+    start_age = models.IntegerField(null=True, blank=True)
+    end_age = models.IntegerField(null=True, blank=True)
+    start_year = models.IntegerField(null=True, blank=True)
+    end_year = models.IntegerField(null=True, blank=True)
+
+    # Withdrawal parameters
+    target_withdrawal_rate = models.FloatField(help_text="Percentage of portfolio (e.g., 4.0 for 4%)")
+    min_withdrawal_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Minimum withdrawal amount in dollars"
+    )
+    max_withdrawal_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Maximum withdrawal amount in dollars"
+    )
+    manual_withdrawal_override = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Fixed withdrawal amount if set (overrides rate calculation)"
+    )
+
+    # Account constraints
+    allowed_account_types = models.JSONField(
+        default=list,
+        help_text="List of allowed account type codes (e.g., ['traditional_401k', 'roth_ira'])"
+    )
+    prohibited_account_types = models.JSONField(
+        default=list,
+        help_text="List of prohibited account type codes"
+    )
+    withdrawal_order = models.JSONField(
+        default=list,
+        help_text="Ordered list of account IDs for withdrawal preference"
+    )
+
+    # Special considerations
+    tax_loss_harvesting_enabled = models.BooleanField(default=False)
+    roth_conversion_enabled = models.BooleanField(default=False)
+    healthcare_cost_adjustment = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        help_text="Healthcare cost adjustment in dollars (positive increases withdrawal need)"
+    )
+    expected_pension_income = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        help_text="Expected pension income per year (reduces portfolio withdrawal need)"
+    )
+    expected_social_security_income = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        help_text="Expected Social Security income per year (reduces portfolio withdrawal need)"
+    )
+
+    # Metadata
+    created_date = models.DateTimeField(auto_now_add=True)
+    updated_date = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'withdrawal_bucket'
+        verbose_name = 'Withdrawal Bucket'
+        verbose_name_plural = 'Withdrawal Buckets'
+        ordering = ['order', 'start_age']
+        indexes = [
+            models.Index(fields=['scenario']),
+            models.Index(fields=['order']),
+        ]
+
+    def __str__(self):
+        return f"{self.bucket_name} ({self.scenario.name})"
+
+    def get_age_range_display(self):
+        """Return human-readable age range."""
+        if self.start_age and self.end_age:
+            return f"Age {self.start_age}-{self.end_age}"
+        elif self.start_age:
+            return f"Age {self.start_age}+"
+        return "Unspecified"
+
+
+class BucketedWithdrawalResult(models.Model):
+    """
+    Results from a single year of bucketed withdrawal calculation.
+
+    These records are created by the DynamicBucketedWithdrawalCalculator
+    and stored for analysis and visualization.
+    """
+
+    calculation = models.ForeignKey(
+        CalculationResult,
+        on_delete=models.CASCADE,
+        related_name='bucketed_results'
+    )
+    bucket = models.ForeignKey(
+        WithdrawalBucket,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='results'
+    )
+
+    # Year information
+    year = models.IntegerField()
+    age = models.IntegerField(null=True, blank=True)
+
+    # Withdrawal details
+    target_rate = models.FloatField(help_text="Target withdrawal rate for this year (%)")
+    calculated_withdrawal = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text="Calculated withdrawal based on rate and portfolio value"
+    )
+    actual_withdrawal = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text="Actual withdrawal amount (may differ due to constraints)"
+    )
+    withdrawal_accounts = models.JSONField(
+        default=dict,
+        help_text="Account-by-account withdrawal breakdown: {account_id: amount}"
+    )
+
+    # Portfolio tracking
+    portfolio_value_start = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text="Portfolio value at start of year"
+    )
+    investment_growth = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text="Investment growth/returns during year"
+    )
+    portfolio_value_end = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text="Portfolio value at end of year after withdrawal"
+    )
+
+    # Additional income sources
+    pension_income = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        help_text="Pension income during year"
+    )
+    social_security_income = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        help_text="Social Security income during year"
+    )
+    total_available_income = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        help_text="Total available income (withdrawal + pension + SS)"
+    )
+
+    # Notes and flags
+    notes = models.TextField(
+        blank=True,
+        help_text="Notes about this year (RMD applied, early access penalty, etc.)"
+    )
+    flags = models.JSONField(
+        default=list,
+        help_text="Array of warning flags: ['rmd_applied', 'early_access_penalty', etc.]"
+    )
+
+    class Meta:
+        db_table = 'bucketed_withdrawal_result'
+        verbose_name = 'Bucketed Withdrawal Result'
+        verbose_name_plural = 'Bucketed Withdrawal Results'
+        unique_together = [['calculation', 'year']]
+        ordering = ['calculation', 'year']
+        indexes = [
+            models.Index(fields=['calculation', 'year']),
+            models.Index(fields=['bucket']),
+        ]
+
+    def __str__(self):
+        return f"Year {self.year}, Age {self.age} - ${self.actual_withdrawal:,.2f} withdrawal"
