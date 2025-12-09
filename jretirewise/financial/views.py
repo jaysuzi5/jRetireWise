@@ -8,6 +8,9 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
+import csv
+from django.http import HttpResponse
+from datetime import datetime
 
 from .models import (
     FinancialProfile,
@@ -230,6 +233,47 @@ class AccountViewSet(viewsets.ModelViewSet):
             'is_active': account.status == 'active',
         })
 
+    @action(detail=False, methods=['get'])
+    def export_csv(self, request):
+        """Export account list to CSV format."""
+        # Get the filtered queryset
+        queryset = self.filter_queryset(self.get_queryset())
+
+        # Create CSV response
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="accounts-{datetime.now().strftime("%Y%m%d-%H%M%S")}.csv"'
+
+        writer = csv.writer(response)
+
+        # Write header
+        writer.writerow([
+            'Account Name',
+            'Account Type',
+            'Current Value',
+            'Default Growth Rate (%)',
+            'Tax Treatment',
+            'Status',
+            'Institution',
+            'Account Number',
+            'Created Date'
+        ])
+
+        # Write data rows
+        for account in queryset.select_related('portfolio'):
+            writer.writerow([
+                account.account_name,
+                account.get_account_type_display(),
+                f'{float(account.current_value):.2f}',
+                f'{float(account.default_growth_rate):.2f}',
+                account.get_tax_treatment_display(),
+                account.get_status_display(),
+                account.institution_name or '',
+                account.account_number or '',
+                account.created_date.strftime('%Y-%m-%d') if account.created_date else ''
+            ])
+
+        return response
+
 
 class AccountValueHistoryViewSet(viewsets.ModelViewSet):
     """ViewSet for account value history."""
@@ -243,15 +287,71 @@ class AccountValueHistoryViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """Users can only see history for their accounts."""
+        queryset = AccountValueHistory.objects.none()
+
         portfolio = Portfolio.objects.filter(user=self.request.user).first()
         if portfolio:
             accounts = Account.objects.filter(portfolio=portfolio)
-            return AccountValueHistory.objects.filter(account__in=accounts)
-        return AccountValueHistory.objects.none()
+            queryset = AccountValueHistory.objects.filter(account__in=accounts)
+
+            # Apply date-range filtering if provided
+            start_date = self.request.query_params.get('start_date')
+            end_date = self.request.query_params.get('end_date')
+
+            if start_date:
+                try:
+                    queryset = queryset.filter(recorded_date__gte=start_date)
+                except (ValueError, TypeError):
+                    pass  # Invalid date format, ignore filter
+
+            if end_date:
+                try:
+                    queryset = queryset.filter(recorded_date__lte=end_date)
+                except (ValueError, TypeError):
+                    pass  # Invalid date format, ignore filter
+
+        return queryset
 
     def perform_create(self, serializer):
         """Set recorded_by to current user."""
         serializer.save(recorded_by=self.request.user)
+
+    @action(detail=False, methods=['get'])
+    def export_csv(self, request):
+        """Export account value history to CSV format."""
+        # Get the filtered queryset
+        queryset = self.filter_queryset(self.get_queryset())
+
+        # Create CSV response
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="account-history-{datetime.now().strftime("%Y%m%d-%H%M%S")}.csv"'
+
+        writer = csv.writer(response)
+
+        # Write header
+        writer.writerow([
+            'Account Name',
+            'Account Type',
+            'Recorded Date',
+            'Value',
+            'Source',
+            'Notes',
+            'Recorded By'
+        ])
+
+        # Write data rows
+        for history in queryset.select_related('account', 'recorded_by'):
+            writer.writerow([
+                history.account.account_name,
+                history.account.get_account_type_display(),
+                history.recorded_date.strftime('%Y-%m-%d'),
+                f'{float(history.value):.2f}',
+                history.get_source_display(),
+                history.notes or '',
+                history.recorded_by.email if history.recorded_by else ''
+            ])
+
+        return response
 
 
 class PortfolioSnapshotViewSet(viewsets.ModelViewSet):
