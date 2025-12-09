@@ -102,6 +102,25 @@ class PortfolioDetailView(LoginRequiredMixin, DetailView):
 
         portfolio.accounts_by_type = accounts_by_type
 
+        # Calculate weighted average growth rate
+        if portfolio.total_value > 0:
+            weighted_growth = 0
+            for account in accounts:
+                if account.current_value > 0:
+                    weight = account.current_value / portfolio.total_value
+                    weighted_growth += account.default_growth_rate * weight
+            portfolio.weighted_growth_rate = round(weighted_growth, 2)
+        else:
+            portfolio.weighted_growth_rate = 0
+
+        # Calculate estimated portfolio value at retirement (simple 10-year projection)
+        if portfolio.total_value > 0 and portfolio.weighted_growth_rate > 0:
+            years = 10
+            retirement_value = portfolio.total_value * ((1 + portfolio.weighted_growth_rate / 100) ** years)
+            portfolio.estimated_retirement_value = round(retirement_value, 2)
+        else:
+            portfolio.estimated_retirement_value = portfolio.total_value
+
         return context
 
 

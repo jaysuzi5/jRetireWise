@@ -21,22 +21,22 @@
     </div>
 
     <!-- Portfolio Overview -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <p class="text-gray-600 dark:text-gray-400 text-sm font-medium">Total Value</p>
             <p class="text-3xl font-bold text-indigo-600 dark:text-indigo-400 mt-2">${{ portfolio.total_value|floatformat:0|intcomma }}</p>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <p class="text-gray-600 dark:text-gray-400 text-sm font-medium">Weighted Growth Rate</p>
+            <p class="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">{{ portfolio.weighted_growth_rate|floatformat:2 }}%</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <p class="text-gray-600 dark:text-gray-400 text-sm font-medium">Est. Value (10 yrs)</p>
+            <p class="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-2">${{ portfolio.estimated_retirement_value|floatformat:0|intcomma }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <p class="text-gray-600 dark:text-gray-400 text-sm font-medium">Active Accounts</p>
-            <p class="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">{{ portfolio.account_count }}</p>
-        </div>
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <p class="text-gray-600 dark:text-gray-400 text-sm font-medium">Created</p>
-            <p class="text-lg font-semibold text-gray-900 dark:text-white mt-2">{{ portfolio.created_date|date:"M d, Y" }}</p>
-        </div>
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <p class="text-gray-600 dark:text-gray-400 text-sm font-medium">Last Updated</p>
-            <p class="text-lg font-semibold text-gray-900 dark:text-white mt-2">{{ portfolio.updated_date|date:"M d, Y" }}</p>
+            <p class="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">{{ portfolio.account_count }}</p>
         </div>
     </div>
 
@@ -131,21 +131,102 @@
         {% endif %}
     </div>
 
-    <!-- Accounts by Type Summary -->
+    <!-- Accounts by Type Summary with Chart -->
     {% if portfolio.accounts_by_type %}
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Accounts by Type</h2>
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {% for account_type, info in portfolio.accounts_by_type.items %}
-                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border-l-4 border-indigo-500">
-                        <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">{{ account_type }}</p>
-                        <p class="text-2xl font-bold text-gray-900 dark:text-white mt-2">{{ info.count }}</p>
-                        <p class="text-sm text-indigo-600 dark:text-indigo-400 mt-1 font-semibold">${{ info.total_value|floatformat:0|intcomma }}</p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">{{ info.percentage }}% of portfolio</p>
-                    </div>
-                {% endfor %}
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Chart -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Portfolio Breakdown</h2>
+                <div style="position: relative; height: 300px;">
+                    <canvas id="accountTypeChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Summary Table -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Accounts by Type</h2>
+                <div class="space-y-3">
+                    {% for account_type, info in portfolio.accounts_by_type.items %}
+                        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <div>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">{{ account_type }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ info.count }} account{{ info.count|pluralize }}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-lg font-bold text-gray-900 dark:text-white">${{ info.total_value|floatformat:0|intcomma }}</p>
+                                <p class="text-xs text-indigo-600 dark:text-indigo-400 font-semibold mt-1">{{ info.percentage }}%</p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
             </div>
         </div>
+
+        <script>
+            // Chart.js configuration for account type breakdown
+            const ctx = document.getElementById('accountTypeChart').getContext('2d');
+
+            const chartData = {
+                labels: [
+                    {% for account_type in portfolio.accounts_by_type.keys %}
+                        "{{ account_type }}",
+                    {% endfor %}
+                ],
+                datasets: [{
+                    data: [
+                        {% for info in portfolio.accounts_by_type.values %}
+                            {{ info.total_value }},
+                        {% endfor %}
+                    ],
+                    backgroundColor: [
+                        '#4F46E5', '#7C3AED', '#DB2777', '#DC2626', '#EA580C', '#D97706',
+                        '#059669', '#0891B2', '#0284C7', '#1D4ED8', '#5B21B6', '#831843'
+                    ],
+                    borderColor: [
+                        '#312E81', '#5B21B6', '#831843', '#7F1D1D', '#7C2D12', '#78350F',
+                        '#065F46', '#164E63', '#0C4A6E', '#1E3A8A', '#3F0F5C', '#500724'
+                    ],
+                    borderWidth: 2,
+                }]
+            };
+
+            const accountTypeChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: { size: 12, family: "'Inter', sans-serif" },
+                                color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#4B5563',
+                                padding: 15,
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: document.documentElement.classList.contains('dark') ? '#1F2937' : '#FFF',
+                            titleColor: document.documentElement.classList.contains('dark') ? '#F3F4F6' : '#000',
+                            bodyColor: document.documentElement.classList.contains('dark') ? '#E5E7EB' : '#000',
+                            borderColor: document.documentElement.classList.contains('dark') ? '#4B5563' : '#DDD',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: true,
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.parsed;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `$${value.toLocaleString('en-US', {maximumFractionDigits: 0})} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        </script>
     {% endif %}
 </div>
 
