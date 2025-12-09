@@ -408,6 +408,7 @@ class AccountValueHistoryDeleteView(LoginRequiredMixin, DeleteView):
     """View for deleting an account value history record."""
 
     model = AccountValueHistory
+    template_name = 'jretirewise/accountvaluehistory_confirm_delete.html'
     login_url = 'account_login'
 
     def get_queryset(self):
