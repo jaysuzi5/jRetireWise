@@ -107,8 +107,8 @@ class PortfolioDetailView(LoginRequiredMixin, DetailView):
             weighted_growth = 0
             for account in accounts:
                 if account.current_value > 0:
-                    weight = account.current_value / portfolio.total_value
-                    weighted_growth += account.default_growth_rate * weight
+                    weight = float(account.current_value) / portfolio.total_value
+                    weighted_growth += float(account.default_growth_rate) * weight
             portfolio.weighted_growth_rate = round(weighted_growth, 2)
         else:
             portfolio.weighted_growth_rate = 0
