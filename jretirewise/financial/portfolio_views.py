@@ -363,3 +363,65 @@ class AccountRecordValueView(LoginRequiredMixin, CreateView):
             'recorded_date': date.today(),
             'source': 'manual',
         }
+
+
+class AccountValueHistoryUpdateView(LoginRequiredMixin, UpdateView):
+    """View for editing an account value history record."""
+
+    model = AccountValueHistory
+    form_class = AccountValueHistoryForm
+    template_name = 'jretirewise/account_record_value.html'
+    login_url = 'account_login'
+
+    def get_queryset(self):
+        """Return value histories for current user's accounts only."""
+        return AccountValueHistory.objects.filter(account__portfolio__user=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        """Add account to context."""
+        context = super().get_context_data(**kwargs)
+        history = self.get_object()
+        context['account'] = history.account
+        context['recent_history'] = history.account.value_history.all().order_by('-recorded_date')[:5]
+        context['page_title'] = f'Edit Value Record - {history.account.account_name}'
+        return context
+
+    def form_valid(self, form):
+        """Update the value history record and account current value."""
+        history = form.save(commit=False)
+        account = history.account
+
+        # Update account's current value if value changed
+        account.current_value = form.instance.value
+        account.save()
+
+        messages.success(self.request, f'Value updated for {account.account_name}!')
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        """Redirect to account detail after updating."""
+        history = self.get_object()
+        return reverse_lazy('financial:account-detail', kwargs={'pk': history.account.pk})
+
+
+class AccountValueHistoryDeleteView(LoginRequiredMixin, DeleteView):
+    """View for deleting an account value history record."""
+
+    model = AccountValueHistory
+    login_url = 'account_login'
+
+    def get_queryset(self):
+        """Return value histories for current user's accounts only."""
+        return AccountValueHistory.objects.filter(account__portfolio__user=self.request.user)
+
+    def get_success_url(self):
+        """Redirect to account detail after deletion."""
+        history = self.get_object()
+        return reverse_lazy('financial:account-detail', kwargs={'pk': history.account.pk})
+
+    def delete(self, request, *args, **kwargs):
+        """Delete and show success message."""
+        history = self.get_object()
+        account_name = history.account.account_name
+        messages.success(request, f'Value record deleted for {account_name}!')
+        return super().delete(request, *args, **kwargs)

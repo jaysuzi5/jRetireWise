@@ -14,6 +14,8 @@ from .portfolio_views import (
     AccountUpdateView,
     AccountDeleteView,
     AccountRecordValueView,
+    AccountValueHistoryUpdateView,
+    AccountValueHistoryDeleteView,
 )
 
 app_name = 'financial'
@@ -34,4 +36,6 @@ urlpatterns = [
 
     # Account Value Recording URLs
     path('accounts/<int:account_id>/record-value/', AccountRecordValueView.as_view(), name='account-record-value'),
+    path('value-history/<int:pk>/edit/', AccountValueHistoryUpdateView.as_view(), name='value-history-edit'),
+    path('value-history/<int:pk>/delete/', AccountValueHistoryDeleteView.as_view(), name='value-history-delete'),
 ]
