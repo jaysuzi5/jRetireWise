@@ -168,7 +168,7 @@
                                         {% if history.change_amount >= 0 %}
                                             <span class="text-green-600 dark:text-green-400">+${{ history.change_amount|floatformat:0|intcomma }}</span>
                                         {% else %}
-                                            <span class="text-red-600 dark:text-red-400">-${{ history.change_amount|abs|floatformat:0|intcomma }}</span>
+                                            <span class="text-red-600 dark:text-red-400">-${{ history.change_amount_abs|floatformat:0|intcomma }}</span>
                                         {% endif %}
                                     {% else %}
                                         <span class="text-gray-400">-</span>

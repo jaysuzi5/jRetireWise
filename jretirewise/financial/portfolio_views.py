@@ -200,10 +200,12 @@ class AccountDetailView(LoginRequiredMixin, DetailView):
                 # There's a previous entry (older entry since ordered by -recorded_date)
                 previous_value = value_history_list[i + 1].value
                 history.change_amount = history.value - previous_value
+                history.change_amount_abs = abs(history.change_amount)
                 history.change_percent = (history.change_amount / previous_value * 100) if previous_value != 0 else 0
             else:
                 # No previous entry, can't calculate change
                 history.change_amount = None
+                history.change_amount_abs = None
                 history.change_percent = None
 
         context['value_history'] = value_history_list
