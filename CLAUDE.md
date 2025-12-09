@@ -50,6 +50,48 @@ This is an experimental project being developed in close-to-production mode with
 7. **Push to GitHub regularly** - Ensure backups are current
 8. **Error recovery** - If something breaks, use git to revert and re-approach
 
+## 🔴 CRITICAL: Git Branch Workflow
+
+**⚠️ NEVER COMMIT CODE DIRECTLY TO THE MAIN BRANCH**
+
+### Mandatory Workflow
+1. **Always create feature branch first** - Format: `{phase}_{description}` (e.g., `02_1_advanced_calculation_engines`)
+2. **All development on feature branch** - Every commit to feature branch
+3. **Test on feature branch** - All tests must pass before merge
+4. **Merge only when validated** - Feature branch → main (via fast-forward or merge commit)
+5. **Push to GitHub after merge** - Triggers CI/CD pipeline
+
+### Process
+```bash
+# WRONG - Never do this:
+git checkout main
+git add . && git commit -m "message"  # ❌ WRONG
+
+# RIGHT - Always do this:
+git checkout -b 02_1_feature_name     # Create feature branch
+git add . && git commit -m "message"  # Commit to feature branch
+git push origin 02_1_feature_name     # Push feature branch
+# Test and validate...
+git checkout main
+git pull origin main                  # Ensure main is up to date
+git merge 02_1_feature_name           # Merge feature → main
+git push origin main                  # Push to GitHub (triggers CI/CD)
+```
+
+### Why This Matters
+- ✅ Feature branches allow isolated development
+- ✅ Main branch stays clean and deployable
+- ✅ Easy to revert entire features if needed
+- ✅ CI/CD pipeline only triggered on main changes
+- ✅ Clear history of feature implementations
+- ✅ Prevents accidental breaking changes to production
+
+### Examples Done Wrong (Learn from Mistakes)
+- ❌ Phase 2.1: Code was committed to main instead of feature branch
+  - Should have stayed on `02_1_Advanced_Calculation_Engines` branch
+  - Merged to main only after all validation complete
+  - This is now corrected for future phases
+
 ✅ **When to Still Communicate**
 - Only when you genuinely cannot determine the best path forward
 - When there are multiple equally valid architectural approaches with significant tradeoffs
