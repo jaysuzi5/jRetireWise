@@ -14,7 +14,7 @@ from jretirewise.financial.views import (
     AssetViewSet, IncomeSourceViewSet, ExpenseViewSet, FinancialProfileViewSet,
     PortfolioViewSet, AccountViewSet, AccountValueHistoryViewSet, PortfolioSnapshotViewSet,
 )
-from jretirewise.scenarios.views import ScenarioViewSet
+from jretirewise.scenarios.views import ScenarioViewSet, WithdrawalBucketViewSet
 from jretirewise.calculations.views import CalculationView
 
 
@@ -36,6 +36,8 @@ router.register(r'income-sources', IncomeSourceViewSet, basename='income-source'
 router.register(r'expenses', ExpenseViewSet, basename='expense')
 router.register(r'financial-profile', FinancialProfileViewSet, basename='financial-profile')
 router.register(r'scenarios', ScenarioViewSet, basename='scenario')
+# Phase 2.1 endpoints
+router.register(r'withdrawal-buckets', WithdrawalBucketViewSet, basename='withdrawal-bucket')
 # Phase 2.0 endpoints
 router.register(r'portfolios', PortfolioViewSet, basename='portfolio')
 router.register(r'accounts', AccountViewSet, basename='account')
