@@ -132,7 +132,51 @@
         </div>
     </div>
 
-    <!-- Value History -->
+    <!-- Value History Chart and Analysis -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Growth Trend Analysis</h2>
+
+        {% if value_history %}
+            <div style="position: relative; height: 400px; margin-bottom: 6rem;">
+                <canvas id="valueHistoryChart"></canvas>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Total Growth</p>
+                    <p class="text-2xl font-bold text-green-600 dark:text-green-400 mt-2">
+                        {% if value_history|length > 1 %}
+                            +${{ first_to_last_change|floatformat:0|intcomma }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Growth Rate (Period)</p>
+                    <p class="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-2">
+                        {% if value_history|length > 1 %}
+                            {{ period_growth_rate|floatformat:2 }}%
+                        {% else %}
+                            -
+                        {% endif %}
+                    </p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Time Period</p>
+                    <p class="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-2">
+                        {% if value_history|length > 1 %}
+                            {{ days_elapsed }} days
+                        {% else %}
+                            -
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Value History Table -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg">
         <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
             <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Value History</h2>
@@ -211,4 +255,114 @@
         {% endif %}
     </div>
 </div>
+
+{% if value_history %}
+<script>
+    // Chart.js configuration for value history timeline
+    const ctx = document.getElementById('valueHistoryChart');
+    if (ctx) {
+        const ctxContext = ctx.getContext('2d');
+
+        // Prepare data in chronological order (reverse of display order)
+        const historicalData = [
+            {% for history in value_history|dictsort:"recorded_date" %}
+                {
+                    date: "{{ history.recorded_date|date:'M d, Y' }}",
+                    value: {{ history.value }},
+                    raw_date: "{{ history.recorded_date|date:'Y-m-d' }}"
+                },
+            {% endfor %}
+        ];
+
+        const chartData = {
+            labels: historicalData.map(d => d.date),
+            datasets: [{
+                label: 'Account Value',
+                data: historicalData.map(d => d.value),
+                borderColor: '#4F46E5',
+                backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 5,
+                pointBackgroundColor: '#4F46E5',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointHoverRadius: 7,
+                yAxisID: 'y'
+            }]
+        };
+
+        const valueHistoryChart = new Chart(ctxContext, {
+            type: 'line',
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            font: { size: 12, family: "'Inter', sans-serif", weight: 'bold' },
+                            color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#4B5563',
+                            padding: 15,
+                            usePointStyle: true
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: document.documentElement.classList.contains('dark') ? '#1F2937' : '#FFF',
+                        titleColor: document.documentElement.classList.contains('dark') ? '#F3F4F6' : '#000',
+                        bodyColor: document.documentElement.classList.contains('dark') ? '#E5E7EB' : '#000',
+                        borderColor: document.documentElement.classList.contains('dark') ? '#4B5563' : '#DDD',
+                        borderWidth: 1,
+                        padding: 12,
+                        displayColors: true,
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.parsed.y;
+                                return `$${value.toLocaleString('en-US', {maximumFractionDigits: 0})}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Account Value ($)',
+                            color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#666',
+                            font: { size: 12, family: "'Inter', sans-serif" }
+                        },
+                        grid: {
+                            color: document.documentElement.classList.contains('dark') ? '#374151' : '#E5E7EB',
+                            drawBorder: true
+                        },
+                        ticks: {
+                            color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#666',
+                            callback: function(value) {
+                                return '$' + value.toLocaleString('en-US', {maximumFractionDigits: 0});
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#666'
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endif %}
 {% endblock %}

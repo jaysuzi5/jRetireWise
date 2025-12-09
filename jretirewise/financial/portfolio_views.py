@@ -207,6 +207,8 @@ class AccountDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         """Add value history to context."""
+        from datetime import timedelta
+
         context = super().get_context_data(**kwargs)
         account = context['account']
 
@@ -228,6 +230,34 @@ class AccountDetailView(LoginRequiredMixin, DetailView):
                 history.change_percent = None
 
         context['value_history'] = value_history_list
+
+        # Calculate historical analysis metrics
+        if len(value_history_list) > 1:
+            # Get all history in chronological order
+            all_history = list(account.value_history.all().order_by('recorded_date'))
+
+            if len(all_history) > 1:
+                first_value = float(all_history[0].value)
+                last_value = float(all_history[-1].value)
+
+                # Total growth amount
+                first_to_last_change = last_value - first_value
+                context['first_to_last_change'] = first_to_last_change
+
+                # Period growth rate
+                if first_value > 0:
+                    period_growth_rate = ((last_value - first_value) / first_value) * 100
+                    context['period_growth_rate'] = period_growth_rate
+                else:
+                    context['period_growth_rate'] = 0
+
+                # Days elapsed
+                days_elapsed = (all_history[-1].recorded_date - all_history[0].recorded_date).days
+                context['days_elapsed'] = days_elapsed if days_elapsed > 0 else 1
+            else:
+                context['first_to_last_change'] = 0
+                context['period_growth_rate'] = 0
+                context['days_elapsed'] = 0
 
         return context
 
