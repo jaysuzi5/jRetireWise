@@ -271,6 +271,15 @@ All changes have been:
 3. Verification that forms save correctly
 4. Any additional adjustments based on user feedback
 
+## Bug Fixes Applied During Testing
+
+### Type Mismatch Error Fixed (ADDITIONAL FIX)
+**Issue**: TypeError at /financial/portfolios/ - "unsupported operand type(s) for /: 'float' and 'decimal.Decimal'"
+**Root Cause**: Django DecimalField stores values as Decimal objects, not floats. Division of float by Decimal is not supported.
+**Solution**: Convert sum() result to float before division in percentage calculation
+**Files Modified**: `jretirewise/financial/portfolio_views.py` (lines 33, 82)
+**Status**: ✅ FIXED - Portfolio pages now load successfully
+
 ## Known Limitations
 - Edit/Delete buttons on value history show placeholder alerts (implementation pending)
 - No backend validation for form fields (using model defaults)
