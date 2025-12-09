@@ -30,7 +30,7 @@ class PortfolioListView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         for portfolio in context['portfolios']:
             portfolio.account_count = portfolio.accounts.filter(status='active').count()
-            portfolio.total_value = sum(acc.current_value for acc in portfolio.accounts.all())
+            portfolio.total_value = float(sum(acc.current_value for acc in portfolio.accounts.all()))
 
             # Group accounts by type
             accounts_by_type = {}
@@ -79,7 +79,7 @@ class PortfolioDetailView(LoginRequiredMixin, DetailView):
 
         # Calculate totals
         portfolio.account_count = accounts.filter(status='active').count()
-        portfolio.total_value = sum(acc.current_value for acc in accounts)
+        portfolio.total_value = float(sum(acc.current_value for acc in accounts))
 
         # Group accounts by type
         accounts_by_type = {}
