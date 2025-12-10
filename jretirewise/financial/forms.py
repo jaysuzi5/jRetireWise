@@ -141,8 +141,71 @@ class PortfolioForm(forms.ModelForm):
         }
 
 
+class PercentageDecimalField(forms.DecimalField):
+    """Custom DecimalField for percentage inputs that converts to/from percentage format."""
+
+    def to_python(self, value):
+        """Convert percentage input (6.0) to decimal (0.06)."""
+        if value is None or value == '':
+            return value
+        try:
+            # Get the raw value first
+            numeric_value = float(value)
+            # If it's in percentage format (0-100 range), convert to decimal
+            if numeric_value > 1:
+                numeric_value = numeric_value / 100
+            return Decimal(str(numeric_value))
+        except (ValueError, TypeError):
+            return value
+
+    def clean(self, value):
+        """Validate after conversion to decimal."""
+        if value is None or value == '':
+            return value
+        try:
+            # Convert percentage to decimal if needed
+            if isinstance(value, str):
+                numeric_value = float(value)
+                if numeric_value > 1:
+                    numeric_value = numeric_value / 100
+                value = Decimal(str(numeric_value))
+            # Run parent validation on the decimal value
+            return super().clean(value)
+        except (ValueError, TypeError):
+            raise forms.ValidationError('Enter a valid decimal number.')
+
+
 class AccountForm(forms.ModelForm):
     """Form for creating and updating accounts."""
+
+    # Override percentage fields with custom field class
+    default_growth_rate = PercentageDecimalField(
+        required=False,
+        widget=PercentageNumberInput(attrs={
+            'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+            'placeholder': '7.0',
+            'step': '0.1'
+        }),
+        help_text='Expected annual return as percentage (e.g., 7.0 for 7%)'
+    )
+    inflation_adjustment = PercentageDecimalField(
+        required=False,
+        widget=PercentageNumberInput(attrs={
+            'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+            'placeholder': '0.0',
+            'step': '0.1'
+        }),
+        help_text='Inflation adjustment as percentage (e.g., 3.0 for 3%)'
+    )
+    expected_contribution_rate = PercentageDecimalField(
+        required=False,
+        widget=PercentageNumberInput(attrs={
+            'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+            'placeholder': '0.0',
+            'step': '0.1'
+        }),
+        help_text='Expected contributions as percentage (e.g., 5.0 for 5%)'
+    )
 
     class Meta:
         model = Account
@@ -171,21 +234,6 @@ class AccountForm(forms.ModelForm):
                 'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
                 'placeholder': '0.00',
                 'step': '0.01'
-            }),
-            'default_growth_rate': PercentageNumberInput(attrs={
-                'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
-                'placeholder': '7.0',
-                'step': '0.1'
-            }),
-            'inflation_adjustment': PercentageNumberInput(attrs={
-                'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
-                'placeholder': '0.0',
-                'step': '0.1'
-            }),
-            'expected_contribution_rate': PercentageNumberInput(attrs={
-                'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
-                'placeholder': '0.0',
-                'step': '0.1'
             }),
             'withdrawal_priority': forms.NumberInput(attrs={
                 'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
@@ -223,24 +271,19 @@ class AccountForm(forms.ModelForm):
             if self.instance.expected_contribution_rate is not None:
                 self.fields['expected_contribution_rate'].initial = float(self.instance.expected_contribution_rate) * 100
         else:
-            # Creating new account - set default to 7.0
-            self.fields['default_growth_rate'].initial = 7.0
-            self.fields['inflation_adjustment'].initial = 0.0
-            self.fields['expected_contribution_rate'].initial = 0.0
+            # Creating new account - set defaults
+            if 'default_growth_rate' in self.fields:
+                self.fields['default_growth_rate'].initial = 7.0
+            if 'inflation_adjustment' in self.fields:
+                self.fields['inflation_adjustment'].initial = 0.0
+            if 'expected_contribution_rate' in self.fields:
+                self.fields['expected_contribution_rate'].initial = 0.0
 
     def clean(self):
-        """Convert percentages back to decimals for storage."""
+        """Validate form data."""
         cleaned_data = super().clean()
-
-        # Convert percentage inputs back to decimals for storage
-        if 'default_growth_rate' in cleaned_data and cleaned_data['default_growth_rate'] is not None:
-            # Convert percentage (e.g., 3.5) to decimal (0.035) using Decimal for precision
-            cleaned_data['default_growth_rate'] = Decimal(str(cleaned_data['default_growth_rate'])) / Decimal('100')
-        if 'inflation_adjustment' in cleaned_data and cleaned_data['inflation_adjustment'] is not None:
-            cleaned_data['inflation_adjustment'] = Decimal(str(cleaned_data['inflation_adjustment'])) / Decimal('100')
-        if 'expected_contribution_rate' in cleaned_data and cleaned_data['expected_contribution_rate'] is not None:
-            cleaned_data['expected_contribution_rate'] = Decimal(str(cleaned_data['expected_contribution_rate'])) / Decimal('100')
-
+        # PercentageDecimalField already converts percentages to decimals in to_python()
+        # No additional conversion needed here
         return cleaned_data
 
 
