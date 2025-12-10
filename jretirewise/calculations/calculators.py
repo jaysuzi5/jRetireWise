@@ -43,9 +43,10 @@ class RetirementCalculator:
         # Use Decimal for monetary values to ensure precision
         self.portfolio_value = Decimal(str(portfolio_value))
         self.annual_spending = Decimal(str(annual_spending))
-        self.current_age = current_age
-        self.retirement_age = retirement_age
-        self.life_expectancy = life_expectancy
+        # Ensure ages are integers for range() operations
+        self.current_age = int(current_age)
+        self.retirement_age = int(retirement_age)
+        self.life_expectancy = int(life_expectancy)
         self.annual_return_rate = Decimal(str(annual_return_rate))
         self.inflation_rate = Decimal(str(inflation_rate))
 
@@ -241,8 +242,9 @@ class DynamicBucketedWithdrawalCalculator:
                  inflation_rate: float = 0.03):
         """Initialize calculator with base parameters."""
         self.portfolio_value = Decimal(str(portfolio_value))
-        self.retirement_age = retirement_age
-        self.life_expectancy = life_expectancy
+        # Ensure ages are integers for range() operations
+        self.retirement_age = int(retirement_age)
+        self.life_expectancy = int(life_expectancy)
         self.annual_return_rate = Decimal(str(annual_return_rate))
         self.inflation_rate = Decimal(str(inflation_rate))
 
