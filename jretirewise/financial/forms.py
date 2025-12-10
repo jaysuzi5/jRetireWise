@@ -157,8 +157,7 @@ class AccountForm(forms.ModelForm):
             'default_growth_rate': forms.NumberInput(attrs={
                 'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
                 'placeholder': '7.0',
-                'step': '0.1',
-                'value': '7.0'
+                'step': '0.1'
             }),
             'inflation_adjustment': forms.NumberInput(attrs={
                 'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
@@ -191,6 +190,37 @@ class AccountForm(forms.ModelForm):
                 'rows': 3
             }),
         }
+
+    def __init__(self, *args, **kwargs):
+        """Initialize form and convert decimal growth rates to percentages for display."""
+        super().__init__(*args, **kwargs)
+
+        # Convert decimal growth rates (0.07) to percentages (7.0) for display
+        if self.instance and self.instance.pk:
+            # Editing existing account
+            if self.instance.default_growth_rate is not None:
+                self.fields['default_growth_rate'].initial = float(self.instance.default_growth_rate) * 100
+            if self.instance.inflation_adjustment is not None:
+                self.fields['inflation_adjustment'].initial = float(self.instance.inflation_adjustment) * 100
+            if self.instance.expected_contribution_rate is not None:
+                self.fields['expected_contribution_rate'].initial = float(self.instance.expected_contribution_rate) * 100
+        else:
+            # Creating new account - set default to 7.0
+            self.fields['default_growth_rate'].initial = 7.0
+
+    def clean(self):
+        """Convert percentages back to decimals for storage."""
+        cleaned_data = super().clean()
+
+        # Convert percentage inputs back to decimals for storage
+        if 'default_growth_rate' in cleaned_data and cleaned_data['default_growth_rate'] is not None:
+            cleaned_data['default_growth_rate'] = cleaned_data['default_growth_rate'] / 100
+        if 'inflation_adjustment' in cleaned_data and cleaned_data['inflation_adjustment'] is not None:
+            cleaned_data['inflation_adjustment'] = cleaned_data['inflation_adjustment'] / 100
+        if 'expected_contribution_rate' in cleaned_data and cleaned_data['expected_contribution_rate'] is not None:
+            cleaned_data['expected_contribution_rate'] = cleaned_data['expected_contribution_rate'] / 100
+
+        return cleaned_data
 
 
 class AccountValueHistoryForm(forms.ModelForm):
