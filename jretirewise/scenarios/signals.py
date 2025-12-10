@@ -38,16 +38,34 @@ def run_scenario_calculation(sender, instance, created, **kwargs):
             result.save()
             return
 
+        # Get portfolio value - prefer user's portfolio from the portfolio screens
+        # Fall back to financial profile if portfolio doesn't exist
+        try:
+            user_portfolio = instance.user.portfolio
+            portfolio_value = float(user_portfolio.get_total_value())
+        except:
+            portfolio_value = float(parameters.get('portfolio_value', financial_profile.current_portfolio_value))
+
         # Use scenario parameters or fall back to user's financial profile
-        portfolio_value = float(parameters.get('portfolio_value', financial_profile.current_portfolio_value))
         annual_spending = float(parameters.get('annual_spending', financial_profile.annual_spending))
         current_age = int(parameters.get('current_age', financial_profile.current_age))
         retirement_age = int(parameters.get('retirement_age', financial_profile.retirement_age))
         life_expectancy = int(parameters.get('life_expectancy', financial_profile.life_expectancy))
 
         # Optional parameters with defaults
-        # Accept both 'annual_return' and 'annual_return_rate' for flexibility
-        annual_return_rate = float(parameters.get('annual_return_rate') or parameters.get('annual_return', 0.07))
+        # For annual return rate: try to use portfolio's weighted growth rate, then fallback to parameter or 7%
+        annual_return_rate = 0.07  # Default
+        if parameters.get('annual_return_rate') or parameters.get('annual_return'):
+            annual_return_rate = float(parameters.get('annual_return_rate') or parameters.get('annual_return'))
+        else:
+            # Try to get weighted growth rate from portfolio
+            try:
+                user_portfolio = instance.user.portfolio
+                if hasattr(user_portfolio, 'weighted_growth_rate') and user_portfolio.weighted_growth_rate:
+                    annual_return_rate = float(user_portfolio.weighted_growth_rate) / 100.0  # Convert from percentage
+            except:
+                pass  # Use default 0.07
+
         inflation_rate = float(parameters.get('inflation_rate', 0.03))
 
         # Track which values came from parameters vs defaults for display
@@ -96,6 +114,18 @@ def run_scenario_calculation(sender, instance, created, **kwargs):
                 annual_return_rate=annual_return_rate,
                 inflation_rate=inflation_rate,
             )
+        elif instance.calculator_type == 'monte_carlo':
+            # Monte Carlo calculator not yet implemented
+            result.status = 'failed'
+            result.error_message = 'Monte Carlo calculator is not yet implemented. Please use the 4% Rule or 4.7% Rule calculators.'
+            result.save()
+            return
+        elif instance.calculator_type == 'historical':
+            # Historical analysis calculator not yet implemented
+            result.status = 'failed'
+            result.error_message = 'Historical analysis calculator is not yet implemented. Please use the 4% Rule or 4.7% Rule calculators.'
+            result.save()
+            return
         else:
             result.status = 'failed'
             result.error_message = f'Unsupported calculator type: {instance.calculator_type}'
