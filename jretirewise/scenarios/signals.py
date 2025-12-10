@@ -48,21 +48,31 @@ def run_scenario_calculation(sender, instance, created, **kwargs):
 
         # Use scenario parameters or fall back to user's financial profile
         annual_spending = float(parameters.get('annual_spending', financial_profile.annual_spending))
-        current_age = int(parameters.get('current_age', financial_profile.current_age))
-        retirement_age = int(parameters.get('retirement_age', financial_profile.retirement_age))
+        # Keep decimal precision for ages instead of converting to int
+        current_age = float(parameters.get('current_age', financial_profile.current_age))
+        retirement_age = float(parameters.get('retirement_age', financial_profile.retirement_age))
         life_expectancy = int(parameters.get('life_expectancy', financial_profile.life_expectancy))
 
         # Optional parameters with defaults
         # For annual return rate: try to use portfolio's weighted growth rate, then fallback to parameter or 7%
-        annual_return_rate = 0.07  # Default
+        annual_return_rate = 0.07  # Default fallback
         if parameters.get('annual_return_rate') or parameters.get('annual_return'):
             annual_return_rate = float(parameters.get('annual_return_rate') or parameters.get('annual_return'))
         else:
-            # Try to get weighted growth rate from portfolio
+            # Try to get weighted growth rate from portfolio by calculating it from accounts
             try:
                 user_portfolio = instance.user.portfolio
-                if hasattr(user_portfolio, 'weighted_growth_rate') and user_portfolio.weighted_growth_rate:
-                    annual_return_rate = float(user_portfolio.weighted_growth_rate) / 100.0  # Convert from percentage
+                accounts = user_portfolio.accounts.filter(status='active')
+                portfolio_total_value = sum(float(acc.current_value) for acc in accounts) if accounts else 0
+
+                if portfolio_total_value > 0:
+                    # Calculate weighted average growth rate from accounts
+                    weighted_growth = sum(
+                        float(acc.default_growth_rate) * (float(acc.current_value) / portfolio_total_value)
+                        for acc in accounts if acc.current_value > 0
+                    )
+                    if weighted_growth > 0:
+                        annual_return_rate = weighted_growth  # Already in decimal form (0.0347 for 3.47%)
             except:
                 pass  # Use default 0.07
 
