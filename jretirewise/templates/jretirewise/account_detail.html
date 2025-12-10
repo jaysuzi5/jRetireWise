@@ -13,8 +13,8 @@
                 <div>
                     <h1 class="text-4xl font-bold text-gray-900 dark:text-white">{{ account.account_name }}</h1>
                     <p class="mt-2 text-gray-600 dark:text-gray-400">
-                        <a href="{% url 'financial:portfolio-detail' account.portfolio.id %}" class="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300">
-                            {{ account.portfolio.name }}
+                        <a href="{% url 'financial:portfolio' %}" class="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300">
+                            ← Back to Portfolio
                         </a>
                     </p>
                 </div>
@@ -24,7 +24,7 @@
             <a href="{% url 'financial:account-edit' account.id %}" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition duration-200">
                 Edit
             </a>
-            <a href="{% url 'financial:portfolio-detail' account.portfolio.id %}" class="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition duration-200">
+            <a href="{% url 'financial:portfolio' %}" class="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition duration-200">
                 Back
             </a>
         </div>
