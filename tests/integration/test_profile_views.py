@@ -153,7 +153,6 @@ class ProfileViewIntegrationTestCase(TestCase):
         required_fields = [
             'current_age',
             'retirement_age',
-            'current_portfolio_value',
             'annual_spending',
         ]
 
@@ -161,7 +160,6 @@ class ProfileViewIntegrationTestCase(TestCase):
             'current_age': 35,
             'retirement_age': 65,
             'life_expectancy': 95,
-            'current_portfolio_value': '500000.00',
             'annual_spending': '80000.00',
             'social_security_annual': '0.00',
             'pension_annual': '0.00',
