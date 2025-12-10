@@ -41,7 +41,6 @@ class ProfileViewIntegrationTestCase(TestCase):
             'current_age': 35,
             'retirement_age': 65,
             'life_expectancy': 95,
-            'current_portfolio_value': '500000.00',
             'annual_spending': '80000.00',
             'social_security_annual': '20000.00',
             'pension_annual': '0.00',
@@ -53,7 +52,7 @@ class ProfileViewIntegrationTestCase(TestCase):
         profile = FinancialProfile.objects.get(user=self.user)
         assert profile.current_age == 35
         assert profile.retirement_age == 65
-        assert float(profile.current_portfolio_value) == 500000.00
+        assert float(profile.annual_spending) == 80000.00
 
     def test_update_existing_profile(self):
         """Test updating an existing financial profile."""
@@ -71,7 +70,6 @@ class ProfileViewIntegrationTestCase(TestCase):
             'current_age': 35,
             'retirement_age': 65,
             'life_expectancy': 95,
-            'current_portfolio_value': '600000.00',
             'annual_spending': '90000.00',
             'social_security_annual': '25000.00',
             'pension_annual': '10000.00',
@@ -83,8 +81,8 @@ class ProfileViewIntegrationTestCase(TestCase):
         profile.refresh_from_db()
         assert profile.current_age == 35
         assert profile.retirement_age == 65
-        assert float(profile.current_portfolio_value) == 600000.00
         assert float(profile.annual_spending) == 90000.00
+        assert float(profile.social_security_annual) == 25000.00
 
     def test_profile_form_validation_error(self):
         """Test that validation errors are displayed."""
@@ -92,7 +90,6 @@ class ProfileViewIntegrationTestCase(TestCase):
             'current_age': 70,  # Invalid: greater than retirement age
             'retirement_age': 65,
             'life_expectancy': 95,
-            'current_portfolio_value': '500000.00',
             'annual_spending': '80000.00',
             'social_security_annual': '0.00',
             'pension_annual': '0.00',
@@ -140,7 +137,6 @@ class ProfileViewIntegrationTestCase(TestCase):
             'current_age': 35,
             'retirement_age': 65,
             'life_expectancy': 95,
-            'current_portfolio_value': '500000.00',
             'annual_spending': '80000.00',
             'social_security_annual': '20000.00',
             'pension_annual': '0.00',
