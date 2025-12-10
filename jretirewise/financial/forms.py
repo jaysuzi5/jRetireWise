@@ -262,22 +262,21 @@ class AccountForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         # Convert decimal growth rates (0.07) to percentages (7.0) for display
+        # Must set self.initial dict for ModelForm rendering to pick up the converted values
+        # Use Decimal math to avoid floating point imprecision
         if self.instance and self.instance.pk:
             # Editing existing account - convert decimal values to percentages for display
             if self.instance.default_growth_rate is not None:
-                self.fields['default_growth_rate'].initial = float(self.instance.default_growth_rate) * 100
+                self.initial['default_growth_rate'] = float(Decimal(str(self.instance.default_growth_rate)) * Decimal('100'))
             if self.instance.inflation_adjustment is not None:
-                self.fields['inflation_adjustment'].initial = float(self.instance.inflation_adjustment) * 100
+                self.initial['inflation_adjustment'] = float(Decimal(str(self.instance.inflation_adjustment)) * Decimal('100'))
             if self.instance.expected_contribution_rate is not None:
-                self.fields['expected_contribution_rate'].initial = float(self.instance.expected_contribution_rate) * 100
+                self.initial['expected_contribution_rate'] = float(Decimal(str(self.instance.expected_contribution_rate)) * Decimal('100'))
         else:
             # Creating new account - set defaults
-            if 'default_growth_rate' in self.fields:
-                self.fields['default_growth_rate'].initial = 7.0
-            if 'inflation_adjustment' in self.fields:
-                self.fields['inflation_adjustment'].initial = 0.0
-            if 'expected_contribution_rate' in self.fields:
-                self.fields['expected_contribution_rate'].initial = 0.0
+            self.initial['default_growth_rate'] = 7.0
+            self.initial['inflation_adjustment'] = 0.0
+            self.initial['expected_contribution_rate'] = 0.0
 
     def clean(self):
         """Validate form data."""
