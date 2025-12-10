@@ -79,7 +79,7 @@ def run_scenario_calculation(sender, instance, created, **kwargs):
             'inflation_rate': parameters.get('inflation_rate') is not None,
         }
 
-        # Create a defaults dict showing actual values used
+        # Create a defaults dict showing which values were filled in from defaults (not user-provided)
         defaults_used = {
             'portfolio_value': portfolio_value if not values_used['portfolio_value'] else None,
             'annual_spending': annual_spending if not values_used['annual_spending'] else None,
@@ -89,6 +89,14 @@ def run_scenario_calculation(sender, instance, created, **kwargs):
             'annual_return_rate': annual_return_rate if not values_used['annual_return_rate'] else None,
             'inflation_rate': inflation_rate if not values_used['inflation_rate'] else None,
         }
+
+        # Convert annual_return_rate from decimal to percentage for display (0.07 -> 7.0)
+        if defaults_used['annual_return_rate'] is not None:
+            defaults_used['annual_return_rate'] = float(defaults_used['annual_return_rate']) * 100
+
+        # Convert inflation_rate from decimal to percentage for display (0.03 -> 3.0)
+        if defaults_used['inflation_rate'] is not None:
+            defaults_used['inflation_rate'] = float(defaults_used['inflation_rate']) * 100
 
         # Time the calculation
         start_time = time.time()

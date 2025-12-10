@@ -3,6 +3,7 @@ Forms for financial app.
 """
 
 from django import forms
+from decimal import Decimal
 from .models import FinancialProfile, Asset, IncomeSource, Expense, Portfolio, Account, AccountValueHistory
 
 
@@ -207,6 +208,8 @@ class AccountForm(forms.ModelForm):
         else:
             # Creating new account - set default to 7.0
             self.fields['default_growth_rate'].initial = 7.0
+            self.fields['inflation_adjustment'].initial = 0.0
+            self.fields['expected_contribution_rate'].initial = 0.0
 
     def clean(self):
         """Convert percentages back to decimals for storage."""
@@ -214,11 +217,12 @@ class AccountForm(forms.ModelForm):
 
         # Convert percentage inputs back to decimals for storage
         if 'default_growth_rate' in cleaned_data and cleaned_data['default_growth_rate'] is not None:
-            cleaned_data['default_growth_rate'] = cleaned_data['default_growth_rate'] / 100
+            # Convert percentage (e.g., 3.5) to decimal (0.035) using Decimal for precision
+            cleaned_data['default_growth_rate'] = Decimal(str(cleaned_data['default_growth_rate'])) / Decimal('100')
         if 'inflation_adjustment' in cleaned_data and cleaned_data['inflation_adjustment'] is not None:
-            cleaned_data['inflation_adjustment'] = cleaned_data['inflation_adjustment'] / 100
+            cleaned_data['inflation_adjustment'] = Decimal(str(cleaned_data['inflation_adjustment'])) / Decimal('100')
         if 'expected_contribution_rate' in cleaned_data and cleaned_data['expected_contribution_rate'] is not None:
-            cleaned_data['expected_contribution_rate'] = cleaned_data['expected_contribution_rate'] / 100
+            cleaned_data['expected_contribution_rate'] = Decimal(str(cleaned_data['expected_contribution_rate'])) / Decimal('100')
 
         return cleaned_data
 
