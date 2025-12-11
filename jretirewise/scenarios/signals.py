@@ -8,7 +8,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.contrib.auth.models import User
 from .models import RetirementScenario, CalculationResult
-from jretirewise.calculations.calculators import FourPercentCalculator, FourPointSevenPercentCalculator
+from jretirewise.calculations.calculators import FourPercentCalculator, FourPointSevenPercentCalculator, MonteCarloCalculator
 
 logger = logging.getLogger(__name__)
 
@@ -133,11 +133,21 @@ def run_scenario_calculation(sender, instance, created, **kwargs):
                 inflation_rate=inflation_rate,
             )
         elif instance.calculator_type == 'monte_carlo':
-            # Monte Carlo calculator not yet implemented
-            result.status = 'failed'
-            result.error_message = 'Monte Carlo calculator is not yet implemented. Please use the 4% Rule or 4.7% Rule calculators.'
-            result.save()
-            return
+            # Get Monte Carlo specific parameters
+            return_std_dev = float(parameters.get('return_std_dev', 0.15))
+            num_simulations = int(parameters.get('num_simulations', 1000))
+
+            calculator = MonteCarloCalculator(
+                portfolio_value=portfolio_value,
+                annual_spending=annual_spending,
+                current_age=current_age,
+                retirement_age=retirement_age,
+                life_expectancy=life_expectancy,
+                annual_return_rate=annual_return_rate,
+                inflation_rate=inflation_rate,
+                return_std_dev=return_std_dev,
+                num_simulations=num_simulations,
+            )
         elif instance.calculator_type == 'historical':
             # Historical analysis calculator not yet implemented
             result.status = 'failed'

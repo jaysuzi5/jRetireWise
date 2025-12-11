@@ -229,6 +229,165 @@ class FourPointSevenPercentCalculator(RetirementCalculator):
         }
 
 
+class MonteCarloCalculator(RetirementCalculator):
+    """
+    Monte Carlo simulation calculator for retirement planning.
+
+    Runs thousands of simulations with randomized market returns to estimate
+    the probability of portfolio success over the retirement period.
+    """
+
+    def __init__(self, portfolio_value, annual_spending,
+                 current_age: int, retirement_age: int, life_expectancy: int,
+                 annual_return_rate: float = 0.07, inflation_rate: float = 0.03,
+                 return_std_dev: float = 0.15, num_simulations: int = 1000):
+        """
+        Initialize Monte Carlo calculator.
+
+        Args:
+            portfolio_value: Starting portfolio value
+            annual_spending: Annual spending needed
+            current_age: Current age
+            retirement_age: Age to start retirement
+            life_expectancy: Expected age of death
+            annual_return_rate: Expected average annual return (mean)
+            inflation_rate: Expected inflation rate
+            return_std_dev: Standard deviation of returns (volatility)
+            num_simulations: Number of Monte Carlo simulations to run
+        """
+        super().__init__(portfolio_value, annual_spending, current_age,
+                         retirement_age, life_expectancy, annual_return_rate,
+                         inflation_rate)
+        self.return_std_dev = float(return_std_dev)
+        self.num_simulations = int(num_simulations)
+
+    def calculate(self) -> Dict:
+        """
+        Run Monte Carlo simulation.
+
+        Returns:
+            Dictionary with simulation results, percentiles, and success metrics
+        """
+        years_in_retirement = self.life_expectancy - self.retirement_age
+
+        # Use numpy for efficient simulation
+        mean_return = float(self.annual_return_rate)
+        inflation = float(self.inflation_rate)
+        initial_withdrawal = float(self.portfolio_value) * 0.04  # 4% initial withdrawal
+
+        # Run all simulations
+        all_simulations = []
+        successful_simulations = 0
+
+        for sim in range(self.num_simulations):
+            portfolio = float(self.portfolio_value)
+            withdrawal = initial_withdrawal
+            yearly_values = [portfolio]
+            depleted_year = None
+
+            for year in range(1, years_in_retirement + 1):
+                # Random return from normal distribution
+                annual_return = np.random.normal(mean_return, self.return_std_dev)
+
+                # Apply return
+                portfolio = portfolio * (1 + annual_return)
+
+                # Adjust withdrawal for inflation
+                withdrawal = withdrawal * (1 + inflation)
+
+                # Make withdrawal
+                portfolio = portfolio - withdrawal
+
+                # Track if depleted
+                if portfolio <= 0:
+                    portfolio = 0
+                    if depleted_year is None:
+                        depleted_year = year
+
+                yearly_values.append(portfolio)
+
+            # Track success (portfolio never depleted)
+            if depleted_year is None:
+                successful_simulations += 1
+
+            all_simulations.append({
+                'yearly_values': yearly_values,
+                'final_value': portfolio,
+                'depleted_year': depleted_year,
+                'success': depleted_year is None
+            })
+
+        # Calculate success rate
+        success_rate = (successful_simulations / self.num_simulations) * 100
+
+        # Calculate percentiles for final portfolio values
+        final_values = [sim['final_value'] for sim in all_simulations]
+        percentiles = {
+            'p5': float(np.percentile(final_values, 5)),
+            'p10': float(np.percentile(final_values, 10)),
+            'p25': float(np.percentile(final_values, 25)),
+            'p50': float(np.percentile(final_values, 50)),  # Median
+            'p75': float(np.percentile(final_values, 75)),
+            'p90': float(np.percentile(final_values, 90)),
+            'p95': float(np.percentile(final_values, 95)),
+        }
+
+        # Calculate year-by-year percentile projections for charting
+        yearly_percentiles = []
+        for year in range(years_in_retirement + 1):
+            year_values = [sim['yearly_values'][year] for sim in all_simulations]
+            yearly_percentiles.append({
+                'year': year,
+                'age': self.retirement_age + year,
+                'p5': float(np.percentile(year_values, 5)),
+                'p10': float(np.percentile(year_values, 10)),
+                'p25': float(np.percentile(year_values, 25)),
+                'p50': float(np.percentile(year_values, 50)),
+                'p75': float(np.percentile(year_values, 75)),
+                'p90': float(np.percentile(year_values, 90)),
+                'p95': float(np.percentile(year_values, 95)),
+                'mean': float(np.mean(year_values)),
+            })
+
+        # Find depletion statistics
+        depleted_sims = [sim for sim in all_simulations if sim['depleted_year'] is not None]
+        depletion_stats = None
+        if depleted_sims:
+            depletion_years = [sim['depleted_year'] for sim in depleted_sims]
+            depletion_stats = {
+                'count': len(depleted_sims),
+                'earliest_year': min(depletion_years),
+                'latest_year': max(depletion_years),
+                'median_year': float(np.median(depletion_years)),
+                'earliest_age': self.retirement_age + min(depletion_years),
+                'median_age': self.retirement_age + int(np.median(depletion_years)),
+            }
+
+        return {
+            'calculator_type': 'monte_carlo',
+            'num_simulations': self.num_simulations,
+            'success_rate': success_rate,
+            'failure_rate': 100 - success_rate,
+            'successful_simulations': successful_simulations,
+            'failed_simulations': self.num_simulations - successful_simulations,
+            'final_value_percentiles': percentiles,
+            'yearly_percentiles': yearly_percentiles,
+            'depletion_stats': depletion_stats,
+            'parameters': {
+                'mean_return': mean_return * 100,  # Convert to percentage for display
+                'return_std_dev': self.return_std_dev * 100,
+                'inflation_rate': inflation * 100,
+                'initial_withdrawal_rate': 4.0,
+                'years_in_retirement': years_in_retirement,
+            },
+            'summary': {
+                'median_final_value': percentiles['p50'],
+                'worst_case_final_value': percentiles['p5'],
+                'best_case_final_value': percentiles['p95'],
+            }
+        }
+
+
 class DynamicBucketedWithdrawalCalculator:
     """
     Advanced calculator for dynamic bucketed withdrawal rate scenarios.
