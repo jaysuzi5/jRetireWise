@@ -89,6 +89,12 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         except FinancialProfile.DoesNotExist:
             context['financial_profile'] = None
 
+        # Get portfolio if it exists
+        try:
+            context['portfolio'] = user.portfolio
+        except:
+            context['portfolio'] = None
+
         context['scenarios'] = RetirementScenario.objects.filter(user=user).order_by('-updated_at')[:5]
         return context
 

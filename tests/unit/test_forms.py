@@ -27,7 +27,6 @@ class FinancialProfileFormTestCase(TestCase):
             'current_age': 35,
             'retirement_age': 65,
             'life_expectancy': 95,
-            'current_portfolio_value': '500000.00',
             'annual_spending': '80000.00',
             'social_security_annual': '20000.00',
             'pension_annual': '0.00',
@@ -41,7 +40,6 @@ class FinancialProfileFormTestCase(TestCase):
             'current_age': 40,
             'retirement_age': 67,
             'life_expectancy': 90,
-            'current_portfolio_value': '750000.00',
             'annual_spending': '100000.00',
             'social_security_annual': '25000.00',
             'pension_annual': '15000.00',
@@ -58,7 +56,6 @@ class FinancialProfileFormTestCase(TestCase):
         assert saved_profile.current_age == 40
         assert saved_profile.retirement_age == 67
         assert saved_profile.life_expectancy == 90
-        assert float(saved_profile.current_portfolio_value) == 750000.00
         assert float(saved_profile.annual_spending) == 100000.00
         assert float(saved_profile.social_security_annual) == 25000.00
         assert float(saved_profile.pension_annual) == 15000.00
@@ -69,7 +66,6 @@ class FinancialProfileFormTestCase(TestCase):
             'current_age': 70,  # Invalid: greater than retirement age
             'retirement_age': 65,
             'life_expectancy': 95,
-            'current_portfolio_value': '500000.00',
             'annual_spending': '80000.00',
             'social_security_annual': '0.00',
             'pension_annual': '0.00',
@@ -84,7 +80,6 @@ class FinancialProfileFormTestCase(TestCase):
             'current_age': 35,
             'retirement_age': 65,
             'life_expectancy': 60,  # Invalid: less than retirement age
-            'current_portfolio_value': '500000.00',
             'annual_spending': '80000.00',
             'social_security_annual': '0.00',
             'pension_annual': '0.00',
@@ -110,7 +105,6 @@ class FinancialProfileFormTestCase(TestCase):
             'current_age': 10,  # Invalid: less than 18
             'retirement_age': 65,
             'life_expectancy': 95,
-            'current_portfolio_value': '500000.00',
             'annual_spending': '80000.00',
             'social_security_annual': '0.00',
             'pension_annual': '0.00',

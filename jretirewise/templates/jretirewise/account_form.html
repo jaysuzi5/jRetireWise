@@ -5,13 +5,13 @@
 {% block content %}
 <div class="max-w-2xl mx-auto">
     <div class="mb-8">
-        <a href="{% url 'financial:portfolio-detail' portfolio.id %}" class="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium">
-            ← Back to {{ portfolio.name }}
+        <a href="{% url 'financial:portfolio' %}" class="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium">
+            ← Back to Portfolio
         </a>
     </div>
 
     <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">
-        {% if form.instance.pk %}Edit Account{% else %}Add Account to Portfolio{% endif %}
+        {% if form.instance.pk %}Edit Account{% else %}Add Account{% endif %}
     </h1>
 
     {% if form.non_field_errors %}
@@ -129,7 +129,7 @@
 
         <!-- Form Actions -->
         <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
-            <a href="{% url 'financial:portfolio-detail' portfolio.id %}" class="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition duration-200">
+            <a href="{% url 'financial:portfolio' %}" class="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition duration-200">
                 Cancel
             </a>
             <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition duration-200">

@@ -279,13 +279,13 @@ class Account(models.Model):
         decimal_places=4,
         default=Decimal('0.07'),
         help_text='Annual % return (e.g., 0.07 for 7%)',
-        validators=[MinValueValidator(Decimal('-1.00')), MaxValueValidator(Decimal('10.00'))]
+        validators=[MinValueValidator(Decimal('-1.00')), MaxValueValidator(Decimal('1.00'))]
     )
     inflation_adjustment = models.DecimalField(
         max_digits=5,
         decimal_places=4,
         default=Decimal('0.00'),
-        help_text='Inflation adjustment applied to growth rate',
+        help_text='Inflation adjustment applied to growth rate (0.03 = 3%)',
         validators=[MinValueValidator(Decimal('0.00')), MaxValueValidator(Decimal('1.00'))]
     )
     expected_contribution_rate = models.DecimalField(

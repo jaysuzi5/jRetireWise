@@ -4,8 +4,9 @@ Template views for portfolio management.
 
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
-from django.urls import reverse_lazy
+from django.views import View
+from django.views.generic import DetailView, CreateView, UpdateView, DeleteView
+from django.urls import reverse_lazy, reverse
 from django.contrib import messages
 from datetime import date
 
@@ -13,47 +14,18 @@ from .models import Portfolio, Account, AccountValueHistory
 from .forms import PortfolioForm, AccountForm, AccountValueHistoryForm
 
 
-class PortfolioListView(LoginRequiredMixin, ListView):
-    """View for listing user's portfolios."""
+class PortfolioRedirectView(LoginRequiredMixin, View):
+    """Redirect to user's portfolio, auto-creating if needed."""
 
-    model = Portfolio
-    template_name = 'jretirewise/portfolio_list.html'
-    context_object_name = 'portfolios'
     login_url = 'account_login'
 
-    def get_queryset(self):
-        """Return portfolios for current user."""
-        return Portfolio.objects.filter(user=self.request.user).prefetch_related('accounts')
-
-    def get_context_data(self, **kwargs):
-        """Add context for each portfolio."""
-        context = super().get_context_data(**kwargs)
-        for portfolio in context['portfolios']:
-            portfolio.account_count = portfolio.accounts.filter(status='active').count()
-            portfolio.total_value = float(sum(acc.current_value for acc in portfolio.accounts.all()))
-
-            # Group accounts by type
-            accounts_by_type = {}
-            for account in portfolio.accounts.all():
-                acc_type = account.get_account_type_display()
-                if acc_type not in accounts_by_type:
-                    accounts_by_type[acc_type] = {'count': 0, 'total_value': 0}
-                accounts_by_type[acc_type]['count'] += 1
-                accounts_by_type[acc_type]['total_value'] += float(account.current_value)
-
-            # Calculate percentage of portfolio for each account type
-            if portfolio.total_value > 0:
-                for acc_type in accounts_by_type:
-                    accounts_by_type[acc_type]['percentage'] = round(
-                        (accounts_by_type[acc_type]['total_value'] / portfolio.total_value) * 100, 1
-                    )
-            else:
-                for acc_type in accounts_by_type:
-                    accounts_by_type[acc_type]['percentage'] = 0
-
-            portfolio.accounts_by_type = accounts_by_type
-
-        return context
+    def get(self, request, *args, **kwargs):
+        """Get or create the user's portfolio and redirect to it."""
+        portfolio, created = Portfolio.objects.get_or_create(
+            user=request.user,
+            defaults={'name': 'My Portfolio', 'description': ''}
+        )
+        return redirect('financial:portfolio-detail', pk=portfolio.pk)
 
 
 class PortfolioDetailView(LoginRequiredMixin, DetailView):
@@ -103,20 +75,22 @@ class PortfolioDetailView(LoginRequiredMixin, DetailView):
         portfolio.accounts_by_type = accounts_by_type
 
         # Calculate weighted average growth rate
+        # Growth rates are stored as decimals (0.061 = 6.1%), keep 4 decimal precision
         if portfolio.total_value > 0:
             weighted_growth = 0
             for account in accounts:
                 if account.current_value > 0:
                     weight = float(account.current_value) / portfolio.total_value
                     weighted_growth += float(account.default_growth_rate) * weight
-            portfolio.weighted_growth_rate = round(weighted_growth, 2)
+            portfolio.weighted_growth_rate = round(weighted_growth, 4)  # Keep 4 decimals for precision
         else:
             portfolio.weighted_growth_rate = 0
 
         # Calculate estimated portfolio value at retirement (simple 10-year projection)
+        # weighted_growth_rate is in decimal form (0.061 = 6.1%), no need to divide by 100
         if portfolio.total_value > 0 and portfolio.weighted_growth_rate > 0:
             years = 10
-            retirement_value = portfolio.total_value * ((1 + portfolio.weighted_growth_rate / 100) ** years)
+            retirement_value = portfolio.total_value * ((1 + portfolio.weighted_growth_rate) ** years)
             portfolio.estimated_retirement_value = round(retirement_value, 2)
         else:
             portfolio.estimated_retirement_value = portfolio.total_value

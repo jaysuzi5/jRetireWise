@@ -4,11 +4,8 @@ URLs for financial app.
 
 from django.urls import path
 from .portfolio_views import (
-    PortfolioListView,
+    PortfolioRedirectView,
     PortfolioDetailView,
-    PortfolioCreateView,
-    PortfolioUpdateView,
-    PortfolioDeleteView,
     AccountDetailView,
     AccountCreateView,
     AccountUpdateView,
@@ -21,12 +18,10 @@ from .portfolio_views import (
 app_name = 'financial'
 
 urlpatterns = [
-    # Portfolio URLs
-    path('portfolios/', PortfolioListView.as_view(), name='portfolio-list'),
+    # Portfolio URLs - simplified to single portfolio per user
+    path('portfolios/', PortfolioRedirectView.as_view(), name='portfolio-list'),
+    path('portfolio/', PortfolioRedirectView.as_view(), name='portfolio'),
     path('portfolios/<int:pk>/', PortfolioDetailView.as_view(), name='portfolio-detail'),
-    path('portfolios/create/', PortfolioCreateView.as_view(), name='portfolio-create'),
-    path('portfolios/<int:pk>/edit/', PortfolioUpdateView.as_view(), name='portfolio-edit'),
-    path('portfolios/<int:pk>/delete/', PortfolioDeleteView.as_view(), name='portfolio-delete'),
 
     # Account URLs
     path('accounts/<int:pk>/', AccountDetailView.as_view(), name='account-detail'),

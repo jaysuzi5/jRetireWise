@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load humanize %}
+{% load custom_filters %}
 
 {% block title %}{{ account.account_name }} - jRetireWise{% endblock %}
 
@@ -12,8 +13,8 @@
                 <div>
                     <h1 class="text-4xl font-bold text-gray-900 dark:text-white">{{ account.account_name }}</h1>
                     <p class="mt-2 text-gray-600 dark:text-gray-400">
-                        <a href="{% url 'financial:portfolio-detail' account.portfolio.id %}" class="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300">
-                            {{ account.portfolio.name }}
+                        <a href="{% url 'financial:portfolio' %}" class="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300">
+                            ← Back to Portfolio
                         </a>
                     </p>
                 </div>
@@ -23,7 +24,7 @@
             <a href="{% url 'financial:account-edit' account.id %}" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition duration-200">
                 Edit
             </a>
-            <a href="{% url 'financial:portfolio-detail' account.portfolio.id %}" class="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition duration-200">
+            <a href="{% url 'financial:portfolio' %}" class="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition duration-200">
                 Back
             </a>
         </div>
@@ -37,11 +38,11 @@
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <p class="text-gray-600 dark:text-gray-400 text-sm font-medium">Account Type</p>
-            <p class="text-lg font-semibold text-gray-900 dark:text-white mt-2">{{ account.account_type_display }}</p>
+            <p class="text-lg font-semibold text-gray-900 dark:text-white mt-2">{{ account.get_account_type_display }}</p>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <p class="text-gray-600 dark:text-gray-400 text-sm font-medium">Growth Rate</p>
-            <p class="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">{{ account.effective_growth_rate|floatformat:2 }}%</p>
+            <p class="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">{{ account.get_effective_growth_rate|to_percentage|floatformat:1 }}%</p>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <p class="text-gray-600 dark:text-gray-400 text-sm font-medium">Status</p>
@@ -56,7 +57,7 @@
                     </span>
                 {% else %}
                     <span class="px-3 py-1 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded-full text-sm font-medium">
-                        {{ account.status_display }}
+                        {{ account.get_status_display }}
                     </span>
                 {% endif %}
             </div>
@@ -83,11 +84,7 @@
                 {% endif %}
                 <div>
                     <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Tax Treatment</p>
-                    <p class="text-gray-900 dark:text-white mt-1">{{ account.tax_treatment_display }}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Data Source</p>
-                    <p class="text-gray-900 dark:text-white mt-1">{{ account.data_source_display }}</p>
+                    <p class="text-gray-900 dark:text-white mt-1">{{ account.get_tax_treatment_display }}</p>
                 </div>
                 <div>
                     <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Created</p>
@@ -112,15 +109,15 @@
                 </div>
                 <div>
                     <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Default Growth Rate (Annual)</p>
-                    <p class="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">{{ account.default_growth_rate|floatformat:2 }}%</p>
+                    <p class="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">{{ account.default_growth_rate|to_percentage|floatformat:1 }}%</p>
                 </div>
                 <div>
                     <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Inflation Adjustment</p>
-                    <p class="text-gray-900 dark:text-white mt-1">{{ account.inflation_adjustment|floatformat:2 }}%</p>
+                    <p class="text-gray-900 dark:text-white mt-1">{{ account.inflation_adjustment|to_percentage|floatformat:1 }}%</p>
                 </div>
                 <div>
                     <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Annual Contribution</p>
-                    <p class="text-gray-900 dark:text-white mt-1">${{ account.annual_contribution|floatformat:0|intcomma }}</p>
+                    <p class="text-gray-900 dark:text-white mt-1">${{ account.get_annual_contribution|default:0|floatformat:0|intcomma }}</p>
                 </div>
                 {% if account.rmd_percentage %}
                     <div>
@@ -220,7 +217,7 @@
                                 </td>
                                 <td class="px-6 py-4 text-gray-600 dark:text-gray-400">
                                     <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-sm">
-                                        {{ history.source_display }}
+                                        {{ history.get_source_display }}
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 text-gray-600 dark:text-gray-400">

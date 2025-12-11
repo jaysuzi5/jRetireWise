@@ -74,14 +74,6 @@
                     </div>
 
                     <div>
-                        <label for="{{ form.current_portfolio_value.id_for_label }}" class="block text-sm font-medium text-gray-700">Portfolio Value</label>
-                        {{ form.current_portfolio_value }}
-                        {% if form.current_portfolio_value.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.current_portfolio_value.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-
-                    <div>
                         <label for="{{ form.annual_spending.id_for_label }}" class="block text-sm font-medium text-gray-700">Annual Spending</label>
                         {{ form.annual_spending }}
                         {% if form.annual_spending.errors %}

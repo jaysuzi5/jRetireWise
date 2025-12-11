@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load humanize %}
+{% load custom_filters %}
 
 {% block title %}{{ scenario.name }} - jRetireWise{% endblock %}
 
@@ -30,16 +31,23 @@
             </p>
         </div>
 
-        <div class="bg-white rounded-lg shadow p-6">
-            <h3 class="text-gray-500 text-sm font-medium">Success Rate</h3>
-            <p class="text-2xl font-bold text-gray-900 mt-2">
-                {% if scenario.result.result_data.calculation.success_rate is not None %}
-                    {{ scenario.result.result_data.calculation.success_rate|floatformat:0 }}%
-                {% else %}
-                    —
-                {% endif %}
-            </p>
-        </div>
+        {% if scenario.result.status == 'failed' %}
+            <div class="col-span-2 bg-white rounded-lg shadow p-6">
+                <h3 class="text-gray-500 text-sm font-medium">Error</h3>
+                <p class="text-gray-900 mt-2">{{ scenario.result.error_message }}</p>
+            </div>
+        {% else %}
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-gray-500 text-sm font-medium">Success Rate</h3>
+                <p class="text-2xl font-bold text-gray-900 mt-2">
+                    {% if scenario.result.result_data.calculation.success_rate is not None %}
+                        {{ scenario.result.result_data.calculation.success_rate|floatformat:0 }}%
+                    {% else %}
+                        —
+                    {% endif %}
+                </p>
+            </div>
+        {% endif %}
 
     {% endif %}
 </div>
@@ -171,10 +179,23 @@
         <!-- User-provided parameters -->
         {% for key, value in scenario.parameters.items %}
         <div>
-            <label class="block text-sm font-medium text-gray-700">{{ key|title }}</label>
+            <label class="block text-sm font-medium text-gray-700">
+                {% if key == 'portfolio_value' %}Portfolio Value
+                {% elif key == 'current_age' %}Current Age
+                {% elif key == 'retirement_age' %}Retirement Age
+                {% elif key == 'life_expectancy' %}Life Expectancy
+                {% elif key == 'annual_spending' %}Annual Spending
+                {% elif key == 'annual_return_rate' %}Annual Return Rate
+                {% elif key == 'annual_return' %}Annual Return Rate
+                {% elif key == 'inflation_rate' %}Inflation Rate
+                {% else %}{{ key|title }}
+                {% endif %}
+            </label>
             <p class="mt-1 text-lg text-gray-900">
                 {% if key in 'annual_return_rate,inflation_rate,annual_return' %}
-                    {{ value|floatformat:0 }}%
+                    {{ value|floatformat:1 }}%
+                {% elif key in 'current_age,retirement_age' %}
+                    {{ value|floatformat:1 }}
                 {% elif key in 'portfolio_value,annual_spending' %}
                     ${{ value|floatformat:0|intcomma }}
                 {% else %}
@@ -190,10 +211,23 @@
             {% for key, value in scenario.result.result_data.defaults_used.items %}
                 {% if value is not None %}
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">{{ key|title }}</label>
+                    <label class="block text-sm font-medium text-gray-700">
+                        {% if key == 'portfolio_value' %}Portfolio Value
+                        {% elif key == 'current_age' %}Current Age
+                        {% elif key == 'retirement_age' %}Retirement Age
+                        {% elif key == 'life_expectancy' %}Life Expectancy
+                        {% elif key == 'annual_spending' %}Annual Spending
+                        {% elif key == 'annual_return_rate' %}Annual Return Rate
+                        {% elif key == 'annual_return' %}Annual Return Rate
+                        {% elif key == 'inflation_rate' %}Inflation Rate
+                        {% else %}{{ key|title }}
+                        {% endif %}
+                    </label>
                     <p class="mt-1 text-lg text-gray-900">
                         {% if key in 'annual_return_rate,inflation_rate,annual_return' %}
-                            {{ value|floatformat:0 }}%
+                            {{ value|floatformat:1 }}%
+                        {% elif key in 'current_age,retirement_age' %}
+                            {{ value|floatformat:1 }}
                         {% elif key in 'portfolio_value,annual_spending' %}
                             ${{ value|floatformat:0|intcomma }}
                         {% else %}
