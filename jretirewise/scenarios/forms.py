@@ -5,7 +5,7 @@ Forms for scenarios app.
 from django import forms
 from decimal import Decimal
 import json
-from .models import RetirementScenario
+from .models import RetirementScenario, WithdrawalBucket
 
 
 class ScenarioForm(forms.ModelForm):
@@ -539,3 +539,126 @@ class BucketedWithdrawalScenarioForm(forms.ModelForm):
         if commit:
             instance.save()
         return instance
+
+
+class WithdrawalBucketForm(forms.ModelForm):
+    """
+    Form for creating/editing withdrawal buckets.
+    """
+
+    class Meta:
+        model = WithdrawalBucket
+        fields = [
+            'bucket_name',
+            'description',
+            'order',
+            'start_age',
+            'end_age',
+            'target_withdrawal_rate',
+            'min_withdrawal_amount',
+            'max_withdrawal_amount',
+            'manual_withdrawal_override',
+            'expected_pension_income',
+            'expected_social_security_income',
+            'healthcare_cost_adjustment',
+            'tax_loss_harvesting_enabled',
+            'roth_conversion_enabled',
+        ]
+        widgets = {
+            'bucket_name': forms.TextInput(attrs={
+                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+                'placeholder': 'e.g., Early Retirement',
+            }),
+            'description': forms.Textarea(attrs={
+                'rows': 2,
+                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+                'placeholder': 'Optional description of this bucket',
+            }),
+            'order': forms.NumberInput(attrs={
+                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+                'min': '0',
+            }),
+            'start_age': forms.NumberInput(attrs={
+                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+                'min': '18',
+                'max': '120',
+                'placeholder': '55',
+            }),
+            'end_age': forms.NumberInput(attrs={
+                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+                'min': '18',
+                'max': '120',
+                'placeholder': '65',
+            }),
+            'target_withdrawal_rate': forms.NumberInput(attrs={
+                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+                'min': '0',
+                'max': '20',
+                'step': '0.1',
+                'placeholder': '4.0',
+            }),
+            'min_withdrawal_amount': forms.NumberInput(attrs={
+                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+                'placeholder': '0',
+                'step': '1000',
+            }),
+            'max_withdrawal_amount': forms.NumberInput(attrs={
+                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+                'placeholder': '0',
+                'step': '1000',
+            }),
+            'manual_withdrawal_override': forms.NumberInput(attrs={
+                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+                'placeholder': '0',
+                'step': '1000',
+            }),
+            'expected_pension_income': forms.NumberInput(attrs={
+                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+                'placeholder': '0',
+                'step': '1000',
+            }),
+            'expected_social_security_income': forms.NumberInput(attrs={
+                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+                'placeholder': '0',
+                'step': '1000',
+            }),
+            'healthcare_cost_adjustment': forms.NumberInput(attrs={
+                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+                'placeholder': '0',
+                'step': '1000',
+            }),
+            'tax_loss_harvesting_enabled': forms.CheckboxInput(attrs={
+                'class': 'rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500',
+            }),
+            'roth_conversion_enabled': forms.CheckboxInput(attrs={
+                'class': 'rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500',
+            }),
+        }
+
+    def clean(self):
+        """Validate form."""
+        cleaned_data = super().clean()
+
+        # Validate age relationships
+        start_age = cleaned_data.get('start_age')
+        end_age = cleaned_data.get('end_age')
+
+        if start_age and end_age:
+            if start_age >= end_age:
+                self.add_error('end_age', 'End age must be greater than start age')
+
+        # Validate withdrawal rate
+        rate = cleaned_data.get('target_withdrawal_rate')
+        if rate is not None:
+            if rate < 0 or rate > 20:
+                self.add_error('target_withdrawal_rate', 'Withdrawal rate must be between 0 and 20%')
+
+        # Validate min/max amounts
+        min_amt = cleaned_data.get('min_withdrawal_amount')
+        max_amt = cleaned_data.get('max_withdrawal_amount')
+
+        if min_amt and max_amt and min_amt > 0 and max_amt > 0:
+            if min_amt > max_amt:
+                self.add_error('max_withdrawal_amount', 'Maximum amount must be greater than minimum')
+
+        return cleaned_data

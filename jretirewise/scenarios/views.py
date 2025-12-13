@@ -13,7 +13,7 @@ from django.shortcuts import get_object_or_404
 from django.contrib import messages
 from decimal import Decimal
 from .models import RetirementScenario, WithdrawalBucket, CalculationResult, BucketedWithdrawalResult
-from .forms import ScenarioForm, MonteCarloScenarioForm, BucketedWithdrawalScenarioForm
+from .forms import ScenarioForm, MonteCarloScenarioForm, BucketedWithdrawalScenarioForm, WithdrawalBucketForm
 from .serializers import (
     RetirementScenarioSerializer, WithdrawalBucketSerializer,
     CalculationResultSerializer, CalculationResultDetailSerializer,
