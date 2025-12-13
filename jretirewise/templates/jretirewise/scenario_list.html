@@ -5,15 +5,21 @@
 {% block content %}
 <div class="flex justify-between items-center mb-8">
     <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Retirement Scenarios</h1>
-    <div class="flex space-x-3">
-        <a href="{% url 'scenario-monte-carlo-create' %}" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition duration-200 flex items-center">
+    <div class="flex flex-wrap gap-3">
+        <a href="{% url 'scenario-bucketed-create' %}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200 flex items-center text-sm">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M5.5 13a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.3A4.5 4.5 0 1113.5 13H11V9.413l1.293 1.293a1 1 0 001.414-1.414l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 101.414 1.414L9 9.414V13H5.5z"/>
+            </svg>
+            Bucketed Withdrawal
+        </a>
+        <a href="{% url 'scenario-monte-carlo-create' %}" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition duration-200 flex items-center text-sm">
             <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
             </svg>
-            Monte Carlo Simulation
+            Monte Carlo
         </a>
-        <a href="{% url 'scenario-create' %}" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition duration-200">
-            New Scenario
+        <a href="{% url 'scenario-create' %}" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition duration-200 text-sm">
+            + New Scenario
         </a>
     </div>
 </div>
@@ -51,6 +57,9 @@
                         <a href="{% url 'scenario-detail' scenario.id %}" class="text-indigo-600 hover:text-indigo-900">View</a>
                         {% if scenario.calculator_type == 'monte_carlo' %}
                             <a href="{% url 'scenario-monte-carlo-edit' scenario.id %}" class="text-blue-600 hover:text-blue-900">Edit</a>
+                        {% elif scenario.calculator_type == 'bucketed_withdrawal' %}
+                            <a href="{% url 'scenario-bucketed-edit' scenario.id %}" class="text-blue-600 hover:text-blue-900">Edit</a>
+                            <a href="{% url 'bucket-list' scenario.id %}" class="text-green-600 hover:text-green-900">Buckets</a>
                         {% else %}
                             <a href="{% url 'scenario-edit' scenario.id %}" class="text-blue-600 hover:text-blue-900">Edit</a>
                         {% endif %}
