@@ -8,7 +8,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.contrib.auth.models import User
 from .models import RetirementScenario, CalculationResult
-from jretirewise.calculations.calculators import FourPercentCalculator, FourPointSevenPercentCalculator, MonteCarloCalculator
+from jretirewise.calculations.calculators import FourPercentCalculator, FourPointSevenPercentCalculator, MonteCarloCalculator, EnhancedMonteCarloCalculator
 
 logger = logging.getLogger(__name__)
 
@@ -139,16 +139,50 @@ def run_scenario_calculation(sender, instance, created, **kwargs):
             return_std_dev = float(parameters.get('return_std_dev', 0.15))
             num_simulations = int(parameters.get('num_simulations', 1000))
 
-            calculator = MonteCarloCalculator(
+            # Enhanced Monte Carlo parameters
+            mode = parameters.get('mode', 'evaluate_success')
+            target_success_rate = float(parameters.get('target_success_rate', 90.0))
+            withdrawal_amount = parameters.get('withdrawal_amount')
+            if withdrawal_amount is not None:
+                withdrawal_amount = float(withdrawal_amount)
+            else:
+                # Default to annual_spending if no withdrawal amount specified
+                withdrawal_amount = annual_spending
+
+            # Social Security parameters
+            social_security_start_age = parameters.get('social_security_start_age')
+            if social_security_start_age is not None:
+                social_security_start_age = int(social_security_start_age)
+            social_security_monthly = float(parameters.get('social_security_monthly', 0))
+
+            # Pension from profile if not in parameters
+            pension_annual = float(parameters.get('pension_annual', 0))
+            if pension_annual == 0:
+                try:
+                    if financial_profile.pension_annual:
+                        pension_annual = float(financial_profile.pension_annual)
+                except:
+                    pass
+
+            # Time step configuration (default to monthly for more accurate simulation)
+            periods_per_year = int(parameters.get('periods_per_year', 12))
+
+            # Use EnhancedMonteCarloCalculator for new mode-based scenarios
+            calculator = EnhancedMonteCarloCalculator(
                 portfolio_value=portfolio_value,
-                annual_spending=annual_spending,
-                current_age=current_age,
-                retirement_age=retirement_age,
+                retirement_age=int(retirement_age),
                 life_expectancy=life_expectancy,
                 annual_return_rate=annual_return_rate,
                 inflation_rate=inflation_rate,
                 return_std_dev=return_std_dev,
                 num_simulations=num_simulations,
+                mode=mode,
+                withdrawal_amount=withdrawal_amount,
+                target_success_rate=target_success_rate,
+                social_security_start_age=social_security_start_age,
+                social_security_monthly_benefit=social_security_monthly,
+                pension_annual=pension_annual,
+                periods_per_year=periods_per_year,
             )
         elif instance.calculator_type == 'historical':
             # Historical analysis calculator not yet implemented

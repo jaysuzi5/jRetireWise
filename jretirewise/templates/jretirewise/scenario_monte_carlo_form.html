@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+
+{% block title %}{% if form.instance.pk %}Edit{% else %}Create{% endif %} Monte Carlo Scenario - jRetireWise{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto" x-data="{ mode: '{{ form.calculation_mode.value|default:'find_withdrawal' }}' }">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+            {% if form.instance.pk %}Edit{% else %}Create{% endif %} Monte Carlo Scenario
+        </h1>
+        <p class="mt-2 text-gray-600 dark:text-gray-400">
+            Run Monte Carlo simulations to analyze your retirement success probability.
+        </p>
+    </div>
+
+    {% if form.non_field_errors %}
+        <div class="mb-6 p-4 bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-400 rounded-lg">
+            {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% if prefilled_fields %}
+        <div class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
+            <div class="flex items-start">
+                <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                </svg>
+                <div>
+                    <p class="text-sm font-medium text-blue-800 dark:text-blue-300">Pre-filled from your profile</p>
+                    <p class="mt-1 text-sm text-blue-700 dark:text-blue-400">
+                        Some fields have been pre-filled from your Financial Profile and Portfolio.
+                        You can adjust these values as needed.
+                    </p>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <form method="post" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+        {% csrf_token %}
+
+        <!-- Scenario Info Section -->
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Scenario Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                    {{ form.description }}
+                    {% if form.description.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.description.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Calculation Mode Section -->
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Calculation Mode</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <label class="relative cursor-pointer" @click="mode = 'find_withdrawal'">
+                    <input type="radio" name="calculation_mode" value="find_withdrawal"
+                           class="peer sr-only" x-bind:checked="mode === 'find_withdrawal'">
+                    <div class="p-4 border-2 rounded-lg transition-all duration-200"
+                         :class="mode === 'find_withdrawal' ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-indigo-300'">
+                        <div class="flex items-center mb-2">
+                            <svg class="w-5 h-5 mr-2" :class="mode === 'find_withdrawal' ? 'text-indigo-600' : 'text-gray-400'" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span class="font-medium" :class="mode === 'find_withdrawal' ? 'text-indigo-900 dark:text-indigo-200' : 'text-gray-700 dark:text-gray-300'">
+                                Find Safe Withdrawal
+                            </span>
+                        </div>
+                        <p class="text-sm" :class="mode === 'find_withdrawal' ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-500 dark:text-gray-400'">
+                            Given a target success rate, find the maximum safe withdrawal amount.
+                        </p>
+                    </div>
+                </label>
+
+                <label class="relative cursor-pointer" @click="mode = 'evaluate_success'">
+                    <input type="radio" name="calculation_mode" value="evaluate_success"
+                           class="peer sr-only" x-bind:checked="mode === 'evaluate_success'">
+                    <div class="p-4 border-2 rounded-lg transition-all duration-200"
+                         :class="mode === 'evaluate_success' ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-indigo-300'">
+                        <div class="flex items-center mb-2">
+                            <svg class="w-5 h-5 mr-2" :class="mode === 'evaluate_success' ? 'text-indigo-600' : 'text-gray-400'" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span class="font-medium" :class="mode === 'evaluate_success' ? 'text-indigo-900 dark:text-indigo-200' : 'text-gray-700 dark:text-gray-300'">
+                                Evaluate Success Rate
+                            </span>
+                        </div>
+                        <p class="text-sm" :class="mode === 'evaluate_success' ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-500 dark:text-gray-400'">
+                            Given a fixed withdrawal amount, calculate the probability of success.
+                        </p>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <!-- Main Parameters Grid -->
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Retirement Parameters</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Retirement Age -->
+                <div>
+                    <label for="{{ form.retirement_age.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Retirement Age
+                        {% if 'retirement_age' in prefilled_fields %}<span class="text-blue-600 dark:text-blue-400 text-xs">(from profile)</span>{% endif %}
+                    </label>
+                    {{ form.retirement_age }}
+                    {% if form.retirement_age.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.retirement_age.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Life Expectancy -->
+                <div>
+                    <label for="{{ form.life_expectancy.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Life Expectancy
+                        {% if 'life_expectancy' in prefilled_fields %}<span class="text-blue-600 dark:text-blue-400 text-xs">(from profile)</span>{% endif %}
+                    </label>
+                    {{ form.life_expectancy }}
+                    {% if form.life_expectancy.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.life_expectancy.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Portfolio Value -->
+                <div>
+                    <label for="{{ form.portfolio_value.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Portfolio Balance ($)
+                        {% if 'portfolio_value' in prefilled_fields %}<span class="text-blue-600 dark:text-blue-400 text-xs">(from portfolio)</span>{% endif %}
+                    </label>
+                    {{ form.portfolio_value }}
+                    {% if form.portfolio_value.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.portfolio_value.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Market Parameters -->
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Market Assumptions</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Expected Return -->
+                <div>
+                    <label for="{{ form.expected_return.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Expected Return (%)
+                        {% if 'expected_return' in prefilled_fields %}<span class="text-blue-600 dark:text-blue-400 text-xs">(from portfolio)</span>{% endif %}
+                    </label>
+                    {{ form.expected_return }}
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.expected_return.help_text }}</p>
+                    {% if form.expected_return.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.expected_return.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Inflation Rate -->
+                <div>
+                    <label for="{{ form.inflation_rate.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Inflation Rate (%)
+                    </label>
+                    {{ form.inflation_rate }}
+                    {% if form.inflation_rate.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.inflation_rate.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Volatility -->
+                <div>
+                    <label for="{{ form.volatility.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Volatility / Std Dev (%)
+                    </label>
+                    {{ form.volatility }}
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.volatility.help_text }}</p>
+                    {% if form.volatility.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.volatility.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Mode-Specific Parameters -->
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                <span x-show="mode === 'find_withdrawal'">Target Success Rate</span>
+                <span x-show="mode === 'evaluate_success'">Withdrawal Parameters</span>
+            </h2>
+
+            <!-- Find Withdrawal Mode -->
+            <div x-show="mode === 'find_withdrawal'" x-transition class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="{{ form.target_success_rate.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Target Success Rate (%)
+                    </label>
+                    {{ form.target_success_rate }}
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.target_success_rate.help_text }}</p>
+                    {% if form.target_success_rate.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.target_success_rate.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Evaluate Success Mode -->
+            <div x-show="mode === 'evaluate_success'" x-transition class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="{{ form.withdrawal_amount.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Withdrawal Amount ($)
+                    </label>
+                    {{ form.withdrawal_amount }}
+                    {% if form.withdrawal_amount.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.withdrawal_amount.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Withdrawal Frequency
+                    </label>
+                    <div class="flex space-x-4 mt-2">
+                        {% for radio in form.withdrawal_frequency %}
+                            <label class="inline-flex items-center">
+                                {{ radio.tag }}
+                                <span class="ml-2 text-gray-700 dark:text-gray-300">{{ radio.choice_label }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {% if form.withdrawal_frequency.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.withdrawal_frequency.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Number of Simulations (shared by both modes) -->
+            <div class="mt-6">
+                <label for="{{ form.num_simulations.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Number of Simulations
+                </label>
+                {{ form.num_simulations }}
+                {% if form.num_simulations.errors %}
+                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.num_simulations.errors.0 }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Social Security Section -->
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Social Security (Optional)</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Include Social Security benefits in your retirement analysis.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="{{ form.social_security_start_age.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        SS Start Age
+                    </label>
+                    {{ form.social_security_start_age }}
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.social_security_start_age.help_text }}</p>
+                    {% if form.social_security_start_age.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.social_security_start_age.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.social_security_monthly.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        SS Monthly Benefit ($)
+                        {% if 'social_security_monthly' in prefilled_fields %}<span class="text-blue-600 dark:text-blue-400 text-xs">(from profile)</span>{% endif %}
+                    </label>
+                    {{ form.social_security_monthly }}
+                    {% if form.social_security_monthly.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.social_security_monthly.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Section -->
+        <div class="p-6 bg-white dark:bg-gray-800 flex justify-between items-center">
+            <a href="{% url 'scenarios' %}" class="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition duration-200">
+                Cancel
+            </a>
+            <button type="submit" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-300 dark:focus:ring-indigo-900 transition duration-200 font-medium">
+                <span class="flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
+                    </svg>
+                    Run Simulation
+                </span>
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

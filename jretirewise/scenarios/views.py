@@ -13,7 +13,7 @@ from django.shortcuts import get_object_or_404
 from django.contrib import messages
 from decimal import Decimal
 from .models import RetirementScenario, WithdrawalBucket, CalculationResult, BucketedWithdrawalResult
-from .forms import ScenarioForm
+from .forms import ScenarioForm, MonteCarloScenarioForm
 from .serializers import (
     RetirementScenarioSerializer, WithdrawalBucketSerializer,
     CalculationResultSerializer, CalculationResultDetailSerializer,
@@ -331,3 +331,105 @@ class ScenarioDeleteView(LoginRequiredMixin, DeleteView):
         scenario = self.get_object()
         messages.success(request, f'Scenario "{scenario.name}" deleted successfully!')
         return super().delete(request, *args, **kwargs)
+
+
+class MonteCarloScenarioCreateView(LoginRequiredMixin, CreateView):
+    """Create a new Monte Carlo retirement scenario."""
+    model = RetirementScenario
+    form_class = MonteCarloScenarioForm
+    template_name = 'jretirewise/scenario_monte_carlo_form.html'
+
+    def get_form_kwargs(self):
+        """Pass user to form for pre-filling values."""
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        """Add prefilled fields info to context."""
+        context = super().get_context_data(**kwargs)
+        form = context.get('form')
+        if form and hasattr(form, 'get_prefilled_fields'):
+            context['prefilled_fields'] = form.get_prefilled_fields()
+        return context
+
+    def form_valid(self, form):
+        """Set the current user as the owner."""
+        form.instance.user = self.request.user
+        messages.success(self.request, f'Monte Carlo scenario "{form.instance.name}" created successfully!')
+        response = super().form_valid(form)
+        return response
+
+    def get_success_url(self):
+        """Redirect to scenario detail page."""
+        return reverse_lazy('scenario-detail', kwargs={'pk': self.object.pk})
+
+
+class MonteCarloScenarioUpdateView(LoginRequiredMixin, UpdateView):
+    """Update an existing Monte Carlo scenario."""
+    model = RetirementScenario
+    form_class = MonteCarloScenarioForm
+    template_name = 'jretirewise/scenario_monte_carlo_form.html'
+
+    def get_queryset(self):
+        return RetirementScenario.objects.filter(user=self.request.user, calculator_type='monte_carlo')
+
+    def get_form_kwargs(self):
+        """Pass user to form for pre-filling values."""
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def get_initial(self):
+        """Pre-populate form with existing scenario parameters."""
+        initial = super().get_initial()
+        scenario = self.get_object()
+        params = scenario.parameters or {}
+
+        # Map stored parameters back to form fields
+        if 'mode' in params:
+            initial['calculation_mode'] = params['mode']
+        if 'retirement_age' in params:
+            initial['retirement_age'] = params['retirement_age']
+        if 'life_expectancy' in params:
+            initial['life_expectancy'] = params['life_expectancy']
+        if 'portfolio_value' in params:
+            initial['portfolio_value'] = params['portfolio_value']
+        # Convert decimals back to percentages
+        if 'annual_return_rate' in params:
+            initial['expected_return'] = float(params['annual_return_rate']) * 100
+        if 'inflation_rate' in params:
+            initial['inflation_rate'] = float(params['inflation_rate']) * 100
+        if 'return_std_dev' in params:
+            initial['volatility'] = float(params['return_std_dev']) * 100
+        if 'num_simulations' in params:
+            initial['num_simulations'] = params['num_simulations']
+        if 'target_success_rate' in params:
+            initial['target_success_rate'] = int(params['target_success_rate'])
+        if 'withdrawal_amount' in params:
+            initial['withdrawal_amount'] = params['withdrawal_amount']
+        if 'withdrawal_frequency' in params:
+            initial['withdrawal_frequency'] = params['withdrawal_frequency']
+        if 'social_security_start_age' in params:
+            initial['social_security_start_age'] = params['social_security_start_age']
+        if 'social_security_monthly' in params:
+            initial['social_security_monthly'] = params['social_security_monthly']
+
+        return initial
+
+    def get_context_data(self, **kwargs):
+        """Add prefilled fields info to context."""
+        context = super().get_context_data(**kwargs)
+        form = context.get('form')
+        if form and hasattr(form, 'get_prefilled_fields'):
+            context['prefilled_fields'] = form.get_prefilled_fields()
+        return context
+
+    def form_valid(self, form):
+        """Show success message."""
+        messages.success(self.request, f'Monte Carlo scenario "{form.instance.name}" updated successfully!')
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        """Redirect to scenario detail page."""
+        return reverse_lazy('scenario-detail', kwargs={'pk': self.object.pk})

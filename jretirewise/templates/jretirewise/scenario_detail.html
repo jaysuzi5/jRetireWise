@@ -6,44 +6,48 @@
 
 {% block content %}
 <div class="mb-6">
-    <h1 class="text-3xl font-bold text-gray-900">{{ scenario.name }}</h1>
-    <p class="text-gray-600 mt-2">{{ scenario.description }}</p>
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">{{ scenario.name }}</h1>
+    <p class="text-gray-600 dark:text-gray-400 mt-2">{{ scenario.description }}</p>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
     <!-- Scenario Stats -->
-    <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-gray-500 text-sm font-medium">Calculator</h3>
-        <p class="text-2xl font-bold text-gray-900 mt-2">{{ scenario.get_calculator_type_display }}</p>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h3 class="text-gray-500 dark:text-gray-400 text-sm font-medium">Calculator</h3>
+        <p class="text-2xl font-bold text-gray-900 dark:text-white mt-2">{{ scenario.get_calculator_type_display }}</p>
     </div>
 
     {% if scenario.result %}
-        <div class="bg-white rounded-lg shadow p-6">
-            <h3 class="text-gray-500 text-sm font-medium">Status</h3>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h3 class="text-gray-500 dark:text-gray-400 text-sm font-medium">Status</h3>
             <p class="text-2xl font-bold mt-2">
                 {% if scenario.result.status == 'completed' %}
-                    <span class="text-green-600">✓ Completed</span>
+                    <span class="text-green-600 dark:text-green-400">Completed</span>
                 {% elif scenario.result.status == 'pending' %}
-                    <span class="text-yellow-600">⏳ Running</span>
+                    <span class="text-yellow-600 dark:text-yellow-400">Running</span>
                 {% else %}
-                    <span class="text-red-600">✗ Failed</span>
+                    <span class="text-red-600 dark:text-red-400">Failed</span>
                 {% endif %}
             </p>
         </div>
 
         {% if scenario.result.status == 'failed' %}
-            <div class="col-span-2 bg-white rounded-lg shadow p-6">
-                <h3 class="text-gray-500 text-sm font-medium">Error</h3>
-                <p class="text-gray-900 mt-2">{{ scenario.result.error_message }}</p>
+            <div class="col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h3 class="text-gray-500 dark:text-gray-400 text-sm font-medium">Error</h3>
+                <p class="text-gray-900 dark:text-white mt-2">{{ scenario.result.error_message }}</p>
             </div>
         {% else %}
-            <div class="bg-white rounded-lg shadow p-6">
-                <h3 class="text-gray-500 text-sm font-medium">Success Rate</h3>
-                <p class="text-2xl font-bold text-gray-900 mt-2">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h3 class="text-gray-500 dark:text-gray-400 text-sm font-medium">Success Rate</h3>
+                <p class="text-2xl font-bold mt-2">
                     {% if scenario.result.result_data.calculation.success_rate is not None %}
-                        {{ scenario.result.result_data.calculation.success_rate|floatformat:0 }}%
+                        {% with scenario.result.result_data.calculation.success_rate as rate %}
+                            <span class="{% if rate >= 90 %}text-green-600 dark:text-green-400{% elif rate >= 75 %}text-yellow-600 dark:text-yellow-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+                                {{ rate|floatformat:1 }}%
+                            </span>
+                        {% endwith %}
                     {% else %}
-                        —
+                        <span class="text-gray-900 dark:text-white">—</span>
                     {% endif %}
                 </p>
             </div>
@@ -52,34 +56,297 @@
     {% endif %}
 </div>
 
-<!-- Scenario Summary -->
-{% if scenario.result and scenario.result.result_data.calculation.projections %}
-<div class="bg-white rounded-lg shadow p-6 mb-8">
-    <h2 class="text-xl font-bold text-gray-900 mb-6">Scenario Summary</h2>
+<!-- Enhanced Monte Carlo Results -->
+{% if scenario.calculator_type == 'monte_carlo' and scenario.result and scenario.result.status == 'completed' %}
+{% with scenario.result.result_data.calculation as calc %}
+
+
+<!-- Monte Carlo Results Summary -->
+{% if calc.yearly_percentiles %}
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
+    <h2 class="text-xl font-bold text-indigo-600 dark:text-indigo-400 mb-6">Results</h2>
+
+    <!-- Key Results -->
+    <div class="space-y-3 mb-8">
+        {% if calc.mode == 'find_withdrawal' %}
+        <!-- Find Withdrawal Mode Results -->
+        <div class="flex items-baseline">
+            <span class="text-gray-600 dark:text-gray-400 mr-2">Target Success Rate:</span>
+            <span class="text-xl font-bold text-indigo-500">{{ calc.achieved_success_rate|floatformat:1 }}%</span>
+        </div>
+        <div class="flex items-baseline flex-wrap">
+            <span class="text-gray-600 dark:text-gray-400 mr-2">Safe Withdrawal:</span>
+            <span class="text-xl font-bold text-green-600">${{ calc.safe_withdrawal_annual|floatformat:0|intcomma }}</span>
+            {% if calc.four_percent_comparison %}
+            <span class="text-gray-500 dark:text-gray-400 mx-2">as compared to</span>
+            <span class="text-xl font-bold text-green-600">${{ calc.four_percent_comparison.withdrawal_annual|floatformat:0|intcomma }}</span>
+            <span class="text-gray-500 dark:text-gray-400 ml-2">at the 4 percent rule</span>
+            {% endif %}
+        </div>
+        {% else %}
+        <!-- Evaluate Success Mode Results -->
+        <div class="flex items-baseline">
+            <span class="text-gray-600 dark:text-gray-400 mr-2">Monte Carlo Success Rate:</span>
+            <span class="text-xl font-bold {% if calc.success_rate >= 90 %}text-green-600{% elif calc.success_rate >= 75 %}text-yellow-500{% else %}text-red-500{% endif %}">{{ calc.success_rate|floatformat:1 }}%</span>
+        </div>
+        <div class="flex items-baseline flex-wrap">
+            <span class="text-gray-600 dark:text-gray-400 mr-2">Withdrawal:</span>
+            <span class="text-xl font-bold text-green-600">${{ calc.withdrawal_annual|floatformat:0|intcomma }}</span>
+            <span class="text-gray-500 dark:text-gray-400 ml-2">({{ calc.withdrawal_rate|floatformat:2 }}% of portfolio)</span>
+            {% if calc.four_percent_comparison %}
+            <span class="text-gray-500 dark:text-gray-400 mx-2">as compared to</span>
+            <span class="text-xl font-bold text-green-600">${{ calc.four_percent_comparison.withdrawal_annual|floatformat:0|intcomma }}</span>
+            <span class="text-gray-500 dark:text-gray-400 ml-2">at the 4 percent rule</span>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div class="flex items-baseline mb-2">
+                <span class="text-gray-600 dark:text-gray-400 mr-2">Ending Fixed Rate:</span>
+                <span class="text-lg font-semibold text-green-600">
+                    {% with calc.constant_return_trajectory|last as last_const %}
+                        ${{ last_const.portfolio_value|floatformat:0|intcomma }}
+                    {% endwith %}
+                </span>
+            </div>
+            <div class="flex items-baseline mb-2">
+                <span class="text-gray-600 dark:text-gray-400 mr-2">Ending Median Rate:</span>
+                <span class="text-lg font-semibold text-indigo-400">${{ calc.final_value_percentiles.p50|floatformat:0|intcomma }}</span>
+            </div>
+            <div class="flex items-baseline">
+                <span class="text-gray-600 dark:text-gray-400 mr-2">Ending Target Rate:</span>
+                <span class="text-lg font-semibold text-red-400">${{ calc.final_value_percentiles.p10|floatformat:0|intcomma }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart -->
+    <div style="position: relative; height: 400px;">
+        <canvas id="mcChart"></canvas>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+<script>
+(function() {
+    const ctx = document.getElementById('mcChart').getContext('2d');
+    const yearlyPercentiles = {{ calc.yearly_percentiles|safe }};
+    const constantReturn = {{ calc.constant_return_trajectory|safe|default:'[]' }};
+    const ssStartAge = {{ calc.parameters.social_security_start_age|default:'null' }};
+    const ssAnnual = {{ calc.parameters.social_security_annual|default:0 }};
+    const retirementAge = {{ calc.parameters.retirement_age }};
+
+    const ages = yearlyPercentiles.map(p => p.age);
+    const p10 = yearlyPercentiles.map(p => p.p10);  // Target success rate (~90% success)
+    const p50 = yearlyPercentiles.map(p => p.p50);  // Median
+    const constantValues = constantReturn.map(c => c.portfolio_value);
+
+    // Find index where SS starts (for annotation)
+    const ssStartIndex = ssStartAge && ssAnnual > 0 ? ages.indexOf(ssStartAge) : -1;
+
+    // Build annotations if SS is present
+    const annotations = {};
+    if (ssStartIndex >= 0 && ssAnnual > 0) {
+        annotations.ssLine = {
+            type: 'line',
+            xMin: ssStartIndex,
+            xMax: ssStartIndex,
+            borderColor: 'rgba(59, 130, 246, 0.7)',
+            borderWidth: 2,
+            borderDash: [6, 4],
+            label: {
+                display: true,
+                content: 'SS Starts',
+                position: 'start',
+                backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                color: 'white',
+                font: { size: 11 }
+            }
+        };
+    }
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ages,
+            datasets: [
+                {
+                    label: 'Constant Return',
+                    data: constantValues,
+                    borderColor: 'rgb(34, 197, 94)',
+                    backgroundColor: 'rgba(34, 197, 94, 0.2)',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    fill: true,
+                    order: 3
+                },
+                {
+                    label: 'Random Returns: Median',
+                    data: p50,
+                    borderColor: 'rgb(167, 139, 250)',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    fill: false,
+                    order: 2
+                },
+                {
+                    label: 'Random Returns: Target Success',
+                    data: p10,
+                    borderColor: 'rgb(251, 113, 133)',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    fill: false,
+                    order: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Age',
+                        color: '#9CA3AF'
+                    },
+                    grid: {
+                        color: 'rgba(107, 114, 128, 0.2)'
+                    },
+                    ticks: {
+                        color: '#9CA3AF'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Portfolio Value',
+                        color: '#9CA3AF'
+                    },
+                    grid: {
+                        color: 'rgba(107, 114, 128, 0.2)'
+                    },
+                    ticks: {
+                        color: '#9CA3AF',
+                        callback: function(value) {
+                            if (value >= 1000000) {
+                                return '$' + (value / 1000000).toFixed(1) + 'M';
+                            } else if (value >= 1000) {
+                                return '$' + (value / 1000).toFixed(0) + 'K';
+                            }
+                            return '$' + value;
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                    labels: {
+                        color: '#9CA3AF',
+                        usePointStyle: true,
+                        padding: 20
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': $' + context.parsed.y.toLocaleString();
+                        }
+                    }
+                },
+                annotation: {
+                    annotations: annotations
+                }
+            }
+        }
+    });
+})();
+</script>
+{% endif %}
+
+<!-- Monte Carlo Parameters -->
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Simulation Parameters</h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div>
+            <p class="text-gray-500 dark:text-gray-400 text-sm">Portfolio Value</p>
+            <p class="text-lg font-semibold text-gray-900 dark:text-white">${{ calc.parameters.portfolio_value|floatformat:0|intcomma }}</p>
+        </div>
+        <div>
+            <p class="text-gray-500 dark:text-gray-400 text-sm">Retirement Period</p>
+            <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ calc.parameters.years_in_retirement }} years</p>
+        </div>
+        <div>
+            <p class="text-gray-500 dark:text-gray-400 text-sm">Expected Return</p>
+            <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ calc.parameters.mean_return|floatformat:1 }}%</p>
+        </div>
+        <div>
+            <p class="text-gray-500 dark:text-gray-400 text-sm">Volatility (Std Dev)</p>
+            <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ calc.parameters.return_std_dev|floatformat:1 }}%</p>
+        </div>
+        <div>
+            <p class="text-gray-500 dark:text-gray-400 text-sm">Inflation Rate</p>
+            <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ calc.parameters.inflation_rate|floatformat:1 }}%</p>
+        </div>
+        <div>
+            <p class="text-gray-500 dark:text-gray-400 text-sm">Simulations</p>
+            <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ calc.parameters.num_simulations|intcomma }}</p>
+        </div>
+        {% if calc.parameters.social_security_annual and calc.parameters.social_security_annual > 0 %}
+        <div>
+            <p class="text-gray-500 dark:text-gray-400 text-sm">Social Security</p>
+            <p class="text-lg font-semibold text-gray-900 dark:text-white">${{ calc.parameters.social_security_annual|floatformat:0|intcomma }}/yr</p>
+            <p class="text-xs text-gray-400">Starting at age {{ calc.parameters.social_security_start_age }}</p>
+        </div>
+        {% endif %}
+        {% if calc.parameters.pension_annual and calc.parameters.pension_annual > 0 %}
+        <div>
+            <p class="text-gray-500 dark:text-gray-400 text-sm">Pension</p>
+            <p class="text-lg font-semibold text-gray-900 dark:text-white">${{ calc.parameters.pension_annual|floatformat:0|intcomma }}/yr</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endwith %}
+{% endif %}
+
+<!-- Standard Scenario Summary (for non-Monte Carlo) -->
+{% if scenario.calculator_type != 'monte_carlo' and scenario.result and scenario.result.result_data.calculation.projections %}
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Scenario Summary</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-            <p class="text-gray-600 text-sm font-medium">Initial Portfolio Balance</p>
-            <p class="text-2xl font-bold text-gray-900 mt-2">
+            <p class="text-gray-600 dark:text-gray-400 text-sm font-medium">Initial Portfolio Balance</p>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white mt-2">
                 ${{ scenario.result.result_data.calculation.projections.0.portfolio_value|floatformat:0|intcomma }}
             </p>
         </div>
         <div>
-            <p class="text-gray-600 text-sm font-medium">Final Portfolio Balance</p>
-            <p class="text-2xl font-bold text-gray-900 mt-2">
+            <p class="text-gray-600 dark:text-gray-400 text-sm font-medium">Final Portfolio Balance</p>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white mt-2">
                 {% with scenario.result.result_data.calculation.projections|last as last_projection %}
                     ${{ last_projection.portfolio_value|floatformat:0|intcomma }}
                 {% endwith %}
             </p>
         </div>
         <div>
-            <p class="text-gray-600 text-sm font-medium">Initial Annual Withdrawal</p>
-            <p class="text-2xl font-bold text-gray-900 mt-2">
+            <p class="text-gray-600 dark:text-gray-400 text-sm font-medium">Initial Annual Withdrawal</p>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white mt-2">
                 ${{ scenario.result.result_data.calculation.projections.0.annual_withdrawal|floatformat:0|intcomma }}
             </p>
         </div>
         <div>
-            <p class="text-gray-600 text-sm font-medium">Final Annual Withdrawal</p>
-            <p class="text-2xl font-bold text-gray-900 mt-2">
+            <p class="text-gray-600 dark:text-gray-400 text-sm font-medium">Final Annual Withdrawal</p>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white mt-2">
                 {% with scenario.result.result_data.calculation.projections|last as last_projection %}
                     ${{ last_projection.annual_withdrawal|floatformat:0|intcomma }}
                 {% endwith %}
@@ -89,16 +356,17 @@
 </div>
 {% endif %}
 
-<!-- Chart -->
-{% if scenario.result and scenario.result.result_data.calculation.projections %}
-<div class="bg-white rounded-lg shadow p-6 mb-8">
-    <h2 class="text-xl font-bold text-gray-900 mb-6">Portfolio Projection</h2>
+<!-- Chart for non-Monte Carlo scenarios -->
+{% if scenario.calculator_type != 'monte_carlo' and scenario.result and scenario.result.result_data.calculation.projections %}
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Portfolio Projection</h2>
     <div style="position: relative; height: 400px;">
         <canvas id="projectionChart"></canvas>
     </div>
 </div>
 
 <script>
+(function() {
     const ctx = document.getElementById('projectionChart').getContext('2d');
     const projections = {{ scenario.result.result_data.calculation.projections|safe }};
 
@@ -145,7 +413,14 @@
                     position: 'left',
                     title: {
                         display: true,
-                        text: 'Portfolio Value ($)'
+                        text: 'Portfolio Value ($)',
+                        color: '#6B7280'
+                    },
+                    ticks: {
+                        color: '#6B7280'
+                    },
+                    grid: {
+                        color: 'rgba(107, 114, 128, 0.1)'
                     }
                 },
                 y1: {
@@ -154,7 +429,11 @@
                     position: 'right',
                     title: {
                         display: true,
-                        text: 'Annual Withdrawal ($)'
+                        text: 'Annual Withdrawal ($)',
+                        color: '#6B7280'
+                    },
+                    ticks: {
+                        color: '#6B7280'
                     },
                     grid: {
                         drawOnChartArea: false
@@ -164,22 +443,27 @@
             plugins: {
                 legend: {
                     display: true,
-                    position: 'top'
+                    position: 'top',
+                    labels: {
+                        color: '#6B7280'
+                    }
                 }
             }
         }
     });
+})();
 </script>
 {% endif %}
 
-<!-- Scenario Details -->
-<div class="bg-white rounded-lg shadow p-6 mb-8">
-    <h2 class="text-xl font-bold text-gray-900 mb-6">Scenario Parameters</h2>
+<!-- Scenario Details (for non-Monte Carlo - Monte Carlo has its own parameters section) -->
+{% if scenario.calculator_type != 'monte_carlo' %}
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Scenario Parameters</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <!-- User-provided parameters -->
         {% for key, value in scenario.parameters.items %}
         <div>
-            <label class="block text-sm font-medium text-gray-700">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 {% if key == 'portfolio_value' %}Portfolio Value
                 {% elif key == 'current_age' %}Current Age
                 {% elif key == 'retirement_age' %}Retirement Age
@@ -191,7 +475,7 @@
                 {% else %}{{ key|title }}
                 {% endif %}
             </label>
-            <p class="mt-1 text-lg text-gray-900">
+            <p class="mt-1 text-lg text-gray-900 dark:text-white">
                 {% if key in 'annual_return_rate,inflation_rate,annual_return' %}
                     {{ value|floatformat:1 }}%
                 {% elif key in 'current_age,retirement_age' %}
@@ -202,7 +486,7 @@
                     {{ value }}
                 {% endif %}
             </p>
-            <p class="text-xs text-gray-500 mt-1">User-provided</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">User-provided</p>
         </div>
         {% endfor %}
 
@@ -211,7 +495,7 @@
             {% for key, value in scenario.result.result_data.defaults_used.items %}
                 {% if value is not None %}
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                         {% if key == 'portfolio_value' %}Portfolio Value
                         {% elif key == 'current_age' %}Current Age
                         {% elif key == 'retirement_age' %}Retirement Age
@@ -223,7 +507,7 @@
                         {% else %}{{ key|title }}
                         {% endif %}
                     </label>
-                    <p class="mt-1 text-lg text-gray-900">
+                    <p class="mt-1 text-lg text-gray-900 dark:text-white">
                         {% if key in 'annual_return_rate,inflation_rate,annual_return' %}
                             {{ value|floatformat:1 }}%
                         {% elif key in 'current_age,retirement_age' %}
@@ -234,7 +518,7 @@
                             {{ value }}
                         {% endif %}
                     </p>
-                    <p class="text-xs text-gray-500 mt-1">Default value</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Default value</p>
                 </div>
                 {% endif %}
             {% endfor %}
@@ -243,21 +527,28 @@
 
     <!-- Display note if using defaults -->
     {% if scenario.result.result_data.defaults_used %}
-        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
-            <p class="text-sm text-blue-700">
-                <span class="font-medium">ℹ Note:</span> Some parameters were not specified and were filled in with default values from your financial profile.
+        <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded">
+            <p class="text-sm text-blue-700 dark:text-blue-300">
+                <span class="font-medium">Note:</span> Some parameters were not specified and were filled in with default values from your financial profile.
             </p>
         </div>
     {% endif %}
 </div>
+{% endif %}
 
 <!-- Actions -->
 <div class="flex space-x-4">
-    <a href="{% url 'scenario-edit' scenario.id %}" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-        Edit
-    </a>
-    <a href="{% url 'dashboard' %}" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
-        Back to Dashboard
+    {% if scenario.calculator_type == 'monte_carlo' %}
+        <a href="{% url 'scenario-monte-carlo-edit' scenario.id %}" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition duration-200">
+            Edit Scenario
+        </a>
+    {% else %}
+        <a href="{% url 'scenario-edit' scenario.id %}" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition duration-200">
+            Edit Scenario
+        </a>
+    {% endif %}
+    <a href="{% url 'scenarios' %}" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition duration-200">
+        Back to Scenarios
     </a>
 </div>
 {% endblock %}
