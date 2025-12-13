@@ -110,9 +110,12 @@
 
         <!-- Run Calculation Section -->
         <div class="mt-8 flex gap-4">
-            <button onclick="runCalculation({{ scenario.pk }})" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold transition-colors">
-                Run Bucketed Withdrawal Calculation
-            </button>
+            <form method="post" action="{% url 'bucket-calculate' scenario.pk %}" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold transition-colors">
+                    Run Bucketed Withdrawal Calculation
+                </button>
+            </form>
             <a href="{% url 'scenario-bucketed-edit' scenario.pk %}" class="px-6 py-3 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
                 Edit Scenario Parameters
             </a>
@@ -140,58 +143,4 @@
     </div>
 </div>
 
-<!-- Hidden CSRF token for JavaScript -->
-{% csrf_token %}
-
-<!-- JavaScript for calculation -->
-<script>
-function runCalculation(scenarioId) {
-    if (!confirm('Run the bucketed withdrawal calculation? This may take a moment...')) {
-        return;
-    }
-
-    // Show loading state
-    const button = event.target;
-    const originalText = button.textContent;
-    button.disabled = true;
-    button.textContent = 'Running calculation...';
-
-    fetch(`/api/v1/scenarios/${scenarioId}/calculate/bucketed-withdrawal/`, {
-        method: 'POST',
-        credentials: 'same-origin',  // Include session cookies
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken')
-        }
-    })
-    .then(response => {
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        return response.json();
-    })
-    .then(data => {
-        // Redirect to scenario detail page to see results
-        window.location.href = `/scenarios/${scenarioId}/`;
-    })
-    .catch(error => {
-        alert('Calculation failed: ' + error.message);
-        button.disabled = false;
-        button.textContent = originalText;
-    });
-}
-
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-</script>
 {% endblock %}

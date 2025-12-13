@@ -6,7 +6,7 @@ from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django.views.generic import DetailView, ListView, CreateView, UpdateView, DeleteView
+from django.views.generic import DetailView, ListView, CreateView, UpdateView, DeleteView, View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.shortcuts import get_object_or_404
@@ -603,6 +603,120 @@ class BucketUpdateView(LoginRequiredMixin, UpdateView):
     def get_success_url(self):
         bucket = self.get_object()
         return reverse_lazy('bucket-list', kwargs={'scenario_pk': bucket.scenario.pk})
+
+
+class RunBucketedCalculationView(LoginRequiredMixin, View):
+    """Run bucketed withdrawal calculation for a scenario."""
+
+    def post(self, request, scenario_pk):
+        """Handle POST request to run calculation."""
+        import time
+        from decimal import Decimal
+        from jretirewise.calculations.calculators import DynamicBucketedWithdrawalCalculator
+        from .models import CalculationResult, BucketedWithdrawalResult
+
+        # Get scenario and verify ownership
+        scenario = get_object_or_404(RetirementScenario, pk=scenario_pk, user=request.user)
+
+        # Validate scenario has required parameters
+        params = scenario.parameters
+        if not all(k in params for k in ['portfolio_value', 'retirement_age', 'life_expectancy']):
+            messages.error(request, 'Scenario missing required parameters: portfolio_value, retirement_age, life_expectancy')
+            return redirect('bucket-list', scenario_pk=scenario_pk)
+
+        # Get all withdrawal buckets for scenario
+        buckets = scenario.withdrawal_buckets.all().order_by('order', 'start_age')
+        if not buckets.exists():
+            messages.error(request, 'Please add at least one withdrawal bucket before running the calculation.')
+            return redirect('bucket-list', scenario_pk=scenario_pk)
+
+        # Convert buckets to dictionaries for calculator
+        bucket_dicts = []
+        for bucket in buckets:
+            bucket_dict = {
+                'bucket_name': bucket.bucket_name,
+                'start_age': bucket.start_age,
+                'end_age': bucket.end_age,
+                'target_withdrawal_rate': float(bucket.target_withdrawal_rate),
+                'min_withdrawal_amount': float(bucket.min_withdrawal_amount) if bucket.min_withdrawal_amount else None,
+                'max_withdrawal_amount': float(bucket.max_withdrawal_amount) if bucket.max_withdrawal_amount else None,
+                'manual_withdrawal_override': float(bucket.manual_withdrawal_override) if bucket.manual_withdrawal_override else None,
+                'expected_pension_income': float(bucket.expected_pension_income),
+                'expected_social_security_income': float(bucket.expected_social_security_income),
+                'healthcare_cost_adjustment': float(bucket.healthcare_cost_adjustment),
+                'tax_loss_harvesting_enabled': bucket.tax_loss_harvesting_enabled,
+                'roth_conversion_enabled': bucket.roth_conversion_enabled,
+                'allowed_account_types': bucket.allowed_account_types or [],
+                'prohibited_account_types': bucket.prohibited_account_types or [],
+                'withdrawal_order': bucket.withdrawal_order or [],
+            }
+            bucket_dicts.append(bucket_dict)
+
+        try:
+            # Run calculation
+            start_time = time.time()
+            calculator = DynamicBucketedWithdrawalCalculator(
+                portfolio_value=Decimal(str(params['portfolio_value'])),
+                retirement_age=int(params['retirement_age']),
+                life_expectancy=int(params['life_expectancy']),
+                annual_return_rate=float(params.get('annual_return_rate', 0.07)),
+                inflation_rate=float(params.get('inflation_rate', 0.03))
+            )
+            result_data = calculator.calculate(bucket_dicts)
+            execution_time_ms = int((time.time() - start_time) * 1000)
+
+            # Store result in database
+            calculation_result, created = CalculationResult.objects.update_or_create(
+                scenario=scenario,
+                defaults={
+                    'status': 'completed',
+                    'result_data': result_data,
+                    'execution_time_ms': execution_time_ms,
+                    'error_message': ''
+                }
+            )
+
+            # Store individual year results
+            BucketedWithdrawalResult.objects.filter(calculation=calculation_result).delete()
+
+            # Create bucket lookup
+            bucket_lookup = {b.bucket_name: b for b in buckets}
+
+            for projection in result_data.get('projections', []):
+                bucket_obj = bucket_lookup.get(projection.get('bucket_name'))
+                if bucket_obj:
+                    BucketedWithdrawalResult.objects.create(
+                        calculation=calculation_result,
+                        bucket=bucket_obj,
+                        year=projection.get('year', 0),
+                        age=projection.get('age', 0),
+                        portfolio_value_start=Decimal(str(projection.get('portfolio_value_start', 0))),
+                        portfolio_value_end=Decimal(str(projection.get('portfolio_value_end', 0))),
+                        target_withdrawal=Decimal(str(projection.get('target_withdrawal', 0))),
+                        actual_withdrawal=Decimal(str(projection.get('actual_withdrawal', 0))),
+                        pension_income=Decimal(str(projection.get('pension_income', 0))),
+                        social_security_income=Decimal(str(projection.get('social_security_income', 0))),
+                        healthcare_costs=Decimal(str(projection.get('healthcare_costs', 0))),
+                        total_available_income=Decimal(str(projection.get('total_available_income', 0))),
+                        investment_return=Decimal(str(projection.get('investment_return', 0))),
+                        inflation_adjustment=Decimal(str(projection.get('inflation_adjustment', 0))),
+                    )
+
+            messages.success(request, f'Calculation completed successfully in {execution_time_ms}ms!')
+            return redirect('scenario-detail', pk=scenario_pk)
+
+        except Exception as e:
+            # Store error in result
+            CalculationResult.objects.update_or_create(
+                scenario=scenario,
+                defaults={
+                    'status': 'failed',
+                    'result_data': {},
+                    'error_message': str(e)
+                }
+            )
+            messages.error(request, f'Calculation failed: {str(e)}')
+            return redirect('bucket-list', scenario_pk=scenario_pk)
 
 
 class BucketDeleteView(LoginRequiredMixin, DeleteView):

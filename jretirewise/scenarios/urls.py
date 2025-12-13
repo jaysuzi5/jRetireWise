@@ -9,6 +9,7 @@ from .views import (
     MonteCarloScenarioCreateView, MonteCarloScenarioUpdateView,
     BucketedWithdrawalScenarioCreateView, BucketedWithdrawalScenarioUpdateView,
     BucketListView, BucketCreateView, BucketUpdateView, BucketDeleteView,
+    RunBucketedCalculationView,
 )
 
 urlpatterns = [
@@ -24,6 +25,7 @@ urlpatterns = [
     # Bucket Management URLs
     path('<int:scenario_pk>/buckets/', BucketListView.as_view(), name='bucket-list'),
     path('<int:scenario_pk>/buckets/create/', BucketCreateView.as_view(), name='bucket-create'),
+    path('<int:scenario_pk>/buckets/calculate/', RunBucketedCalculationView.as_view(), name='bucket-calculate'),
     path('buckets/<int:pk>/edit/', BucketUpdateView.as_view(), name='bucket-edit'),
     path('buckets/<int:pk>/delete/', BucketDeleteView.as_view(), name='bucket-delete'),
 ]
