@@ -43,11 +43,11 @@
             </div>
             <div>
                 <p class="text-gray-500 dark:text-gray-400">Expected Return</p>
-                <p class="text-xl font-semibold text-gray-900 dark:text-white">{{ scenario.parameters.annual_return_rate|mul:100|floatformat:1 }}%</p>
+                <p class="text-xl font-semibold text-gray-900 dark:text-white">{{ scenario.parameters.annual_return_rate|multiply:100|floatformat:1 }}%</p>
             </div>
             <div>
                 <p class="text-gray-500 dark:text-gray-400">Inflation Rate</p>
-                <p class="text-xl font-semibold text-gray-900 dark:text-white">{{ scenario.parameters.inflation_rate|mul:100|floatformat:1 }}%</p>
+                <p class="text-xl font-semibold text-gray-900 dark:text-white">{{ scenario.parameters.inflation_rate|multiply:100|floatformat:1 }}%</p>
             </div>
         </div>
     </div>
