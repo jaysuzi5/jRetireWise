@@ -140,6 +140,9 @@
     </div>
 </div>
 
+<!-- Hidden CSRF token for JavaScript -->
+{% csrf_token %}
+
 <!-- JavaScript for calculation -->
 <script>
 function runCalculation(scenarioId) {
@@ -155,6 +158,7 @@ function runCalculation(scenarioId) {
 
     fetch(`/api/v1/scenarios/${scenarioId}/calculate/bucketed-withdrawal/`, {
         method: 'POST',
+        credentials: 'same-origin',  // Include session cookies
         headers: {
             'Content-Type': 'application/json',
             'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken')
