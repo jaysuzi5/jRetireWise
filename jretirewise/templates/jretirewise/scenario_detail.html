@@ -537,9 +537,207 @@
 {% endif %}
 
 <!-- Actions -->
+<!-- Bucketed Withdrawal Results -->
+{% if scenario.calculator_type == 'bucketed_withdrawal' %}
+    {% if scenario.withdrawal_buckets.exists %}
+        {% if scenario.result and scenario.result.status == 'completed' %}
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
+                <h2 class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mb-6">Bucketed Withdrawal Results</h2>
+
+                <!-- Summary Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                    <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Final Portfolio Value</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white">${{ scenario.result.result_data.final_portfolio_value|floatformat:0|intcomma }}</p>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Total Withdrawals</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white">${{ scenario.result.result_data.total_withdrawals|floatformat:0|intcomma }}</p>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Success Status</p>
+                        <p class="text-2xl font-bold {% if scenario.result.result_data.success %}text-green-600{% else %}text-red-600{% endif %}">
+                            {% if scenario.result.result_data.success %}✓ Success{% else %}✗ Failed{% endif %}
+                        </p>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Years Portfolio Lasted</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ scenario.result.result_data.years_portfolio_lasted }}</p>
+                    </div>
+                </div>
+
+                <!-- Year-by-Year Results Table -->
+                <div class="mb-8">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Year-by-Year Projections</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-100 dark:bg-gray-700">
+                                <tr>
+                                    <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-300">Year</th>
+                                    <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-300">Age</th>
+                                    <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-300">Bucket</th>
+                                    <th class="px-4 py-2 text-right text-gray-700 dark:text-gray-300">Rate</th>
+                                    <th class="px-4 py-2 text-right text-gray-700 dark:text-gray-300">Withdrawal</th>
+                                    <th class="px-4 py-2 text-right text-gray-700 dark:text-gray-300">Income</th>
+                                    <th class="px-4 py-2 text-right text-gray-700 dark:text-gray-300">Portfolio (End)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                {% for year_result in scenario.result.bucketed_results.all|slice:":30" %}
+                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                        <td class="px-4 py-2 text-gray-900 dark:text-white">{{ year_result.year }}</td>
+                                        <td class="px-4 py-2 text-gray-900 dark:text-white">{{ year_result.age }}</td>
+                                        <td class="px-4 py-2 text-gray-900 dark:text-white font-medium">{{ year_result.bucket.bucket_name }}</td>
+                                        <td class="px-4 py-2 text-right text-gray-900 dark:text-white">{{ year_result.target_rate|floatformat:1 }}%</td>
+                                        <td class="px-4 py-2 text-right text-gray-900 dark:text-white">${{ year_result.actual_withdrawal|floatformat:0|intcomma }}</td>
+                                        <td class="px-4 py-2 text-right text-gray-900 dark:text-white">${{ year_result.total_available_income|floatformat:0|intcomma }}</td>
+                                        <td class="px-4 py-2 text-right text-gray-900 dark:text-white font-semibold">${{ year_result.portfolio_value_end|floatformat:0|intcomma }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% if scenario.result.bucketed_results.all|length > 30 %}
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Showing first 30 years of {{ scenario.result.bucketed_results.all|length }} total years</p>
+                    {% endif %}
+                </div>
+
+                <!-- Chart -->
+                <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Portfolio Growth & Withdrawals Over Time</h3>
+                    <canvas id="bucketedChart" height="80"></canvas>
+                </div>
+            </div>
+
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <script>
+                const bucketedData = {{ scenario.result.bucketed_results.all|safe }};
+                const ctx = document.getElementById('bucketedChart').getContext('2d');
+
+                // Prepare data for chart
+                const labels = bucketedData.map(d => d.age);
+                const portfolioValues = bucketedData.map(d => parseFloat(d.portfolio_value_end));
+                const withdrawals = bucketedData.map(d => parseFloat(d.actual_withdrawal));
+
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Portfolio Value',
+                                data: portfolioValues,
+                                borderColor: '#4f46e5',
+                                backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                                borderWidth: 2,
+                                fill: true,
+                                tension: 0.4,
+                                yAxisID: 'y'
+                            },
+                            {
+                                label: 'Annual Withdrawal',
+                                data: withdrawals,
+                                borderColor: '#ef4444',
+                                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                borderWidth: 2,
+                                fill: false,
+                                tension: 0.4,
+                                yAxisID: 'y1'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        },
+                        plugins: {
+                            legend: {
+                                display: true,
+                                labels: {
+                                    color: document.documentElement.classList.contains('dark') ? '#d1d5db' : '#374151',
+                                    padding: 15
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Age',
+                                    color: document.documentElement.classList.contains('dark') ? '#d1d5db' : '#374151'
+                                },
+                                grid: {
+                                    color: document.documentElement.classList.contains('dark') ? 'rgba(107, 114, 128, 0.3)' : 'rgba(209, 213, 219, 0.5)'
+                                },
+                                ticks: {
+                                    color: document.documentElement.classList.contains('dark') ? '#d1d5db' : '#374151'
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Portfolio Value ($)',
+                                    color: document.documentElement.classList.contains('dark') ? '#d1d5db' : '#374151'
+                                },
+                                position: 'left',
+                                grid: {
+                                    color: document.documentElement.classList.contains('dark') ? 'rgba(107, 114, 128, 0.3)' : 'rgba(209, 213, 219, 0.5)'
+                                },
+                                ticks: {
+                                    color: document.documentElement.classList.contains('dark') ? '#d1d5db' : '#374151',
+                                    callback: function(value) {
+                                        return '$' + value.toLocaleString('en-US', {maximumFractionDigits: 0});
+                                    }
+                                }
+                            },
+                            y1: {
+                                title: {
+                                    display: true,
+                                    text: 'Annual Withdrawal ($)',
+                                    color: document.documentElement.classList.contains('dark') ? '#d1d5db' : '#374151'
+                                },
+                                position: 'right',
+                                grid: {
+                                    drawOnChartArea: false
+                                },
+                                ticks: {
+                                    color: document.documentElement.classList.contains('dark') ? '#d1d5db' : '#374151',
+                                    callback: function(value) {
+                                        return '$' + value.toLocaleString('en-US', {maximumFractionDigits: 0});
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            </script>
+        {% else %}
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8 text-center">
+                <p class="text-gray-600 dark:text-gray-400 mb-4">Calculation not run yet. Configure your withdrawal buckets and run the calculation to see results.</p>
+                <a href="{% url 'bucket-list' scenario.id %}" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 inline-block">
+                    Manage Buckets
+                </a>
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8 text-center">
+            <p class="text-gray-600 dark:text-gray-400 mb-4">No withdrawal buckets configured yet. Create your first bucket to define your retirement strategy.</p>
+            <a href="{% url 'bucket-create' scenario.id %}" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 inline-block">
+                Create First Bucket
+            </a>
+        </div>
+    {% endif %}
+{% endif %}
+
 <div class="flex space-x-4">
     {% if scenario.calculator_type == 'monte_carlo' %}
         <a href="{% url 'scenario-monte-carlo-edit' scenario.id %}" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition duration-200">
+            Edit Scenario
+        </a>
+    {% elif scenario.calculator_type == 'bucketed_withdrawal' %}
+        <a href="{% url 'scenario-bucketed-edit' scenario.id %}" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition duration-200">
             Edit Scenario
         </a>
     {% else %}
