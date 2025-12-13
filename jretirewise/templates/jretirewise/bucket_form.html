@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_create %}Create{% else %}Edit{% endif %} Withdrawal Bucket - jRetireWise{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+            {% if is_create %}Create{% else %}Edit{% endif %} Withdrawal Bucket
+        </h1>
+        <p class="mt-2 text-gray-600 dark:text-gray-400">
+            Scenario: <span class="font-semibold">{{ scenario.name }}</span>
+        </p>
+    </div>
+
+    {% if form.non_field_errors %}
+        <div class="mb-6 p-4 bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-400 rounded-lg">
+            {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <form method="post" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+        {% csrf_token %}
+
+        <!-- Basic Info Section -->
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Bucket Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="{{ form.bucket_name.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name *</label>
+                    {{ form.bucket_name }}
+                    {% if form.bucket_name.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.bucket_name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.order.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Order</label>
+                    {{ form.order }}
+                    {% if form.order.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.order.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="mt-6">
+                <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                {{ form.description }}
+                {% if form.description.errors %}
+                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.description.errors.0 }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Time Period Section -->
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Time Period</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="{{ form.start_age.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Age *</label>
+                    {{ form.start_age }}
+                    {% if form.start_age.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.start_age.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.end_age.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">End Age *</label>
+                    {{ form.end_age }}
+                    {% if form.end_age.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.end_age.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Withdrawal Parameters Section -->
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Withdrawal Parameters</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="{{ form.target_withdrawal_rate.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Target Withdrawal Rate (%) *</label>
+                    {{ form.target_withdrawal_rate }}
+                    {% if form.target_withdrawal_rate.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.target_withdrawal_rate.errors.0 }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">E.g., 4.0 for 4% withdrawal</p>
+                </div>
+
+                <div>
+                    <label for="{{ form.manual_withdrawal_override.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Manual Withdrawal Amount ($)</label>
+                    {{ form.manual_withdrawal_override }}
+                    {% if form.manual_withdrawal_override.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.manual_withdrawal_override.errors.0 }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Leave blank to use calculated rate</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <div>
+                    <label for="{{ form.min_withdrawal_amount.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Min Withdrawal Amount ($)</label>
+                    {{ form.min_withdrawal_amount }}
+                    {% if form.min_withdrawal_amount.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.min_withdrawal_amount.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.max_withdrawal_amount.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Max Withdrawal Amount ($)</label>
+                    {{ form.max_withdrawal_amount }}
+                    {% if form.max_withdrawal_amount.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.max_withdrawal_amount.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Income Sources Section -->
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Income Sources</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="{{ form.expected_pension_income.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Expected Pension Income ($/year)</label>
+                    {{ form.expected_pension_income }}
+                    {% if form.expected_pension_income.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.expected_pension_income.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.expected_social_security_income.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Expected Social Security ($/year)</label>
+                    {{ form.expected_social_security_income }}
+                    {% if form.expected_social_security_income.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.expected_social_security_income.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="mt-6">
+                <label for="{{ form.healthcare_cost_adjustment.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Healthcare Cost Adjustment ($/year)</label>
+                {{ form.healthcare_cost_adjustment }}
+                {% if form.healthcare_cost_adjustment.errors %}
+                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.healthcare_cost_adjustment.errors.0 }}</p>
+                {% endif %}
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Positive = additional cost, Negative = savings (e.g., Medicare reduces costs)</p>
+            </div>
+        </div>
+
+        <!-- Advanced Options Section -->
+        <div class="p-6">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Advanced Options</h2>
+            <div class="space-y-4">
+                <div class="flex items-center">
+                    <input type="checkbox" id="{{ form.tax_loss_harvesting_enabled.id_for_label }}" name="tax_loss_harvesting_enabled" {% if form.tax_loss_harvesting_enabled.value %}checked{% endif %} class="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500">
+                    <label for="{{ form.tax_loss_harvesting_enabled.id_for_label }}" class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Enable Tax Loss Harvesting
+                        <p class="text-xs text-gray-500 dark:text-gray-400 font-normal mt-0.5">Automatically harvest tax losses to offset gains</p>
+                    </label>
+                </div>
+
+                <div class="flex items-center">
+                    <input type="checkbox" id="{{ form.roth_conversion_enabled.id_for_label }}" name="roth_conversion_enabled" {% if form.roth_conversion_enabled.value %}checked{% endif %} class="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500">
+                    <label for="{{ form.roth_conversion_enabled.id_for_label }}" class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Enable Roth Conversions
+                        <p class="text-xs text-gray-500 dark:text-gray-400 font-normal mt-0.5">Consider Roth conversions during low-income years</p>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700 flex justify-between">
+            <a href="{% url 'bucket-list' scenario.pk %}" class="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                Cancel
+            </a>
+            <button type="submit" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-500 transition-colors">
+                {% if is_create %}Create{% else %}Update{% endif %} Bucket
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

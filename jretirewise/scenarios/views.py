@@ -519,3 +519,108 @@ class BucketedWithdrawalScenarioUpdateView(LoginRequiredMixin, UpdateView):
     def get_success_url(self):
         """Redirect to bucket management page."""
         return reverse_lazy('bucket-list', kwargs={'scenario_pk': self.object.pk})
+
+
+class BucketListView(LoginRequiredMixin, ListView):
+    """List all withdrawal buckets for a scenario."""
+    model = WithdrawalBucket
+    template_name = 'jretirewise/bucket_list.html'
+    context_object_name = 'buckets'
+    paginate_by = 50
+
+    def get_queryset(self):
+        scenario_pk = self.kwargs['scenario_pk']
+        scenario = get_object_or_404(
+            RetirementScenario,
+            pk=scenario_pk,
+            user=self.request.user
+        )
+        return WithdrawalBucket.objects.filter(scenario=scenario).order_by('order', 'start_age')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        scenario_pk = self.kwargs['scenario_pk']
+        context['scenario'] = get_object_or_404(
+            RetirementScenario,
+            pk=scenario_pk,
+            user=self.request.user
+        )
+        return context
+
+
+class BucketCreateView(LoginRequiredMixin, CreateView):
+    """Create a new withdrawal bucket for a scenario."""
+    model = WithdrawalBucket
+    form_class = WithdrawalBucketForm
+    template_name = 'jretirewise/bucket_form.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        scenario_pk = self.kwargs['scenario_pk']
+        context['scenario'] = get_object_or_404(
+            RetirementScenario,
+            pk=scenario_pk,
+            user=self.request.user
+        )
+        context['is_create'] = True
+        return context
+
+    def form_valid(self, form):
+        scenario_pk = self.kwargs['scenario_pk']
+        scenario = get_object_or_404(
+            RetirementScenario,
+            pk=scenario_pk,
+            user=self.request.user
+        )
+        form.instance.scenario = scenario
+        messages.success(self.request, f'Bucket "{form.instance.bucket_name}" created successfully!')
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('bucket-list', kwargs={'scenario_pk': self.kwargs['scenario_pk']})
+
+
+class BucketUpdateView(LoginRequiredMixin, UpdateView):
+    """Update an existing withdrawal bucket."""
+    model = WithdrawalBucket
+    form_class = WithdrawalBucketForm
+    template_name = 'jretirewise/bucket_form.html'
+
+    def get_queryset(self):
+        return WithdrawalBucket.objects.filter(scenario__user=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        bucket = self.get_object()
+        context['scenario'] = bucket.scenario
+        context['is_create'] = False
+        return context
+
+    def form_valid(self, form):
+        messages.success(self.request, f'Bucket "{form.instance.bucket_name}" updated successfully!')
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        bucket = self.get_object()
+        return reverse_lazy('bucket-list', kwargs={'scenario_pk': bucket.scenario.pk})
+
+
+class BucketDeleteView(LoginRequiredMixin, DeleteView):
+    """Delete a withdrawal bucket."""
+    model = WithdrawalBucket
+
+    def get_queryset(self):
+        return WithdrawalBucket.objects.filter(scenario__user=self.request.user)
+
+    def delete(self, request, *args, **kwargs):
+        bucket = self.get_object()
+        bucket_name = bucket.bucket_name
+        scenario_pk = bucket.scenario.pk
+        messages.success(request, f'Bucket "{bucket_name}" deleted successfully!')
+        response = super().delete(request, *args, **kwargs)
+        self.success_url = reverse_lazy('bucket-list', kwargs={'scenario_pk': scenario_pk})
+        return response
+
+    def get_success_url(self):
+        bucket = self.get_object()
+        return reverse_lazy('bucket-list', kwargs={'scenario_pk': bucket.scenario.pk})

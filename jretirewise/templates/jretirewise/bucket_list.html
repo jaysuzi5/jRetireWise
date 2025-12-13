@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Withdrawal Buckets - jRetireWise{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8 flex justify-between items-start">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+                Withdrawal Buckets
+            </h1>
+            <p class="mt-2 text-gray-600 dark:text-gray-400">
+                Managing: <span class="font-semibold">{{ scenario.name }}</span>
+            </p>
+        </div>
+        <div class="space-x-3">
+            <a href="{% url 'scenario-detail' scenario.pk %}" class="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                View Results
+            </a>
+            <a href="{% url 'bucket-create' scenario.pk %}" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                + Add Bucket
+            </a>
+        </div>
+    </div>
+
+    <!-- Scenario Info Card -->
+    <div class="mb-6 bg-white dark:bg-gray-800 rounded-xl shadow p-6 border-l-4 border-indigo-600">
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+            <div>
+                <p class="text-gray-500 dark:text-gray-400">Retirement Age</p>
+                <p class="text-xl font-semibold text-gray-900 dark:text-white">{{ scenario.parameters.retirement_age }}</p>
+            </div>
+            <div>
+                <p class="text-gray-500 dark:text-gray-400">Life Expectancy</p>
+                <p class="text-xl font-semibold text-gray-900 dark:text-white">{{ scenario.parameters.life_expectancy }}</p>
+            </div>
+            <div>
+                <p class="text-gray-500 dark:text-gray-400">Portfolio Value</p>
+                <p class="text-xl font-semibold text-gray-900 dark:text-white">${{ scenario.parameters.portfolio_value|floatformat:0|intcomma }}</p>
+            </div>
+            <div>
+                <p class="text-gray-500 dark:text-gray-400">Expected Return</p>
+                <p class="text-xl font-semibold text-gray-900 dark:text-white">{{ scenario.parameters.annual_return_rate|mul:100|floatformat:1 }}%</p>
+            </div>
+            <div>
+                <p class="text-gray-500 dark:text-gray-400">Inflation Rate</p>
+                <p class="text-xl font-semibold text-gray-900 dark:text-white">{{ scenario.parameters.inflation_rate|mul:100|floatformat:1 }}%</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Buckets Section -->
+    {% if buckets %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">
+            <!-- Table Header -->
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Bucket Name</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Age Range</th>
+                            <th class="px-6 py-4 text-right text-sm font-semibold text-gray-900 dark:text-white">Withdrawal Rate</th>
+                            <th class="px-6 py-4 text-right text-sm font-semibold text-gray-900 dark:text-white">Pension + SS Income</th>
+                            <th class="px-6 py-4 text-center text-sm font-semibold text-gray-900 dark:text-white">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                        {% for bucket in buckets %}
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                <td class="px-6 py-4">
+                                    <div>
+                                        <p class="font-medium text-gray-900 dark:text-white">{{ bucket.bucket_name }}</p>
+                                        {% if bucket.description %}
+                                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ bucket.description|truncatewords:8 }}</p>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-gray-900 dark:text-white">
+                                    {{ bucket.get_age_range_display }}
+                                </td>
+                                <td class="px-6 py-4 text-right font-semibold text-gray-900 dark:text-white">
+                                    {{ bucket.target_withdrawal_rate|floatformat:1 }}%
+                                </td>
+                                <td class="px-6 py-4 text-right text-gray-900 dark:text-white">
+                                    {% if bucket.expected_pension_income or bucket.expected_social_security_income %}
+                                        ${{ bucket.expected_pension_income|add:bucket.expected_social_security_income|floatformat:0|intcomma }}
+                                    {% else %}
+                                        <span class="text-gray-500 dark:text-gray-400">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 text-center">
+                                    <div class="flex justify-center gap-2">
+                                        <a href="{% url 'bucket-edit' bucket.pk %}" class="px-3 py-1 text-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded">
+                                            Edit
+                                        </a>
+                                        <a href="{% url 'bucket-delete' bucket.pk %}" class="px-3 py-1 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded">
+                                            Delete
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Run Calculation Section -->
+        <div class="mt-8 flex gap-4">
+            <button onclick="runCalculation({{ scenario.pk }})" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold transition-colors">
+                Run Bucketed Withdrawal Calculation
+            </button>
+            <a href="{% url 'scenario-bucketed-edit' scenario.pk %}" class="px-6 py-3 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                Edit Scenario Parameters
+            </a>
+        </div>
+
+    {% else %}
+        <!-- Empty State -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-12 text-center">
+            <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m0 0h6m-6-6H6m0 0H0"/>
+            </svg>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Withdrawal Buckets</h3>
+            <p class="text-gray-500 dark:text-gray-400 mb-6">Create your first withdrawal bucket to define your retirement strategy.</p>
+            <a href="{% url 'bucket-create' scenario.pk %}" class="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 inline-block">
+                Create First Bucket
+            </a>
+        </div>
+    {% endif %}
+
+    <!-- Back to Scenarios -->
+    <div class="mt-8 text-center">
+        <a href="{% url 'scenarios' %}" class="text-indigo-600 dark:text-indigo-400 hover:underline">
+            ← Back to All Scenarios
+        </a>
+    </div>
+</div>
+
+<!-- JavaScript for calculation -->
+<script>
+function runCalculation(scenarioId) {
+    if (!confirm('Run the bucketed withdrawal calculation? This may take a moment...')) {
+        return;
+    }
+
+    // Show loading state
+    const button = event.target;
+    const originalText = button.textContent;
+    button.disabled = true;
+    button.textContent = 'Running calculation...';
+
+    fetch(`/api/v1/scenarios/${scenarioId}/calculate/bucketed-withdrawal/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken')
+        }
+    })
+    .then(response => {
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return response.json();
+    })
+    .then(data => {
+        // Redirect to scenario detail page to see results
+        window.location.href = `/scenarios/${scenarioId}/`;
+    })
+    .catch(error => {
+        alert('Calculation failed: ' + error.message);
+        button.disabled = false;
+        button.textContent = originalText;
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}
