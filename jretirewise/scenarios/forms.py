@@ -369,3 +369,173 @@ class MonteCarloScenarioForm(forms.ModelForm):
         if commit:
             instance.save()
         return instance
+
+
+class BucketedWithdrawalScenarioForm(forms.ModelForm):
+    """
+    Form for creating/editing bucketed withdrawal scenarios.
+    Pre-fills from FinancialProfile and Portfolio.
+    """
+
+    # Age Parameters
+    retirement_age = forms.IntegerField(
+        min_value=18,
+        max_value=100,
+        widget=forms.NumberInput(attrs={
+            'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+            'placeholder': '65',
+        }),
+        label='Retirement Age',
+    )
+
+    life_expectancy = forms.IntegerField(
+        min_value=50,
+        max_value=120,
+        widget=forms.NumberInput(attrs={
+            'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+            'placeholder': '95',
+        }),
+        label='Life Expectancy',
+    )
+
+    # Portfolio Parameters
+    portfolio_value = forms.DecimalField(
+        min_value=0,
+        max_digits=15,
+        decimal_places=2,
+        widget=forms.NumberInput(attrs={
+            'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+            'placeholder': '1,000,000',
+            'step': '1000',
+        }),
+        label='Portfolio Balance ($)',
+    )
+
+    # Market Parameters (as percentages for user input)
+    expected_return = forms.DecimalField(
+        min_value=0,
+        max_value=30,
+        decimal_places=1,
+        widget=forms.NumberInput(attrs={
+            'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+            'placeholder': '7.0',
+            'step': '0.1',
+        }),
+        label='Expected Annual Return (%)',
+        help_text='Historical stock market average is ~7%',
+        initial=7.0,
+    )
+
+    inflation_rate = forms.DecimalField(
+        min_value=0,
+        max_value=20,
+        decimal_places=1,
+        widget=forms.NumberInput(attrs={
+            'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+            'placeholder': '3.0',
+            'step': '0.1',
+        }),
+        label='Inflation Rate (%)',
+        initial=3.0,
+    )
+
+    class Meta:
+        model = RetirementScenario
+        fields = ['name', 'description']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+                'placeholder': 'My Bucketed Withdrawal Strategy',
+            }),
+            'description': forms.Textarea(attrs={
+                'rows': 2,
+                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+                'placeholder': 'Optional description...',
+            }),
+        }
+
+    def __init__(self, *args, user=None, **kwargs):
+        """Initialize with pre-filled values from user's profile and portfolio."""
+        super().__init__(*args, **kwargs)
+        self.user = user
+        self._prefilled_fields = set()
+
+        if user:
+            self._prefill_from_profile(user)
+            self._prefill_from_portfolio(user)
+
+    def _prefill_from_profile(self, user):
+        """Pre-fill form fields from user's FinancialProfile."""
+        try:
+            profile = user.financial_profile
+            if profile.retirement_age:
+                self.fields['retirement_age'].initial = int(profile.retirement_age)
+                self._prefilled_fields.add('retirement_age')
+            if profile.life_expectancy:
+                self.fields['life_expectancy'].initial = int(profile.life_expectancy)
+                self._prefilled_fields.add('life_expectancy')
+        except Exception:
+            pass  # Profile doesn't exist or error accessing
+
+    def _prefill_from_portfolio(self, user):
+        """Pre-fill form fields from user's Portfolio."""
+        try:
+            portfolio = user.portfolio
+            total_value = portfolio.get_total_value()
+            if total_value and total_value > 0:
+                self.fields['portfolio_value'].initial = round(float(total_value), 2)
+                self._prefilled_fields.add('portfolio_value')
+
+                # Calculate weighted average return from accounts
+                accounts = portfolio.accounts.filter(status='active')
+                if accounts.exists():
+                    total = float(total_value)
+                    weighted_return = sum(
+                        float(acc.default_growth_rate) * (float(acc.current_value) / total)
+                        for acc in accounts if acc.current_value and acc.current_value > 0
+                    )
+                    if weighted_return > 0:
+                        # default_growth_rate is stored as decimal (0.06 for 6%)
+                        # Convert to percentage for display (6.0 for 6%)
+                        self.fields['expected_return'].initial = round(weighted_return * 100, 1)
+                        self._prefilled_fields.add('expected_return')
+        except Exception:
+            pass  # Portfolio doesn't exist or error accessing
+
+    def get_prefilled_fields(self):
+        """Return set of field names that were pre-filled from user data."""
+        return self._prefilled_fields
+
+    def clean(self):
+        """Validate form."""
+        cleaned_data = super().clean()
+
+        # Validate age relationships
+        retirement_age = cleaned_data.get('retirement_age')
+        life_expectancy = cleaned_data.get('life_expectancy')
+        if retirement_age and life_expectancy and retirement_age >= life_expectancy:
+            self.add_error('life_expectancy', 'Life expectancy must be greater than retirement age')
+
+        return cleaned_data
+
+    def save(self, commit=True):
+        """Save scenario with structured parameters."""
+        instance = super().save(commit=False)
+        instance.calculator_type = 'bucketed_withdrawal'
+
+        # Build parameters JSON - convert percentages to decimals for calculator
+        instance.parameters = {
+            'retirement_age': int(self.cleaned_data['retirement_age']),
+            'life_expectancy': int(self.cleaned_data['life_expectancy']),
+            'portfolio_value': float(self.cleaned_data['portfolio_value']),
+            # Convert percentages to decimals
+            'annual_return_rate': float(self.cleaned_data['expected_return']) / 100,
+            'inflation_rate': float(self.cleaned_data['inflation_rate']) / 100,
+        }
+
+        if self.user:
+            instance.user = self.user
+
+        if commit:
+            instance.save()
+        return instance

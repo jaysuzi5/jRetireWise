@@ -13,7 +13,7 @@ from django.shortcuts import get_object_or_404
 from django.contrib import messages
 from decimal import Decimal
 from .models import RetirementScenario, WithdrawalBucket, CalculationResult, BucketedWithdrawalResult
-from .forms import ScenarioForm, MonteCarloScenarioForm
+from .forms import ScenarioForm, MonteCarloScenarioForm, BucketedWithdrawalScenarioForm
 from .serializers import (
     RetirementScenarioSerializer, WithdrawalBucketSerializer,
     CalculationResultSerializer, CalculationResultDetailSerializer,
@@ -433,3 +433,89 @@ class MonteCarloScenarioUpdateView(LoginRequiredMixin, UpdateView):
     def get_success_url(self):
         """Redirect to scenario detail page."""
         return reverse_lazy('scenario-detail', kwargs={'pk': self.object.pk})
+
+
+class BucketedWithdrawalScenarioCreateView(LoginRequiredMixin, CreateView):
+    """Create a new bucketed withdrawal retirement scenario."""
+    model = RetirementScenario
+    form_class = BucketedWithdrawalScenarioForm
+    template_name = 'jretirewise/scenario_bucketed_withdrawal_form.html'
+
+    def get_form_kwargs(self):
+        """Pass user to form for pre-filling values."""
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        """Add prefilled fields info to context."""
+        context = super().get_context_data(**kwargs)
+        form = context.get('form')
+        if form and hasattr(form, 'get_prefilled_fields'):
+            context['prefilled_fields'] = form.get_prefilled_fields()
+        return context
+
+    def form_valid(self, form):
+        """Set the current user as the owner."""
+        form.instance.user = self.request.user
+        messages.success(self.request, f'Bucketed withdrawal scenario "{form.instance.name}" created successfully!')
+        response = super().form_valid(form)
+        return response
+
+    def get_success_url(self):
+        """Redirect to bucket management page."""
+        return reverse_lazy('bucket-list', kwargs={'scenario_pk': self.object.pk})
+
+
+class BucketedWithdrawalScenarioUpdateView(LoginRequiredMixin, UpdateView):
+    """Update an existing bucketed withdrawal scenario."""
+    model = RetirementScenario
+    form_class = BucketedWithdrawalScenarioForm
+    template_name = 'jretirewise/scenario_bucketed_withdrawal_form.html'
+
+    def get_queryset(self):
+        return RetirementScenario.objects.filter(user=self.request.user, calculator_type='bucketed_withdrawal')
+
+    def get_form_kwargs(self):
+        """Pass user to form for pre-filling values."""
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def get_initial(self):
+        """Pre-populate form with existing scenario parameters."""
+        initial = super().get_initial()
+        scenario = self.get_object()
+        params = scenario.parameters or {}
+
+        # Map stored parameters back to form fields
+        if 'retirement_age' in params:
+            initial['retirement_age'] = params['retirement_age']
+        if 'life_expectancy' in params:
+            initial['life_expectancy'] = params['life_expectancy']
+        if 'portfolio_value' in params:
+            initial['portfolio_value'] = params['portfolio_value']
+        # Convert decimals back to percentages
+        if 'annual_return_rate' in params:
+            initial['expected_return'] = float(params['annual_return_rate']) * 100
+        if 'inflation_rate' in params:
+            initial['inflation_rate'] = float(params['inflation_rate']) * 100
+
+        return initial
+
+    def get_context_data(self, **kwargs):
+        """Add prefilled fields info to context."""
+        context = super().get_context_data(**kwargs)
+        form = context.get('form')
+        if form and hasattr(form, 'get_prefilled_fields'):
+            context['prefilled_fields'] = form.get_prefilled_fields()
+        return context
+
+    def form_valid(self, form):
+        """Show success message."""
+        messages.success(self.request, f'Bucketed withdrawal scenario "{form.instance.name}" updated successfully!')
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        """Redirect to bucket management page."""
+        return reverse_lazy('bucket-list', kwargs={'scenario_pk': self.object.pk})
