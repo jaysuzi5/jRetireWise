@@ -692,14 +692,13 @@ class RunBucketedCalculationView(LoginRequiredMixin, View):
                         age=projection.get('age', 0),
                         portfolio_value_start=Decimal(str(projection.get('portfolio_value_start', 0))),
                         portfolio_value_end=Decimal(str(projection.get('portfolio_value_end', 0))),
-                        target_withdrawal=Decimal(str(projection.get('target_withdrawal', 0))),
+                        target_rate=float(projection.get('target_rate', 0)),
+                        calculated_withdrawal=Decimal(str(projection.get('calculated_withdrawal', 0))),
                         actual_withdrawal=Decimal(str(projection.get('actual_withdrawal', 0))),
                         pension_income=Decimal(str(projection.get('pension_income', 0))),
                         social_security_income=Decimal(str(projection.get('social_security_income', 0))),
-                        healthcare_costs=Decimal(str(projection.get('healthcare_costs', 0))),
                         total_available_income=Decimal(str(projection.get('total_available_income', 0))),
-                        investment_return=Decimal(str(projection.get('investment_return', 0))),
-                        inflation_adjustment=Decimal(str(projection.get('inflation_adjustment', 0))),
+                        investment_growth=Decimal(str(projection.get('investment_growth', 0))),
                     )
 
             messages.success(request, f'Calculation completed successfully in {execution_time_ms}ms!')
