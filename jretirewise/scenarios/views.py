@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from django.views.generic import DetailView, ListView, CreateView, UpdateView, DeleteView, View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
 from decimal import Decimal
 from .models import RetirementScenario, WithdrawalBucket, CalculationResult, BucketedWithdrawalResult
