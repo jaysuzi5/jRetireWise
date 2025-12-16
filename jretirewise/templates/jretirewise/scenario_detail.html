@@ -545,26 +545,32 @@
                 <h2 class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mb-6">Bucketed Withdrawal Results</h2>
 
                 <!-- Summary Stats -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                {% with scenario.result.result_data.summary as summary %}
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+                    <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Success Rate</p>
+                        <p class="text-2xl font-bold {% if summary.success_rate >= 100 %}text-green-600{% else %}text-red-600{% endif %}">{{ summary.success_rate|floatformat:0 }}%</p>
+                    </div>
                     <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
                         <p class="text-sm text-gray-600 dark:text-gray-400">Final Portfolio Value</p>
-                        <p class="text-2xl font-bold text-gray-900 dark:text-white">${{ scenario.result.result_data.final_portfolio_value|floatformat:0|intcomma }}</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white">${{ summary.final_portfolio_value|floatformat:0|intcomma }}</p>
                     </div>
                     <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
                         <p class="text-sm text-gray-600 dark:text-gray-400">Total Withdrawals</p>
-                        <p class="text-2xl font-bold text-gray-900 dark:text-white">${{ scenario.result.result_data.total_withdrawals|floatformat:0|intcomma }}</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white">${{ summary.total_withdrawals|floatformat:0|intcomma }}</p>
                     </div>
                     <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
                         <p class="text-sm text-gray-600 dark:text-gray-400">Success Status</p>
-                        <p class="text-2xl font-bold {% if scenario.result.result_data.success %}text-green-600{% else %}text-red-600{% endif %}">
-                            {% if scenario.result.result_data.success %}✓ Success{% else %}✗ Failed{% endif %}
+                        <p class="text-2xl font-bold {% if not summary.portfolio_depleted %}text-green-600{% else %}text-red-600{% endif %}">
+                            {% if not summary.portfolio_depleted %}✓ Success{% else %}✗ Failed{% endif %}
                         </p>
                     </div>
                     <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
                         <p class="text-sm text-gray-600 dark:text-gray-400">Years Portfolio Lasted</p>
-                        <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ scenario.result.result_data.years_portfolio_lasted }}</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ summary.total_projections }}</p>
                     </div>
                 </div>
+                {% endwith %}
 
                 <!-- Year-by-Year Results Table -->
                 <div class="mb-8">
@@ -583,7 +589,7 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                                {% for year_result in scenario.result.bucketed_results.all|slice:":30" %}
+                                {% for year_result in scenario.result.bucketed_results.all|slice:":100" %}
                                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                         <td class="px-4 py-2 text-gray-900 dark:text-white">{{ year_result.year }}</td>
                                         <td class="px-4 py-2 text-gray-900 dark:text-white">{{ year_result.age }}</td>
@@ -597,8 +603,8 @@
                             </tbody>
                         </table>
                     </div>
-                    {% if scenario.result.bucketed_results.all|length > 30 %}
-                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Showing first 30 years of {{ scenario.result.bucketed_results.all|length }} total years</p>
+                    {% if scenario.result.bucketed_results.all|length > 100 %}
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Showing first 100 years of {{ scenario.result.bucketed_results.all|length }} total years</p>
                     {% endif %}
                 </div>
 
@@ -611,7 +617,8 @@
 
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
             <script>
-                const bucketedData = {{ scenario.result.bucketed_results.all|safe }};
+                // Use projections from result_data (already JSON)
+                const bucketedData = {{ scenario.result.result_data.projections|safe }};
                 const ctx = document.getElementById('bucketedChart').getContext('2d');
 
                 // Prepare data for chart
