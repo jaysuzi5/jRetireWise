@@ -46,6 +46,12 @@
                                 {{ rate|floatformat:1 }}%
                             </span>
                         {% endwith %}
+                    {% elif scenario.result.result_data.summary.success_rate is not None %}
+                        {% with scenario.result.result_data.summary.success_rate as rate %}
+                            <span class="{% if rate >= 90 %}text-green-600 dark:text-green-400{% elif rate >= 75 %}text-yellow-600 dark:text-yellow-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+                                {{ rate|floatformat:1 }}%
+                            </span>
+                        {% endwith %}
                     {% else %}
                         <span class="text-gray-900 dark:text-white">—</span>
                     {% endif %}
@@ -608,10 +614,18 @@
                     {% endif %}
                 </div>
 
-                <!-- Chart -->
-                <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Portfolio Growth & Withdrawals Over Time</h3>
-                    <canvas id="bucketedChart" height="80"></canvas>
+                <!-- Charts -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Portfolio Value Chart -->
+                    <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Portfolio Value Over Time</h3>
+                        <canvas id="portfolioChart" height="200"></canvas>
+                    </div>
+                    <!-- Annual Withdrawal Chart -->
+                    <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Annual Withdrawal Over Time</h3>
+                        <canvas id="withdrawalChart" height="200"></canvas>
+                    </div>
                 </div>
             </div>
 
@@ -619,100 +633,96 @@
             <script>
                 // Use projections from result_data (already JSON)
                 const bucketedData = {{ scenario.result.result_data.projections|safe }};
-                const ctx = document.getElementById('bucketedChart').getContext('2d');
+                const isDark = document.documentElement.classList.contains('dark');
+                const textColor = isDark ? '#d1d5db' : '#374151';
+                const gridColor = isDark ? 'rgba(107, 114, 128, 0.3)' : 'rgba(209, 213, 219, 0.5)';
 
-                // Prepare data for chart
+                // Prepare data for charts
                 const labels = bucketedData.map(d => d.age);
                 const portfolioValues = bucketedData.map(d => parseFloat(d.portfolio_value_end));
                 const withdrawals = bucketedData.map(d => parseFloat(d.actual_withdrawal));
 
-                new Chart(ctx, {
+                // Portfolio Value Chart
+                new Chart(document.getElementById('portfolioChart').getContext('2d'), {
                     type: 'line',
                     data: {
                         labels: labels,
-                        datasets: [
-                            {
-                                label: 'Portfolio Value',
-                                data: portfolioValues,
-                                borderColor: '#4f46e5',
-                                backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                                borderWidth: 2,
-                                fill: true,
-                                tension: 0.4,
-                                yAxisID: 'y'
-                            },
-                            {
-                                label: 'Annual Withdrawal',
-                                data: withdrawals,
-                                borderColor: '#ef4444',
-                                backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                                borderWidth: 2,
-                                fill: false,
-                                tension: 0.4,
-                                yAxisID: 'y1'
-                            }
-                        ]
+                        datasets: [{
+                            label: 'Portfolio Value',
+                            data: portfolioValues,
+                            borderColor: '#4f46e5',
+                            backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 2
+                        }]
                     },
                     options: {
                         responsive: true,
-                        interaction: {
-                            mode: 'index',
-                            intersect: false
-                        },
+                        maintainAspectRatio: true,
                         plugins: {
-                            legend: {
-                                display: true,
-                                labels: {
-                                    color: document.documentElement.classList.contains('dark') ? '#d1d5db' : '#374151',
-                                    padding: 15
-                                }
-                            }
+                            legend: { display: false }
                         },
                         scales: {
                             x: {
-                                title: {
-                                    display: true,
-                                    text: 'Age',
-                                    color: document.documentElement.classList.contains('dark') ? '#d1d5db' : '#374151'
-                                },
-                                grid: {
-                                    color: document.documentElement.classList.contains('dark') ? 'rgba(107, 114, 128, 0.3)' : 'rgba(209, 213, 219, 0.5)'
-                                },
-                                ticks: {
-                                    color: document.documentElement.classList.contains('dark') ? '#d1d5db' : '#374151'
-                                }
+                                title: { display: true, text: 'Age', color: textColor },
+                                grid: { color: gridColor },
+                                ticks: { color: textColor }
                             },
                             y: {
-                                title: {
-                                    display: true,
-                                    text: 'Portfolio Value ($)',
-                                    color: document.documentElement.classList.contains('dark') ? '#d1d5db' : '#374151'
-                                },
-                                position: 'left',
-                                grid: {
-                                    color: document.documentElement.classList.contains('dark') ? 'rgba(107, 114, 128, 0.3)' : 'rgba(209, 213, 219, 0.5)'
-                                },
+                                title: { display: true, text: 'Portfolio Value ($)', color: textColor },
+                                grid: { color: gridColor },
                                 ticks: {
-                                    color: document.documentElement.classList.contains('dark') ? '#d1d5db' : '#374151',
+                                    color: textColor,
                                     callback: function(value) {
-                                        return '$' + value.toLocaleString('en-US', {maximumFractionDigits: 0});
+                                        if (value >= 1000000) return '$' + (value / 1000000).toFixed(1) + 'M';
+                                        if (value >= 1000) return '$' + (value / 1000).toFixed(0) + 'K';
+                                        return '$' + value;
                                     }
                                 }
+                            }
+                        }
+                    }
+                });
+
+                // Annual Withdrawal Chart
+                new Chart(document.getElementById('withdrawalChart').getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Annual Withdrawal',
+                            data: withdrawals,
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            x: {
+                                title: { display: true, text: 'Age', color: textColor },
+                                grid: { color: gridColor },
+                                ticks: { color: textColor }
                             },
-                            y1: {
-                                title: {
-                                    display: true,
-                                    text: 'Annual Withdrawal ($)',
-                                    color: document.documentElement.classList.contains('dark') ? '#d1d5db' : '#374151'
-                                },
-                                position: 'right',
-                                grid: {
-                                    drawOnChartArea: false
-                                },
+                            y: {
+                                title: { display: true, text: 'Annual Withdrawal ($)', color: textColor },
+                                grid: { color: gridColor },
                                 ticks: {
-                                    color: document.documentElement.classList.contains('dark') ? '#d1d5db' : '#374151',
+                                    color: textColor,
                                     callback: function(value) {
-                                        return '$' + value.toLocaleString('en-US', {maximumFractionDigits: 0});
+                                        if (value >= 1000000) return '$' + (value / 1000000).toFixed(1) + 'M';
+                                        if (value >= 1000) return '$' + (value / 1000).toFixed(0) + 'K';
+                                        return '$' + value;
                                     }
                                 }
                             }
