@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}{% if form.instance.pk %}Edit{% else %}Create{% endif %} Historical Analysis - jRetireWise{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+            {% if form.instance.pk %}Edit{% else %}Create{% endif %} Historical Analysis
+        </h1>
+        <p class="mt-2 text-gray-600 dark:text-gray-400">
+            Test your retirement strategy against actual market returns from 1960 to present.
+            This analysis shows how your portfolio would have performed if you retired in any historical year.
+        </p>
+    </div>
+
+    {% if form.non_field_errors %}
+        <div class="mb-6 p-4 bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-400 rounded-lg">
+            {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% if prefilled_fields %}
+        <div class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
+            <div class="flex items-start">
+                <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                </svg>
+                <div>
+                    <p class="text-sm font-medium text-blue-800 dark:text-blue-300">Pre-filled from your profile</p>
+                    <p class="mt-1 text-sm text-blue-700 dark:text-blue-400">
+                        Some fields have been pre-filled from your Financial Profile and Portfolio.
+                    </p>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <form method="post" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+        {% csrf_token %}
+
+        <!-- Scenario Info Section -->
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Scenario Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                    {{ form.description }}
+                    {% if form.description.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.description.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Age Parameters -->
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Age Parameters</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="{{ form.retirement_age.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {{ form.retirement_age.label }}
+                    </label>
+                    {{ form.retirement_age }}
+                    {% if form.retirement_age.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.retirement_age.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.life_expectancy.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {{ form.life_expectancy.label }}
+                    </label>
+                    {{ form.life_expectancy }}
+                    {% if form.life_expectancy.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.life_expectancy.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Portfolio Parameters -->
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Portfolio Parameters</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label for="{{ form.portfolio_value.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {{ form.portfolio_value.label }}
+                    </label>
+                    {{ form.portfolio_value }}
+                    {% if form.portfolio_value.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.portfolio_value.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.withdrawal_rate.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {{ form.withdrawal_rate.label }}
+                    </label>
+                    {{ form.withdrawal_rate }}
+                    {% if form.withdrawal_rate.help_text %}
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.withdrawal_rate.help_text }}</p>
+                    {% endif %}
+                    {% if form.withdrawal_rate.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.withdrawal_rate.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.stock_allocation.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {{ form.stock_allocation.label }}
+                    </label>
+                    {{ form.stock_allocation }}
+                    {% if form.stock_allocation.help_text %}
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.stock_allocation.help_text }}</p>
+                    {% endif %}
+                    {% if form.stock_allocation.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.stock_allocation.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Income Sources -->
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Additional Income (Optional)</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label for="{{ form.social_security_start_age.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {{ form.social_security_start_age.label }}
+                    </label>
+                    {{ form.social_security_start_age }}
+                    {% if form.social_security_start_age.help_text %}
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.social_security_start_age.help_text }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.social_security_annual.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {{ form.social_security_annual.label }}
+                    </label>
+                    {{ form.social_security_annual }}
+                </div>
+                <div>
+                    <label for="{{ form.pension_annual.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {{ form.pension_annual.label }}
+                    </label>
+                    {{ form.pension_annual }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Box -->
+        <div class="p-6 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex items-start">
+                <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400 mt-0.5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                </svg>
+                <div class="text-sm text-gray-600 dark:text-gray-400">
+                    <p class="font-medium text-gray-800 dark:text-gray-200 mb-1">About Historical Analysis</p>
+                    <ul class="list-disc list-inside space-y-1">
+                        <li>Tests your portfolio against every possible starting year from 1960 onwards</li>
+                        <li>Uses actual S&P 500 and bond returns with historical inflation rates</li>
+                        <li>Identifies best and worst-case scenarios</li>
+                        <li>Shows vulnerable periods where the strategy would fail</li>
+                        <li>Provides percentile-based confidence bands</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="p-6 flex justify-end space-x-4">
+            <a href="{% url 'scenarios' %}" class="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                Cancel
+            </a>
+            <button type="submit" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                {% if form.instance.pk %}Update{% else %}Create{% endif %} Scenario
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

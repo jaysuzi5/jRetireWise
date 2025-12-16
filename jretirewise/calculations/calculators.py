@@ -1032,3 +1032,360 @@ class EnhancedMonteCarloCalculator:
                 })
 
         return trajectory
+
+
+class HistoricalPeriodCalculator:
+    """
+    Historical Period Analysis Calculator.
+
+    Tests retirement scenarios against actual historical market returns
+    from 1960 to present. Identifies:
+    - Success rate across all historical periods
+    - Best/worst case scenarios
+    - Vulnerable periods where the portfolio would fail
+    - Sequence of returns risk analysis
+    """
+
+    def __init__(
+        self,
+        portfolio_value: float,
+        retirement_age: int,
+        life_expectancy: int,
+        withdrawal_rate: float = 0.04,
+        withdrawal_amount: float = None,
+        stock_allocation: float = 0.60,
+        social_security_start_age: int = None,
+        social_security_annual: float = 0,
+        pension_annual: float = 0,
+    ):
+        """
+        Initialize Historical Period Calculator.
+
+        Args:
+            portfolio_value: Starting portfolio value
+            retirement_age: Age when retirement begins
+            life_expectancy: Expected age of death
+            withdrawal_rate: Annual withdrawal rate (e.g., 0.04 for 4%)
+            withdrawal_amount: Fixed withdrawal amount (overrides rate if set)
+            stock_allocation: Percentage of portfolio in stocks (0.0-1.0)
+            social_security_start_age: Age when SS benefits begin
+            social_security_annual: Annual SS benefit amount
+            pension_annual: Annual pension income
+        """
+        self.portfolio_value = float(portfolio_value)
+        self.retirement_age = int(retirement_age)
+        self.life_expectancy = int(life_expectancy)
+        self.withdrawal_rate = float(withdrawal_rate)
+        self.withdrawal_amount = float(withdrawal_amount) if withdrawal_amount else None
+        self.stock_allocation = float(stock_allocation)
+        self.social_security_start_age = int(social_security_start_age) if social_security_start_age else None
+        self.social_security_annual = float(social_security_annual)
+        self.pension_annual = float(pension_annual)
+
+        self.years_in_retirement = self.life_expectancy - self.retirement_age
+
+    def calculate(self) -> Dict:
+        """
+        Run historical period analysis across all available starting years.
+
+        Returns:
+            Dictionary with success rate, period results, best/worst cases
+        """
+        from .data import (
+            get_returns_for_period,
+            get_inflation_for_period,
+            get_available_start_years,
+            NOTABLE_PERIODS,
+        )
+
+        # Get all valid starting years
+        available_years = get_available_start_years(self.years_in_retirement)
+
+        if not available_years:
+            return {
+                'calculator_type': 'historical',
+                'error': 'No historical data available for the requested retirement period',
+                'success_rate': 0,
+            }
+
+        # Run simulation for each starting year
+        period_results = []
+        successful_periods = 0
+        failed_periods = []
+
+        for start_year in available_years:
+            result = self._simulate_period(
+                start_year,
+                get_returns_for_period(start_year, self.years_in_retirement, self.stock_allocation),
+                get_inflation_for_period(start_year, self.years_in_retirement),
+            )
+            period_results.append(result)
+
+            if result['success']:
+                successful_periods += 1
+            else:
+                failed_periods.append(result)
+
+        # Calculate success rate
+        success_rate = (successful_periods / len(available_years)) * 100
+
+        # Find best and worst cases
+        sorted_by_final = sorted(period_results, key=lambda x: x['final_portfolio_value'])
+        worst_case = sorted_by_final[0]
+        best_case = sorted_by_final[-1]
+
+        # Find median case
+        median_idx = len(sorted_by_final) // 2
+        median_case = sorted_by_final[median_idx]
+
+        # Analyze vulnerable periods (where failure occurred)
+        vulnerable_periods = self._analyze_vulnerable_periods(failed_periods)
+
+        # Test notable historical periods
+        notable_results = self._test_notable_periods(NOTABLE_PERIODS)
+
+        # Calculate percentiles for final portfolio values
+        final_values = [r['final_portfolio_value'] for r in period_results]
+        percentiles = {
+            'p5': float(np.percentile(final_values, 5)),
+            'p10': float(np.percentile(final_values, 10)),
+            'p25': float(np.percentile(final_values, 25)),
+            'p50': float(np.percentile(final_values, 50)),
+            'p75': float(np.percentile(final_values, 75)),
+            'p90': float(np.percentile(final_values, 90)),
+            'p95': float(np.percentile(final_values, 95)),
+        }
+
+        # Build yearly percentile data for charting
+        yearly_percentiles = self._calculate_yearly_percentiles(period_results)
+
+        return {
+            'calculator_type': 'historical',
+            'success_rate': success_rate,
+            'total_periods_tested': len(available_years),
+            'successful_periods': successful_periods,
+            'failed_periods': len(failed_periods),
+            'years_tested': f"{min(available_years)}-{max(available_years)}",
+            'years_in_retirement': self.years_in_retirement,
+            'best_case': {
+                'start_year': best_case['start_year'],
+                'final_portfolio_value': best_case['final_portfolio_value'],
+                'total_withdrawals': best_case['total_withdrawals'],
+                'average_return': best_case['average_return'],
+            },
+            'worst_case': {
+                'start_year': worst_case['start_year'],
+                'final_portfolio_value': worst_case['final_portfolio_value'],
+                'total_withdrawals': worst_case['total_withdrawals'],
+                'years_lasted': worst_case['years_lasted'],
+                'average_return': worst_case['average_return'],
+            },
+            'median_case': {
+                'start_year': median_case['start_year'],
+                'final_portfolio_value': median_case['final_portfolio_value'],
+                'total_withdrawals': median_case['total_withdrawals'],
+                'average_return': median_case['average_return'],
+            },
+            'final_value_percentiles': percentiles,
+            'yearly_percentiles': yearly_percentiles,
+            'vulnerable_periods': vulnerable_periods,
+            'notable_periods': notable_results,
+            'period_results': period_results,
+            'parameters': {
+                'portfolio_value': self.portfolio_value,
+                'retirement_age': self.retirement_age,
+                'life_expectancy': self.life_expectancy,
+                'withdrawal_rate': self.withdrawal_rate * 100,
+                'stock_allocation': self.stock_allocation * 100,
+                'social_security_start_age': self.social_security_start_age,
+                'social_security_annual': self.social_security_annual,
+                'pension_annual': self.pension_annual,
+            },
+        }
+
+    def _simulate_period(self, start_year: int, returns: List[float],
+                         inflation_rates: List[float]) -> Dict:
+        """
+        Simulate retirement for a specific historical period.
+
+        Args:
+            start_year: The year retirement begins
+            returns: List of annual returns for the period
+            inflation_rates: List of annual inflation rates
+
+        Returns:
+            Dictionary with simulation results for this period
+        """
+        portfolio = self.portfolio_value
+
+        # Calculate initial withdrawal
+        if self.withdrawal_amount:
+            initial_withdrawal = self.withdrawal_amount
+        else:
+            initial_withdrawal = self.portfolio_value * self.withdrawal_rate
+
+        current_withdrawal = initial_withdrawal
+        total_withdrawals = 0
+        yearly_values = [portfolio]
+        depleted_year = None
+
+        for year in range(self.years_in_retirement):
+            current_age = self.retirement_age + year
+            annual_return = returns[year] if year < len(returns) else 0.07
+            inflation = inflation_rates[year] if year < len(inflation_rates) else 0.03
+
+            # Apply market return
+            portfolio = portfolio * (1 + annual_return)
+
+            # Calculate net withdrawal (reduce by SS and pension if applicable)
+            net_withdrawal = current_withdrawal
+
+            # Social Security kicks in at specified age
+            if self.social_security_annual > 0:
+                ss_start = self.social_security_start_age or 67
+                if current_age >= ss_start:
+                    net_withdrawal = max(0, net_withdrawal - self.social_security_annual)
+
+            # Pension reduces withdrawal need
+            if self.pension_annual > 0:
+                net_withdrawal = max(0, net_withdrawal - self.pension_annual)
+
+            # Make withdrawal
+            portfolio = portfolio - net_withdrawal
+            total_withdrawals += net_withdrawal
+
+            # Track depletion
+            if portfolio <= 0:
+                portfolio = 0
+                if depleted_year is None:
+                    depleted_year = year + 1
+
+            yearly_values.append(portfolio)
+
+            # Adjust withdrawal for inflation
+            current_withdrawal = current_withdrawal * (1 + inflation)
+
+        success = depleted_year is None
+        avg_return = sum(returns) / len(returns) if returns else 0
+
+        return {
+            'start_year': start_year,
+            'end_year': start_year + self.years_in_retirement - 1,
+            'success': success,
+            'years_lasted': depleted_year if depleted_year else self.years_in_retirement,
+            'final_portfolio_value': portfolio,
+            'total_withdrawals': total_withdrawals,
+            'average_return': avg_return * 100,
+            'yearly_values': yearly_values,
+        }
+
+    def _analyze_vulnerable_periods(self, failed_periods: List[Dict]) -> List[Dict]:
+        """
+        Analyze failed periods to identify vulnerability patterns.
+
+        Args:
+            failed_periods: List of period results that failed
+
+        Returns:
+            List of vulnerable period descriptions
+        """
+        if not failed_periods:
+            return []
+
+        vulnerable = []
+        for period in sorted(failed_periods, key=lambda x: x['start_year']):
+            vulnerable.append({
+                'start_year': period['start_year'],
+                'end_year': period['end_year'],
+                'years_lasted': period['years_lasted'],
+                'shortfall_years': self.years_in_retirement - period['years_lasted'],
+                'reason': self._identify_failure_reason(period),
+            })
+
+        return vulnerable
+
+    def _identify_failure_reason(self, period: Dict) -> str:
+        """Identify the likely reason for period failure."""
+        start_year = period['start_year']
+
+        # Check for known difficult periods
+        if 1973 <= start_year <= 1974:
+            return "Stagflation: High inflation combined with poor market returns"
+        elif 2000 <= start_year <= 2002:
+            return "Dot-com bust followed by poor early returns"
+        elif start_year == 2007 or start_year == 2008:
+            return "Great Financial Crisis caused severe early losses"
+        elif period['average_return'] < 4:
+            return "Below-average returns throughout retirement period"
+        else:
+            return "Sequence of returns risk: Poor early-year performance"
+
+    def _test_notable_periods(self, notable_periods: Dict) -> List[Dict]:
+        """
+        Test retirement starting in notable historical periods.
+
+        Args:
+            notable_periods: Dictionary of notable period definitions
+
+        Returns:
+            List of results for each notable period
+        """
+        from .data import get_returns_for_period, get_inflation_for_period
+
+        results = []
+        for period_name, period_info in notable_periods.items():
+            start_year = period_info['start_year']
+
+            # Only test if we have enough data
+            try:
+                returns = get_returns_for_period(start_year, self.years_in_retirement, self.stock_allocation)
+                inflation = get_inflation_for_period(start_year, self.years_in_retirement)
+
+                result = self._simulate_period(start_year, returns, inflation)
+                results.append({
+                    'period_name': period_name.replace('_', ' ').title(),
+                    'description': period_info['description'],
+                    'start_year': start_year,
+                    'success': result['success'],
+                    'years_lasted': result['years_lasted'],
+                    'final_portfolio_value': result['final_portfolio_value'],
+                })
+            except (KeyError, IndexError):
+                # Not enough data for this period
+                continue
+
+        return results
+
+    def _calculate_yearly_percentiles(self, period_results: List[Dict]) -> List[Dict]:
+        """
+        Calculate percentiles for each year across all periods.
+
+        Args:
+            period_results: List of all period simulation results
+
+        Returns:
+            List of yearly percentile data for charting
+        """
+        yearly_percentiles = []
+
+        for year in range(self.years_in_retirement + 1):
+            year_values = []
+            for result in period_results:
+                if year < len(result['yearly_values']):
+                    year_values.append(result['yearly_values'][year])
+
+            if year_values:
+                yearly_percentiles.append({
+                    'year': year,
+                    'age': self.retirement_age + year,
+                    'p5': float(np.percentile(year_values, 5)),
+                    'p10': float(np.percentile(year_values, 10)),
+                    'p25': float(np.percentile(year_values, 25)),
+                    'p50': float(np.percentile(year_values, 50)),
+                    'p75': float(np.percentile(year_values, 75)),
+                    'p90': float(np.percentile(year_values, 90)),
+                    'p95': float(np.percentile(year_values, 95)),
+                    'mean': float(np.mean(year_values)),
+                })
+
+        return yearly_percentiles

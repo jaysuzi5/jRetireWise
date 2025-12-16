@@ -8,6 +8,8 @@ from .views import (
     ScenarioUpdateView, ScenarioDeleteView,
     MonteCarloScenarioCreateView, MonteCarloScenarioUpdateView,
     BucketedWithdrawalScenarioCreateView, BucketedWithdrawalScenarioUpdateView,
+    HistoricalScenarioCreateView, HistoricalScenarioUpdateView,
+    RunHistoricalCalculationView,
     BucketListView, BucketCreateView, BucketUpdateView, BucketDeleteView,
     RunBucketedCalculationView,
 )
@@ -17,11 +19,15 @@ urlpatterns = [
     path('create/', ScenarioCreateView.as_view(), name='scenario-create'),
     path('monte-carlo/create/', MonteCarloScenarioCreateView.as_view(), name='scenario-monte-carlo-create'),
     path('bucketed-withdrawal/create/', BucketedWithdrawalScenarioCreateView.as_view(), name='scenario-bucketed-create'),
+    path('historical/create/', HistoricalScenarioCreateView.as_view(), name='scenario-historical-create'),
     path('<int:pk>/', ScenarioDetailView.as_view(), name='scenario-detail'),
     path('<int:pk>/edit/', ScenarioUpdateView.as_view(), name='scenario-edit'),
     path('monte-carlo/<int:pk>/edit/', MonteCarloScenarioUpdateView.as_view(), name='scenario-monte-carlo-edit'),
     path('bucketed-withdrawal/<int:pk>/edit/', BucketedWithdrawalScenarioUpdateView.as_view(), name='scenario-bucketed-edit'),
+    path('historical/<int:pk>/edit/', HistoricalScenarioUpdateView.as_view(), name='scenario-historical-edit'),
     path('<int:pk>/delete/', ScenarioDeleteView.as_view(), name='scenario-delete'),
+    # Historical Analysis
+    path('<int:pk>/calculate/historical/', RunHistoricalCalculationView.as_view(), name='run-historical-calculation'),
     # Bucket Management URLs
     path('<int:scenario_pk>/buckets/', BucketListView.as_view(), name='bucket-list'),
     path('<int:scenario_pk>/buckets/create/', BucketCreateView.as_view(), name='bucket-create'),

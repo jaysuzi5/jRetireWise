@@ -13,7 +13,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
 from decimal import Decimal
 from .models import RetirementScenario, WithdrawalBucket, CalculationResult, BucketedWithdrawalResult
-from .forms import ScenarioForm, MonteCarloScenarioForm, BucketedWithdrawalScenarioForm, WithdrawalBucketForm
+from .forms import ScenarioForm, MonteCarloScenarioForm, BucketedWithdrawalScenarioForm, WithdrawalBucketForm, HistoricalScenarioForm
 from .serializers import (
     RetirementScenarioSerializer, WithdrawalBucketSerializer,
     CalculationResultSerializer, CalculationResultDetailSerializer,
@@ -737,3 +737,157 @@ class BucketDeleteView(LoginRequiredMixin, DeleteView):
     def get_success_url(self):
         bucket = self.get_object()
         return reverse_lazy('bucket-list', kwargs={'scenario_pk': bucket.scenario.pk})
+
+
+class HistoricalScenarioCreateView(LoginRequiredMixin, CreateView):
+    """Create a new historical period analysis scenario."""
+    model = RetirementScenario
+    form_class = HistoricalScenarioForm
+    template_name = 'jretirewise/scenario_historical_form.html'
+
+    def get_form_kwargs(self):
+        """Pass user to form for pre-filling values."""
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        """Add prefilled fields info to context."""
+        context = super().get_context_data(**kwargs)
+        form = context.get('form')
+        if form and hasattr(form, 'get_prefilled_fields'):
+            context['prefilled_fields'] = form.get_prefilled_fields()
+        return context
+
+    def form_valid(self, form):
+        """Set the current user as the owner."""
+        form.instance.user = self.request.user
+        messages.success(self.request, f'Historical analysis scenario "{form.instance.name}" created successfully!')
+        response = super().form_valid(form)
+        return response
+
+    def get_success_url(self):
+        """Redirect to scenario detail page."""
+        return reverse_lazy('scenario-detail', kwargs={'pk': self.object.pk})
+
+
+class HistoricalScenarioUpdateView(LoginRequiredMixin, UpdateView):
+    """Update an existing historical analysis scenario."""
+    model = RetirementScenario
+    form_class = HistoricalScenarioForm
+    template_name = 'jretirewise/scenario_historical_form.html'
+
+    def get_queryset(self):
+        return RetirementScenario.objects.filter(user=self.request.user, calculator_type='historical')
+
+    def get_form_kwargs(self):
+        """Pass user to form for pre-filling values."""
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def get_initial(self):
+        """Pre-populate form with existing scenario parameters."""
+        initial = super().get_initial()
+        scenario = self.get_object()
+        params = scenario.parameters or {}
+
+        # Map stored parameters back to form fields
+        if 'retirement_age' in params:
+            initial['retirement_age'] = params['retirement_age']
+        if 'life_expectancy' in params:
+            initial['life_expectancy'] = params['life_expectancy']
+        if 'portfolio_value' in params:
+            initial['portfolio_value'] = params['portfolio_value']
+        # Convert decimals back to percentages
+        if 'withdrawal_rate' in params:
+            initial['withdrawal_rate'] = float(params['withdrawal_rate']) * 100
+        if 'stock_allocation' in params:
+            initial['stock_allocation'] = int(float(params['stock_allocation']) * 100)
+        if 'social_security_start_age' in params:
+            initial['social_security_start_age'] = params['social_security_start_age']
+        if 'social_security_annual' in params:
+            initial['social_security_annual'] = params['social_security_annual']
+        if 'pension_annual' in params:
+            initial['pension_annual'] = params['pension_annual']
+
+        return initial
+
+    def get_context_data(self, **kwargs):
+        """Add prefilled fields info to context."""
+        context = super().get_context_data(**kwargs)
+        form = context.get('form')
+        if form and hasattr(form, 'get_prefilled_fields'):
+            context['prefilled_fields'] = form.get_prefilled_fields()
+        return context
+
+    def form_valid(self, form):
+        """Show success message."""
+        messages.success(self.request, f'Historical analysis scenario "{form.instance.name}" updated successfully!')
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        """Redirect to scenario detail page."""
+        return reverse_lazy('scenario-detail', kwargs={'pk': self.object.pk})
+
+
+class RunHistoricalCalculationView(LoginRequiredMixin, View):
+    """Run historical period analysis calculation for a scenario."""
+
+    def post(self, request, pk):
+        """Handle POST request to run calculation."""
+        import time
+        from jretirewise.calculations.calculators import HistoricalPeriodCalculator
+
+        # Get scenario and verify ownership
+        scenario = get_object_or_404(RetirementScenario, pk=pk, user=request.user)
+
+        # Validate scenario has required parameters
+        params = scenario.parameters
+        if not all(k in params for k in ['portfolio_value', 'retirement_age', 'life_expectancy']):
+            messages.error(request, 'Scenario missing required parameters: portfolio_value, retirement_age, life_expectancy')
+            return redirect('scenario-detail', pk=pk)
+
+        try:
+            # Run calculation
+            start_time = time.time()
+            calculator = HistoricalPeriodCalculator(
+                portfolio_value=float(params['portfolio_value']),
+                retirement_age=int(params['retirement_age']),
+                life_expectancy=int(params['life_expectancy']),
+                withdrawal_rate=float(params.get('withdrawal_rate', 0.04)),
+                stock_allocation=float(params.get('stock_allocation', 0.60)),
+                social_security_start_age=params.get('social_security_start_age'),
+                social_security_annual=float(params.get('social_security_annual', 0)),
+                pension_annual=float(params.get('pension_annual', 0)),
+            )
+            result_data = calculator.calculate()
+            execution_time_ms = int((time.time() - start_time) * 1000)
+
+            # Store result in database
+            CalculationResult.objects.update_or_create(
+                scenario=scenario,
+                defaults={
+                    'status': 'completed',
+                    'result_data': result_data,
+                    'execution_time_ms': execution_time_ms,
+                    'error_message': ''
+                }
+            )
+
+            messages.success(request, f'Historical analysis completed in {execution_time_ms}ms! Tested {result_data.get("total_periods_tested", 0)} historical periods.')
+            return redirect('scenario-detail', pk=pk)
+
+        except Exception as e:
+            logger.exception(f"Historical calculation failed for scenario {pk}")
+            # Store error in result
+            CalculationResult.objects.update_or_create(
+                scenario=scenario,
+                defaults={
+                    'status': 'failed',
+                    'result_data': {},
+                    'error_message': str(e)
+                }
+            )
+            messages.error(request, f'Calculation failed: {str(e)}')
+            return redirect('scenario-detail', pk=pk)

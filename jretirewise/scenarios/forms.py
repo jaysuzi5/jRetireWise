@@ -662,3 +662,208 @@ class WithdrawalBucketForm(forms.ModelForm):
                 self.add_error('max_withdrawal_amount', 'Maximum amount must be greater than minimum')
 
         return cleaned_data
+
+
+class HistoricalScenarioForm(forms.ModelForm):
+    """
+    Form for creating/editing historical period analysis scenarios.
+    Tests retirement scenarios against actual historical market returns.
+    """
+
+    # Age Parameters
+    retirement_age = forms.IntegerField(
+        min_value=18,
+        max_value=100,
+        widget=forms.NumberInput(attrs={
+            'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+            'placeholder': '65',
+        }),
+        label='Retirement Age',
+    )
+
+    life_expectancy = forms.IntegerField(
+        min_value=50,
+        max_value=120,
+        widget=forms.NumberInput(attrs={
+            'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+            'placeholder': '95',
+        }),
+        label='Life Expectancy',
+    )
+
+    # Portfolio Parameters
+    portfolio_value = forms.DecimalField(
+        min_value=0,
+        max_digits=15,
+        decimal_places=2,
+        widget=forms.NumberInput(attrs={
+            'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+            'placeholder': '1,000,000',
+            'step': '1000',
+        }),
+        label='Portfolio Balance ($)',
+    )
+
+    # Withdrawal Parameters
+    withdrawal_rate = forms.DecimalField(
+        min_value=0,
+        max_value=15,
+        decimal_places=1,
+        widget=forms.NumberInput(attrs={
+            'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+            'placeholder': '4.0',
+            'step': '0.1',
+        }),
+        label='Withdrawal Rate (%)',
+        help_text='Annual withdrawal as percentage of initial portfolio',
+        initial=4.0,
+    )
+
+    # Asset Allocation
+    stock_allocation = forms.IntegerField(
+        min_value=0,
+        max_value=100,
+        widget=forms.NumberInput(attrs={
+            'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+            'placeholder': '60',
+        }),
+        label='Stock Allocation (%)',
+        help_text='Percentage in stocks (remainder in bonds)',
+        initial=60,
+    )
+
+    # Social Security
+    social_security_start_age = forms.IntegerField(
+        min_value=62,
+        max_value=70,
+        required=False,
+        widget=forms.NumberInput(attrs={
+            'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+            'placeholder': '67',
+        }),
+        label='Social Security Start Age',
+        help_text='Age 62-70; leave blank to exclude',
+    )
+
+    social_security_annual = forms.DecimalField(
+        min_value=0,
+        max_digits=10,
+        decimal_places=2,
+        required=False,
+        widget=forms.NumberInput(attrs={
+            'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+            'placeholder': '30,000',
+        }),
+        label='Social Security Annual Benefit ($)',
+    )
+
+    # Pension
+    pension_annual = forms.DecimalField(
+        min_value=0,
+        max_digits=10,
+        decimal_places=2,
+        required=False,
+        widget=forms.NumberInput(attrs={
+            'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+            'placeholder': '0',
+        }),
+        label='Annual Pension Income ($)',
+    )
+
+    class Meta:
+        model = RetirementScenario
+        fields = ['name', 'description']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+                'placeholder': 'My Historical Analysis',
+            }),
+            'description': forms.Textarea(attrs={
+                'rows': 2,
+                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+                'placeholder': 'Optional description...',
+            }),
+        }
+
+    def __init__(self, *args, user=None, **kwargs):
+        """Initialize with pre-filled values from user's profile and portfolio."""
+        super().__init__(*args, **kwargs)
+        self.user = user
+        self._prefilled_fields = set()
+
+        if user:
+            self._prefill_from_profile(user)
+            self._prefill_from_portfolio(user)
+
+    def _prefill_from_profile(self, user):
+        """Pre-fill form fields from user's FinancialProfile."""
+        try:
+            profile = user.financial_profile
+            if profile.retirement_age:
+                self.fields['retirement_age'].initial = int(profile.retirement_age)
+                self._prefilled_fields.add('retirement_age')
+            if profile.life_expectancy:
+                self.fields['life_expectancy'].initial = int(profile.life_expectancy)
+                self._prefilled_fields.add('life_expectancy')
+            if profile.social_security_annual and profile.social_security_annual > 0:
+                self.fields['social_security_annual'].initial = round(float(profile.social_security_annual), 2)
+                self._prefilled_fields.add('social_security_annual')
+        except Exception:
+            pass
+
+    def _prefill_from_portfolio(self, user):
+        """Pre-fill form fields from user's Portfolio."""
+        try:
+            portfolio = user.portfolio
+            total_value = portfolio.get_total_value()
+            if total_value and total_value > 0:
+                self.fields['portfolio_value'].initial = round(float(total_value), 2)
+                self._prefilled_fields.add('portfolio_value')
+        except Exception:
+            pass
+
+    def get_prefilled_fields(self):
+        """Return set of field names that were pre-filled from user data."""
+        return self._prefilled_fields
+
+    def clean(self):
+        """Validate form."""
+        cleaned_data = super().clean()
+
+        # Validate age relationships
+        retirement_age = cleaned_data.get('retirement_age')
+        life_expectancy = cleaned_data.get('life_expectancy')
+        if retirement_age and life_expectancy and retirement_age >= life_expectancy:
+            self.add_error('life_expectancy', 'Life expectancy must be greater than retirement age')
+
+        # Validate retirement period is reasonable for historical data
+        if retirement_age and life_expectancy:
+            years = life_expectancy - retirement_age
+            if years > 50:
+                self.add_error('life_expectancy', 'Retirement period cannot exceed 50 years for historical analysis')
+
+        return cleaned_data
+
+    def save(self, commit=True):
+        """Save scenario with structured parameters."""
+        instance = super().save(commit=False)
+        instance.calculator_type = 'historical'
+
+        # Build parameters JSON
+        instance.parameters = {
+            'retirement_age': int(self.cleaned_data['retirement_age']),
+            'life_expectancy': int(self.cleaned_data['life_expectancy']),
+            'portfolio_value': float(self.cleaned_data['portfolio_value']),
+            'withdrawal_rate': float(self.cleaned_data['withdrawal_rate']) / 100,
+            'stock_allocation': float(self.cleaned_data['stock_allocation']) / 100,
+            'social_security_start_age': self.cleaned_data.get('social_security_start_age'),
+            'social_security_annual': float(self.cleaned_data.get('social_security_annual') or 0),
+            'pension_annual': float(self.cleaned_data.get('pension_annual') or 0),
+        }
+
+        if self.user:
+            instance.user = self.user
+
+        if commit:
+            instance.save()
+        return instance
