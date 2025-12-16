@@ -615,16 +615,16 @@
                 </div>
 
                 <!-- Charts -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="space-y-6">
                     <!-- Portfolio Value Chart -->
                     <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
                         <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Portfolio Value Over Time</h3>
-                        <canvas id="portfolioChart" height="200"></canvas>
+                        <canvas id="portfolioChart" height="100"></canvas>
                     </div>
-                    <!-- Annual Withdrawal Chart -->
+                    <!-- Income Chart -->
                     <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Annual Withdrawal Over Time</h3>
-                        <canvas id="withdrawalChart" height="200"></canvas>
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Annual Income Over Time</h3>
+                        <canvas id="incomeChart" height="100"></canvas>
                     </div>
                 </div>
             </div>
@@ -641,6 +641,7 @@
                 const labels = bucketedData.map(d => d.age);
                 const portfolioValues = bucketedData.map(d => parseFloat(d.portfolio_value_end));
                 const withdrawals = bucketedData.map(d => parseFloat(d.actual_withdrawal));
+                const totalIncome = bucketedData.map(d => parseFloat(d.total_available_income));
 
                 // Portfolio Value Chart
                 new Chart(document.getElementById('portfolioChart').getContext('2d'), {
@@ -686,27 +687,54 @@
                     }
                 });
 
-                // Annual Withdrawal Chart
-                new Chart(document.getElementById('withdrawalChart').getContext('2d'), {
+                // Annual Income Chart (Withdrawal + Total Available)
+                new Chart(document.getElementById('incomeChart').getContext('2d'), {
                     type: 'line',
                     data: {
                         labels: labels,
-                        datasets: [{
-                            label: 'Annual Withdrawal',
-                            data: withdrawals,
-                            borderColor: '#ef4444',
-                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                            borderWidth: 2,
-                            fill: true,
-                            tension: 0.4,
-                            pointRadius: 2
-                        }]
+                        datasets: [
+                            {
+                                label: 'Total Available Income',
+                                data: totalIncome,
+                                borderColor: '#22c55e',
+                                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                                borderWidth: 2,
+                                fill: true,
+                                tension: 0.4,
+                                pointRadius: 2
+                            },
+                            {
+                                label: 'Portfolio Withdrawal',
+                                data: withdrawals,
+                                borderColor: '#ef4444',
+                                backgroundColor: 'transparent',
+                                borderWidth: 2,
+                                fill: false,
+                                tension: 0.4,
+                                pointRadius: 2
+                            }
+                        ]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: true,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        },
                         plugins: {
-                            legend: { display: false }
+                            legend: {
+                                display: true,
+                                position: 'top',
+                                labels: { color: textColor, padding: 15 }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.dataset.label + ': $' + context.parsed.y.toLocaleString();
+                                    }
+                                }
+                            }
                         },
                         scales: {
                             x: {
@@ -715,7 +743,7 @@
                                 ticks: { color: textColor }
                             },
                             y: {
-                                title: { display: true, text: 'Annual Withdrawal ($)', color: textColor },
+                                title: { display: true, text: 'Annual Income ($)', color: textColor },
                                 grid: { color: gridColor },
                                 ticks: {
                                     color: textColor,
