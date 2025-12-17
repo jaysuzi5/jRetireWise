@@ -214,17 +214,21 @@ class MonteCarloScenarioForm(forms.ModelForm):
         label='Withdrawal Frequency',
     )
 
-    # Social Security
-    social_security_start_age = forms.IntegerField(
-        min_value=62,
-        max_value=70,
+    # Social Security - select claiming age
+    social_security_start_age = forms.ChoiceField(
+        choices=[
+            ('', '-- No Social Security --'),
+            (62, 'Age 62 (Reduced ~70%)'),
+            (65, 'Age 65 (Partial ~86%)'),
+            (67, 'Age 67 (Full 100% - FRA)'),
+            (70, 'Age 70 (Delayed ~124%)'),
+        ],
         required=False,
-        widget=forms.NumberInput(attrs={
+        widget=forms.Select(attrs={
             'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
-            'placeholder': '67',
         }),
-        label='Social Security Start Age',
-        help_text='Age 62-70; leave blank to exclude',
+        label='Social Security Claiming Age',
+        help_text='Select the age you plan to claim Social Security',
     )
 
     social_security_monthly = forms.DecimalField(
@@ -237,6 +241,34 @@ class MonteCarloScenarioForm(forms.ModelForm):
             'placeholder': '2,500',
         }),
         label='Social Security Monthly Benefit ($)',
+        help_text='Monthly benefit amount at selected claiming age',
+    )
+
+    # Pension Parameters
+    pension_annual = forms.DecimalField(
+        min_value=0,
+        max_digits=12,
+        decimal_places=2,
+        required=False,
+        widget=forms.NumberInput(attrs={
+            'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+            'placeholder': '20,000',
+            'step': '100',
+        }),
+        label='Pension - Annual Amount ($)',
+        help_text='Annual pension income; leave blank if no pension',
+    )
+
+    pension_start_age = forms.IntegerField(
+        min_value=18,
+        max_value=100,
+        required=False,
+        widget=forms.NumberInput(attrs={
+            'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+            'placeholder': '65',
+        }),
+        label='Pension - Start Age',
+        help_text='Age when pension income begins',
     )
 
     class Meta:
@@ -265,22 +297,38 @@ class MonteCarloScenarioForm(forms.ModelForm):
             self._prefill_from_portfolio(user)
 
     def _prefill_from_profile(self, user):
-        """Pre-fill form fields from user's FinancialProfile."""
+        """Pre-fill form fields from user's FinancialProfile and TaxProfile."""
         try:
+            # Fill from FinancialProfile
             profile = user.financial_profile
             if profile.retirement_age:
-                # Convert to integer for the form
                 self.fields['retirement_age'].initial = int(profile.retirement_age)
                 self._prefilled_fields.add('retirement_age')
             if profile.life_expectancy:
                 self.fields['life_expectancy'].initial = int(profile.life_expectancy)
                 self._prefilled_fields.add('life_expectancy')
-            # Pre-fill SS if available (convert annual to monthly, round to 2 decimals)
-            if profile.social_security_annual and profile.social_security_annual > 0:
-                self.fields['social_security_monthly'].initial = round(float(profile.social_security_annual) / 12, 2)
-                self._prefilled_fields.add('social_security_monthly')
+
+            # Fill pension from FinancialProfile
+            if profile.pension_annual and profile.pension_annual > 0:
+                self.fields['pension_annual'].initial = round(float(profile.pension_annual), 2)
+                self._prefilled_fields.add('pension_annual')
+            if profile.pension_start_age:
+                self.fields['pension_start_age'].initial = profile.pension_start_age
+                self._prefilled_fields.add('pension_start_age')
         except Exception:
             pass  # Profile doesn't exist or error accessing
+
+        try:
+            # Fill Social Security from TaxProfile
+            tax_profile = user.tax_profile
+            # Default to FRA (67) if available
+            if tax_profile.social_security_age_67 and tax_profile.social_security_age_67 > 0:
+                self.fields['social_security_start_age'].initial = 67
+                self.fields['social_security_monthly'].initial = round(float(tax_profile.social_security_age_67), 2)
+                self._prefilled_fields.add('social_security_start_age')
+                self._prefilled_fields.add('social_security_monthly')
+        except Exception:
+            pass  # TaxProfile doesn't exist or error accessing
 
     def _prefill_from_portfolio(self, user):
         """Pre-fill form fields from user's Portfolio."""
@@ -359,8 +407,11 @@ class MonteCarloScenarioForm(forms.ModelForm):
             'target_success_rate': float(self.cleaned_data.get('target_success_rate') or 90),
             'withdrawal_amount': self.cleaned_data.get('withdrawal_amount_annual', 0),
             # Social Security
-            'social_security_start_age': self.cleaned_data.get('social_security_start_age'),
+            'social_security_start_age': int(self.cleaned_data.get('social_security_start_age') or 0),
             'social_security_monthly': float(self.cleaned_data.get('social_security_monthly') or 0),
+            # Pension
+            'pension_annual': float(self.cleaned_data.get('pension_annual') or 0),
+            'pension_start_age': int(self.cleaned_data.get('pension_start_age') or 0),
         }
 
         if self.user:
