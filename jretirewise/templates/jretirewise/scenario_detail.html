@@ -141,6 +141,8 @@
     const constantReturn = {{ calc.constant_return_trajectory|safe|default:'[]' }};
     const ssStartAge = {{ calc.parameters.social_security_start_age|default:'null' }};
     const ssAnnual = {{ calc.parameters.social_security_annual|default:0 }};
+    const pensionStartAge = {{ calc.parameters.pension_start_age|default:'null' }};
+    const pensionAnnual = {{ calc.parameters.pension_annual|default:0 }};
     const retirementAge = {{ calc.parameters.retirement_age }};
 
     const ages = yearlyPercentiles.map(p => p.age);
@@ -148,10 +150,11 @@
     const p50 = yearlyPercentiles.map(p => p.p50);  // Median
     const constantValues = constantReturn.map(c => c.portfolio_value);
 
-    // Find index where SS starts (for annotation)
+    // Find index where SS and Pension start (for annotations)
     const ssStartIndex = ssStartAge && ssAnnual > 0 ? ages.indexOf(ssStartAge) : -1;
+    const pensionStartIndex = pensionStartAge && pensionAnnual > 0 ? ages.indexOf(pensionStartAge) : -1;
 
-    // Build annotations if SS is present
+    // Build annotations for SS and Pension if present
     const annotations = {};
     if (ssStartIndex >= 0 && ssAnnual > 0) {
         annotations.ssLine = {
@@ -166,6 +169,24 @@
                 content: 'SS Starts',
                 position: 'start',
                 backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                color: 'white',
+                font: { size: 11 }
+            }
+        };
+    }
+    if (pensionStartIndex >= 0 && pensionAnnual > 0) {
+        annotations.pensionLine = {
+            type: 'line',
+            xMin: pensionStartIndex,
+            xMax: pensionStartIndex,
+            borderColor: 'rgba(168, 85, 247, 0.7)',
+            borderWidth: 2,
+            borderDash: [6, 4],
+            label: {
+                display: true,
+                content: 'Pension Starts',
+                position: 'start',
+                backgroundColor: 'rgba(168, 85, 247, 0.8)',
                 color: 'white',
                 font: { size: 11 }
             }
@@ -318,6 +339,7 @@
         <div>
             <p class="text-gray-500 dark:text-gray-400 text-sm">Pension</p>
             <p class="text-lg font-semibold text-gray-900 dark:text-white">${{ calc.parameters.pension_annual|floatformat:0|intcomma }}/yr</p>
+            <p class="text-xs text-gray-400">Starting at age {{ calc.parameters.pension_start_age }}</p>
         </div>
         {% endif %}
     </div>
