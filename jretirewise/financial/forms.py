@@ -109,6 +109,8 @@ class FinancialProfileForm(forms.ModelForm):
             'retirement_age',
             'life_expectancy',
             'annual_spending',
+            'pension_annual',
+            'pension_start_age',
         ]
         widgets = {
             'current_age': forms.NumberInput(attrs={
@@ -132,6 +134,17 @@ class FinancialProfileForm(forms.ModelForm):
                 'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
                 'min': '0',
                 'step': '0.01',
+            }),
+            'pension_annual': forms.NumberInput(attrs={
+                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
+                'min': '0',
+                'step': '0.01',
+            }),
+            'pension_start_age': forms.NumberInput(attrs={
+                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
+                'type': 'number',
+                'min': '18',
+                'step': '1',
             }),
         }
 

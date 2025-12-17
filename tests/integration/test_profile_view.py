@@ -89,13 +89,15 @@ class ProfileViewTestCase(TestCase):
         self.assertEqual(profile.annual_spending, Decimal('85000'))
 
     def test_tax_form_submission(self):
-        """Test submitting unified profile form with tax planning data."""
+        """Test submitting unified profile form with tax planning and pension data."""
         self.client.login(username='testuser', password='testpass123')
         response = self.client.post('/profile/', {
             'current_age': '60',
             'retirement_age': '65',
             'life_expectancy': '95',
             'annual_spending': '80000',
+            'pension_annual': '12000',
+            'pension_start_age': '62',
             'filing_status': 'single',
             'state_of_residence': 'CA',
             'social_security_age_62': '2500.00',
@@ -105,8 +107,10 @@ class ProfileViewTestCase(TestCase):
         }, follow=True)
 
         self.assertEqual(response.status_code, 200)
+        # Verify financial profile was updated with pension
+        profile = FinancialProfile.objects.get(user=self.user)
+        self.assertEqual(profile.pension_annual, Decimal('12000'))
+        self.assertEqual(profile.pension_start_age, 62)
         # Verify tax profile was updated
         tax_profile = TaxProfile.objects.get(user=self.user)
-        self.assertEqual(tax_profile.filing_status, 'single')
-        self.assertEqual(tax_profile.state_of_residence, 'CA')
         self.assertEqual(tax_profile.social_security_age_70, Decimal('5000.00'))

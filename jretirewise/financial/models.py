@@ -20,6 +20,7 @@ class FinancialProfile(models.Model):
     annual_spending = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     social_security_annual = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     pension_annual = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    pension_start_age = models.IntegerField(validators=[MinValueValidator(18)], default=65, null=True, blank=True)
     current_portfolio_value = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

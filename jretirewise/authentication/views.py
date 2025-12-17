@@ -151,13 +151,31 @@ class ProfileView(LoginRequiredMixin, TemplateView):
             except TaxProfile.DoesNotExist:
                 tax_profile = TaxProfile(user=user)
 
-            # Update tax profile with form data
-            tax_profile.filing_status = form.cleaned_data.get('filing_status') or tax_profile.filing_status
-            tax_profile.state_of_residence = form.cleaned_data.get('state_of_residence') or tax_profile.state_of_residence
-            tax_profile.social_security_age_62 = form.cleaned_data.get('social_security_age_62') or 0
-            tax_profile.social_security_age_65 = form.cleaned_data.get('social_security_age_65') or 0
-            tax_profile.social_security_age_67 = form.cleaned_data.get('social_security_age_67') or 0
-            tax_profile.social_security_age_70 = form.cleaned_data.get('social_security_age_70') or 0
+            # Update tax profile with form data (use form values if present)
+            filing_status = form.cleaned_data.get('filing_status')
+            if filing_status:
+                tax_profile.filing_status = filing_status
+
+            state = form.cleaned_data.get('state_of_residence')
+            if state:
+                tax_profile.state_of_residence = state
+
+            ss_62 = form.cleaned_data.get('social_security_age_62')
+            if ss_62:
+                tax_profile.social_security_age_62 = ss_62
+
+            ss_65 = form.cleaned_data.get('social_security_age_65')
+            if ss_65:
+                tax_profile.social_security_age_65 = ss_65
+
+            ss_67 = form.cleaned_data.get('social_security_age_67')
+            if ss_67:
+                tax_profile.social_security_age_67 = ss_67
+
+            ss_70 = form.cleaned_data.get('social_security_age_70')
+            if ss_70:
+                tax_profile.social_security_age_70 = ss_70
+
             tax_profile.save()
 
             messages.success(request, 'Profile updated successfully!')

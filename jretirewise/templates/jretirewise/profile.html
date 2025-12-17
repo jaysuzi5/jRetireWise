@@ -83,6 +83,22 @@
                                 <p class="mt-1 text-sm text-red-600">{{ form.annual_spending.errors.0 }}</p>
                             {% endif %}
                         </div>
+
+                        <div>
+                            <label for="{{ form.pension_annual.id_for_label }}" class="block text-sm font-medium text-gray-700">Pension (Annual)</label>
+                            {{ form.pension_annual }}
+                            {% if form.pension_annual.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ form.pension_annual.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="{{ form.pension_start_age.id_for_label }}" class="block text-sm font-medium text-gray-700">Pension Start Age</label>
+                            {{ form.pension_start_age }}
+                            {% if form.pension_start_age.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ form.pension_start_age.errors.0 }}</p>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
 
