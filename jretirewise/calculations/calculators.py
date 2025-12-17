@@ -962,6 +962,7 @@ class EnhancedMonteCarloCalculator:
                 'social_security_start_age': self.social_security_start_age if self.social_security_start_age else 65,
                 'social_security_annual': ss_annual,
                 'pension_annual': self.pension_annual,
+                'pension_start_age': self.pension_start_age if self.pension_start_age else self.retirement_age,
             },
             'summary': {
                 'median_final_value': final_percentiles['p50'],
