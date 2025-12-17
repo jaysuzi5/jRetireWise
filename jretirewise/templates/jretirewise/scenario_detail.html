@@ -344,6 +344,156 @@
         {% endif %}
     </div>
 </div>
+
+<!-- Income Breakdown by Age Band -->
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Income Breakdown by Age Band</h2>
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="border-b-2 border-gray-200 dark:border-gray-700">
+                <tr>
+                    <th class="text-left py-3 px-4 text-gray-700 dark:text-gray-300 font-semibold">Age Band</th>
+                    <th class="text-right py-3 px-4 text-gray-700 dark:text-gray-300 font-semibold">Portfolio Withdrawal</th>
+                    <th class="text-right py-3 px-4 text-gray-700 dark:text-gray-300 font-semibold">Pension</th>
+                    <th class="text-right py-3 px-4 text-gray-700 dark:text-gray-300 font-semibold">Social Security</th>
+                    <th class="text-right py-3 px-4 text-gray-700 dark:text-gray-300 font-semibold">Total Income</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                {% with withdrawal=calc.withdrawal_annual|default:calc.safe_withdrawal_annual pension=calc.parameters.pension_annual|default:0 pension_age=calc.parameters.pension_start_age|default:999 ss=calc.parameters.social_security_annual|default:0 ss_age=calc.parameters.social_security_start_age|default:999 ret_age=calc.parameters.retirement_age life_exp=calc.parameters.life_expectancy %}
+
+                <!-- Band 1: Early Retirement (before any income sources) -->
+                {% if pension_age < ss_age %}
+                    {% if pension > 0 and pension_age > ret_age %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="py-3 px-4 text-gray-900 dark:text-white">
+                            Early Retirement ({{ ret_age|floatformat:1 }}-{{ pension_age }})
+                            <div class="text-xs text-gray-500 dark:text-gray-400">Before pension and Social Security</div>
+                        </td>
+                        <td class="py-3 px-4 text-right text-gray-900 dark:text-white font-medium">${{ withdrawal|floatformat:0|intcomma }}</td>
+                        <td class="py-3 px-4 text-right text-gray-500 dark:text-gray-400">—</td>
+                        <td class="py-3 px-4 text-right text-gray-500 dark:text-gray-400">—</td>
+                        <td class="py-3 px-4 text-right text-gray-900 dark:text-white font-bold text-lg">${{ withdrawal|floatformat:0|intcomma }}</td>
+                    </tr>
+                    {% endif %}
+                {% else %}
+                    {% if ss > 0 and ss_age > ret_age %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="py-3 px-4 text-gray-900 dark:text-white">
+                            Early Retirement ({{ ret_age|floatformat:1 }}-{{ ss_age }})
+                            <div class="text-xs text-gray-500 dark:text-gray-400">Before Social Security{% if pension > 0 %} and pension{% endif %}</div>
+                        </td>
+                        <td class="py-3 px-4 text-right text-gray-900 dark:text-white font-medium">${{ withdrawal|floatformat:0|intcomma }}</td>
+                        <td class="py-3 px-4 text-right text-gray-500 dark:text-gray-400">—</td>
+                        <td class="py-3 px-4 text-right text-gray-500 dark:text-gray-400">—</td>
+                        <td class="py-3 px-4 text-right text-gray-900 dark:text-white font-bold text-lg">${{ withdrawal|floatformat:0|intcomma }}</td>
+                    </tr>
+                    {% endif %}
+                {% endif %}
+
+                <!-- Band 2: With pension but before SS, OR with SS but before pension -->
+                {% if pension > 0 and ss > 0 and pension_age != ss_age %}
+                    {% if pension_age < ss_age %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="py-3 px-4 text-gray-900 dark:text-white">
+                            Retirement with Pension ({{ pension_age }}-{{ ss_age }})
+                            <div class="text-xs text-gray-500 dark:text-gray-400">Before Social Security</div>
+                        </td>
+                        <td class="py-3 px-4 text-right text-gray-900 dark:text-white font-medium">${{ withdrawal|floatformat:0|intcomma }}</td>
+                        <td class="py-3 px-4 text-right text-green-600 dark:text-green-400 font-medium">${{ pension|floatformat:0|intcomma }}</td>
+                        <td class="py-3 px-4 text-right text-gray-500 dark:text-gray-400">—</td>
+                        <td class="py-3 px-4 text-right text-gray-900 dark:text-white font-bold text-lg">${{ withdrawal|add:pension|floatformat:0|intcomma }}</td>
+                    </tr>
+                    {% elif ss_age < pension_age %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="py-3 px-4 text-gray-900 dark:text-white">
+                            Retirement with Social Security ({{ ss_age }}-{{ pension_age }})
+                            <div class="text-xs text-gray-500 dark:text-gray-400">Before pension</div>
+                        </td>
+                        <td class="py-3 px-4 text-right text-gray-900 dark:text-white font-medium">${{ withdrawal|floatformat:0|intcomma }}</td>
+                        <td class="py-3 px-4 text-right text-gray-500 dark:text-gray-400">—</td>
+                        <td class="py-3 px-4 text-right text-blue-600 dark:text-blue-400 font-medium">${{ ss|floatformat:0|intcomma }}</td>
+                        <td class="py-3 px-4 text-right text-gray-900 dark:text-white font-bold text-lg">${{ withdrawal|add:ss|floatformat:0|intcomma }}</td>
+                    </tr>
+                    {% endif %}
+                {% endif %}
+
+                <!-- Band 3: Full Retirement (with all income sources) -->
+                {% if pension > 0 and ss > 0 %}
+                    {% if pension_age > ss_age %}
+                        {% with final_age=pension_age %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 bg-green-50 dark:bg-green-900/10">
+                        <td class="py-3 px-4 text-gray-900 dark:text-white">
+                            Full Retirement ({{ final_age }}-{{ life_exp }})
+                            <div class="text-xs text-gray-500 dark:text-gray-400">With pension and Social Security</div>
+                        </td>
+                        <td class="py-3 px-4 text-right text-gray-900 dark:text-white font-medium">${{ withdrawal|floatformat:0|intcomma }}</td>
+                        <td class="py-3 px-4 text-right text-green-600 dark:text-green-400 font-medium">${{ pension|floatformat:0|intcomma }}</td>
+                        <td class="py-3 px-4 text-right text-blue-600 dark:text-blue-400 font-medium">${{ ss|floatformat:0|intcomma }}</td>
+                        <td class="py-3 px-4 text-right text-gray-900 dark:text-white font-bold text-lg">${{ withdrawal|add:pension|add:ss|floatformat:0|intcomma }}</td>
+                    </tr>
+                        {% endwith %}
+                    {% else %}
+                        {% with final_age=ss_age %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 bg-green-50 dark:bg-green-900/10">
+                        <td class="py-3 px-4 text-gray-900 dark:text-white">
+                            Full Retirement ({{ final_age }}-{{ life_exp }})
+                            <div class="text-xs text-gray-500 dark:text-gray-400">With pension and Social Security</div>
+                        </td>
+                        <td class="py-3 px-4 text-right text-gray-900 dark:text-white font-medium">${{ withdrawal|floatformat:0|intcomma }}</td>
+                        <td class="py-3 px-4 text-right text-green-600 dark:text-green-400 font-medium">${{ pension|floatformat:0|intcomma }}</td>
+                        <td class="py-3 px-4 text-right text-blue-600 dark:text-blue-400 font-medium">${{ ss|floatformat:0|intcomma }}</td>
+                        <td class="py-3 px-4 text-right text-gray-900 dark:text-white font-bold text-lg">${{ withdrawal|add:pension|add:ss|floatformat:0|intcomma }}</td>
+                    </tr>
+                        {% endwith %}
+                    {% endif %}
+                {% elif pension > 0 %}
+                    <!-- Only pension, no SS -->
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 bg-green-50 dark:bg-green-900/10">
+                        <td class="py-3 px-4 text-gray-900 dark:text-white">
+                            Retirement with Pension ({{ pension_age }}-{{ life_exp }})
+                            <div class="text-xs text-gray-500 dark:text-gray-400">Pension only</div>
+                        </td>
+                        <td class="py-3 px-4 text-right text-gray-900 dark:text-white font-medium">${{ withdrawal|floatformat:0|intcomma }}</td>
+                        <td class="py-3 px-4 text-right text-green-600 dark:text-green-400 font-medium">${{ pension|floatformat:0|intcomma }}</td>
+                        <td class="py-3 px-4 text-right text-gray-500 dark:text-gray-400">—</td>
+                        <td class="py-3 px-4 text-right text-gray-900 dark:text-white font-bold text-lg">${{ withdrawal|add:pension|floatformat:0|intcomma }}</td>
+                    </tr>
+                {% elif ss > 0 %}
+                    <!-- Only SS, no pension -->
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 bg-green-50 dark:bg-green-900/10">
+                        <td class="py-3 px-4 text-gray-900 dark:text-white">
+                            Retirement with Social Security ({{ ss_age }}-{{ life_exp }})
+                            <div class="text-xs text-gray-500 dark:text-gray-400">Social Security only</div>
+                        </td>
+                        <td class="py-3 px-4 text-right text-gray-900 dark:text-white font-medium">${{ withdrawal|floatformat:0|intcomma }}</td>
+                        <td class="py-3 px-4 text-right text-gray-500 dark:text-gray-400">—</td>
+                        <td class="py-3 px-4 text-right text-blue-600 dark:text-blue-400 font-medium">${{ ss|floatformat:0|intcomma }}</td>
+                        <td class="py-3 px-4 text-right text-gray-900 dark:text-white font-bold text-lg">${{ withdrawal|add:ss|floatformat:0|intcomma }}</td>
+                    </tr>
+                {% else %}
+                    <!-- No pension or SS -->
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="py-3 px-4 text-gray-900 dark:text-white">
+                            Retirement ({{ ret_age|floatformat:1 }}-{{ life_exp }})
+                            <div class="text-xs text-gray-500 dark:text-gray-400">Portfolio withdrawals only</div>
+                        </td>
+                        <td class="py-3 px-4 text-right text-gray-900 dark:text-white font-medium">${{ withdrawal|floatformat:0|intcomma }}</td>
+                        <td class="py-3 px-4 text-right text-gray-500 dark:text-gray-400">—</td>
+                        <td class="py-3 px-4 text-right text-gray-500 dark:text-gray-400">—</td>
+                        <td class="py-3 px-4 text-right text-gray-900 dark:text-white font-bold text-lg">${{ withdrawal|floatformat:0|intcomma }}</td>
+                    </tr>
+                {% endif %}
+                {% endwith %}
+            </tbody>
+        </table>
+    </div>
+    <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded">
+        <p class="text-sm text-blue-700 dark:text-blue-300">
+            <span class="font-medium">Note:</span> Income amounts shown are initial values. Actual amounts will increase with inflation ({{ calc.parameters.inflation_rate|floatformat:1 }}% annually) throughout retirement.
+        </p>
+    </div>
+</div>
 {% endwith %}
 {% endif %}
 
