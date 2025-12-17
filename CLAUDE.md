@@ -114,7 +114,6 @@ git push origin main                  # Push to GitHub (triggers CI/CD)
 - **Backend**: Python 3.11+ with Django 5.0+ and Django REST Framework
 - **Frontend**: Django templates with HTMX, Chart.js, Tailwind CSS
 - **Database**: PostgreSQL 14+
-- **Task Queue**: Celery with Redis broker
 - **Container**: Docker, Kubernetes (home cluster deployment)
 - **CI/CD**: GitHub Actions with Docker Hub and ArgoCD integration
 - **Observability**: OpenTelemetry with local collector integration
@@ -125,7 +124,7 @@ The application follows a unified Django architecture:
 - **View Layer**: Django templates + DRF for API endpoints
 - **Business Logic**: Calculation engines (4%, 4.7%, Monte Carlo, historical analysis)
 - **Database Models**: User, Asset, Scenario, CalculationResult, FinancialProfile
-- **Async Processing**: Celery tasks for long-running calculations
+- **Calculation Processing**: Synchronous calculations via Django signals (no task queue needed)
 - **Frontend**: Server-rendered templates with HTMX for dynamic interactions
 
 See `documents/plan.md` - **Architecture Overview** section for detailed system design.
@@ -145,9 +144,6 @@ python manage.py createsuperuser
 ```bash
 # Start Django development server
 python manage.py runserver
-
-# Start Celery worker (in another terminal)
-celery -A config worker -l info
 
 # Collect static files
 python manage.py collectstatic
@@ -269,7 +265,6 @@ See `documents/plan.md` for detailed phase planning:
 2. **Phase 2** - 6-8 weeks
    - Monte Carlo simulations (1k-100k iterations)
    - Historical period backtesting
-   - Async calculation processing (Celery)
    - Advanced charting (confidence bands, heatmaps)
    - Scenario comparison
    - PDF/CSV export
@@ -325,7 +320,6 @@ See `documents/plan.md` - **Database Management** for backup and migration strat
 **OpenTelemetry** integration for:
 - HTTP request spans (latency, status)
 - Database query spans
-- Celery task execution spans
 - Custom financial calculation metrics
 - Structured JSON logging with context
 
@@ -651,7 +645,6 @@ git push origin feature-branch
 - **Calculation Reference**: Bogleheads, FIREcalc, early retirement forums
 - **Django**: https://docs.djangoproject.com/
 - **DRF**: https://www.django-rest-framework.org/
-- **Celery**: https://docs.celeryproject.org/
 - **Kubernetes**: https://kubernetes.io/docs/
 - **ArgoCD**: https://argo-cd.readthedocs.io/
 - **Playwright**: https://playwright.dev/python/

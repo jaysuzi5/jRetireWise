@@ -10,8 +10,6 @@ resources:
 - rbac.yaml
 - service.yaml
 - statefulset-postgres.yaml
-- deployment-redis.yaml
-- deployment-celery.yaml
 - deployment-web.yaml
 
 namePrefix: jretirewise-
@@ -28,9 +26,5 @@ commonAnnotations:
 replicas:
 - name: postgres
   count: 1
-- name: redis
-  count: 1
-- name: jretirewise-celery
-  count: 2
 - name: jretirewise-web
   count: 3

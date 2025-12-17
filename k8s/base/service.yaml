@@ -39,25 +39,6 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: redis-service
-  labels:
-    app: jretirewise
-    component: redis
-spec:
-  type: ClusterIP
-  ports:
-  - name: redis
-    port: 6379
-    targetPort: 6379
-    protocol: TCP
-  selector:
-    app: jretirewise
-    component: redis
-
----
-apiVersion: v1
-kind: Service
-metadata:
   name: otel-collector
   labels:
     app: jretirewise

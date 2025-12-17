@@ -891,3 +891,56 @@ class RunHistoricalCalculationView(LoginRequiredMixin, View):
             )
             messages.error(request, f'Calculation failed: {str(e)}')
             return redirect('scenario-detail', pk=pk)
+
+
+class HistoricalPeriodDetailView(LoginRequiredMixin, DetailView):
+    """View detailed year-by-year breakdown for a specific historical period."""
+    model = RetirementScenario
+    template_name = 'jretirewise/historical_period_detail.html'
+    context_object_name = 'scenario'
+
+    def get_queryset(self):
+        return RetirementScenario.objects.filter(user=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        scenario = self.object
+        start_year = self.kwargs.get('start_year')
+
+        # Get the calculation result
+        if not hasattr(scenario, 'result') or not scenario.result:
+            context['error'] = 'No calculation results available. Please run the historical analysis first.'
+            return context
+
+        result_data = scenario.result.result_data
+
+        # Handle both direct storage and wrapped storage (from signals.py)
+        if 'calculation' in result_data:
+            calc_data = result_data['calculation']
+        else:
+            calc_data = result_data
+
+        # Find the period data for the requested start year
+        period_results = calc_data.get('period_results', [])
+        period_data = None
+        for period in period_results:
+            if period.get('start_year') == start_year:
+                period_data = period
+                break
+
+        if not period_data:
+            context['error'] = f'No data found for start year {start_year}'
+            return context
+
+        context['period'] = period_data
+        context['start_year'] = start_year
+        context['yearly_details'] = period_data.get('yearly_details', [])
+        context['parameters'] = calc_data.get('parameters', {})
+
+        # Provide data for JavaScript charts
+        context['chart_data'] = json.dumps({
+            'yearly_details': period_data.get('yearly_details', []),
+            'yearly_values': period_data.get('yearly_values', []),
+        })
+
+        return context

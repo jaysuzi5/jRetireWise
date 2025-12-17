@@ -9,7 +9,7 @@ from .views import (
     MonteCarloScenarioCreateView, MonteCarloScenarioUpdateView,
     BucketedWithdrawalScenarioCreateView, BucketedWithdrawalScenarioUpdateView,
     HistoricalScenarioCreateView, HistoricalScenarioUpdateView,
-    RunHistoricalCalculationView,
+    RunHistoricalCalculationView, HistoricalPeriodDetailView,
     BucketListView, BucketCreateView, BucketUpdateView, BucketDeleteView,
     RunBucketedCalculationView,
 )
@@ -28,6 +28,7 @@ urlpatterns = [
     path('<int:pk>/delete/', ScenarioDeleteView.as_view(), name='scenario-delete'),
     # Historical Analysis
     path('<int:pk>/calculate/historical/', RunHistoricalCalculationView.as_view(), name='run-historical-calculation'),
+    path('<int:pk>/historical/<int:start_year>/', HistoricalPeriodDetailView.as_view(), name='historical-period-detail'),
     # Bucket Management URLs
     path('<int:scenario_pk>/buckets/', BucketListView.as_view(), name='bucket-list'),
     path('<int:scenario_pk>/buckets/create/', BucketCreateView.as_view(), name='bucket-create'),

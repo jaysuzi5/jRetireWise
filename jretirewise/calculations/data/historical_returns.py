@@ -1,16 +1,29 @@
 """
 Historical market return data for backtesting retirement scenarios.
 
-Data sources:
-- S&P 500 total returns (including dividends reinvested)
-- US Treasury Bond returns (10-year)
-- Inflation rates (CPI)
+Data Sources:
+- Primary: NYU Stern (Aswath Damodaran) - Historical Returns on Stocks, Bonds and Bills
+  https://pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/histretSP.html
+- Supporting: FRED (Federal Reserve Economic Data), Bureau of Labor Statistics (CPI)
+- Reference: Ibbotson SBBI (Stocks, Bonds, Bills, and Inflation) via Morningstar
+
+Data Included:
+- S&P 500 Total Returns (including dividends reinvested)
+- 10-Year US Treasury Bond Total Returns (yield + price change)
+- Annual CPI Inflation Rates
+
+Important: Bond returns are TOTAL RETURNS (not just yield), which includes both
+coupon payments and capital gains/losses from price changes. This accurately
+reflects actual portfolio performance, especially during periods of significant
+interest rate changes (e.g., 1982: +32.81%, 2022: -17.46%).
+
+See README.md in this directory for detailed documentation.
 
 All values are expressed as decimals (e.g., 0.15 = 15% return)
 """
 
 # S&P 500 Total Returns (including dividends) by year
-# Source: Historical S&P 500 data, publicly available
+# Source: NYU Stern (Damodaran) - https://pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/histretSP.html
 SP500_RETURNS = {
     1960: 0.0047,
     1961: 0.2689,
@@ -79,7 +92,9 @@ SP500_RETURNS = {
     2024: 0.2500,  # Estimated through end of year
 }
 
-# 10-Year US Treasury Bond Returns by year
+# 10-Year US Treasury Bond TOTAL Returns (yield + price change) by year
+# Source: NYU Stern (Damodaran) - https://pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/histretSP.html
+# Note: Total return includes both coupon payments AND capital gains/losses from price changes
 BOND_RETURNS = {
     1960: 0.1178,
     1961: 0.0206,
@@ -148,7 +163,8 @@ BOND_RETURNS = {
     2024: 0.0200,  # Estimated
 }
 
-# Annual Inflation Rates (CPI) by year
+# Annual Inflation Rates (CPI-U: Consumer Price Index for All Urban Consumers) by year
+# Source: Bureau of Labor Statistics / FRED - https://fred.stlouisfed.org/series/CPIAUCSL
 INFLATION_RATES = {
     1960: 0.0172,
     1961: 0.0067,

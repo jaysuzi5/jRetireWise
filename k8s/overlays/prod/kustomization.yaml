@@ -11,13 +11,9 @@ resources:
 
 # Production replicas - scaled for 1-3 users
 replicas:
-- name: jretirewise-celery
-  count: 1
 - name: jretirewise-web
   count: 2
 - name: postgres
-  count: 1
-- name: redis
   count: 1
 
 # ConfigMap overrides for production
@@ -32,9 +28,6 @@ configMapGenerator:
   - CSRF_COOKIE_SECURE=false
   - CSRF_TRUSTED_ORIGINS=http://192.168.86.229,http://jaycurtis.org,https://jaycurtis.org,https://jretirewise.jaycurtis.org
   - DATABASE_HOST=prod-jretirewise-postgres-service.jretirewise.svc.cluster.local
-  - REDIS_URL=redis://prod-jretirewise-redis-service.jretirewise.svc.cluster.local:6379/0
-  - CELERY_BROKER_URL=redis://prod-jretirewise-redis-service.jretirewise.svc.cluster.local:6379/0
-  - CELERY_RESULT_BACKEND=redis://prod-jretirewise-redis-service.jretirewise.svc.cluster.local:6379/0
   - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector-collector.monitoring.svc.cluster.local:4317
   - OTEL_SERVICE_NAME=jretirewise
   - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
@@ -54,8 +47,6 @@ namePrefix: prod-
 patchesStrategicMerge:
 - deployment-web-patch.yaml
 - statefulset-postgres-patch.yaml
-- deployment-redis-patch.yaml
-- deployment-celery-patch.yaml
 
 # Network policies for prod - soft anti-affinity (preferred, not required)
 # Pods can run on same node if needed due to resource constraints

@@ -8,8 +8,6 @@ bases:
 
 # Override replicas for dev
 replicas:
-- name: jretirewise-celery
-  count: 1
 - name: jretirewise-web
   count: 1
 
@@ -39,7 +37,6 @@ namePrefix: dev-
 patchesStrategicMerge:
 - deployment-web-patch.yaml
 - statefulset-postgres-patch.yaml
-- deployment-redis-patch.yaml
 
 commonAnnotations:
   environment: development

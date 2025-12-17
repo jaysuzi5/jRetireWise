@@ -779,7 +779,7 @@
 <!-- Historical Analysis Results -->
 {% if scenario.calculator_type == 'historical' %}
     {% if scenario.result and scenario.result.status == 'completed' %}
-        {% with scenario.result.result_data as data %}
+        {% with scenario.result.result_data.calculation as data %}
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
             <h2 class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mb-6">Historical Analysis Results</h2>
 
@@ -812,33 +812,36 @@
             <!-- Best/Worst/Median Cases -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <!-- Best Case -->
-                <div class="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
-                    <h3 class="font-semibold text-green-800 dark:text-green-300 mb-2">Best Case ({{ data.best_case.start_year }})</h3>
+                <a href="{% url 'historical-period-detail' scenario.pk data.best_case.start_year %}" class="block bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800 hover:shadow-lg hover:border-green-400 dark:hover:border-green-600 transition-all">
+                    <h3 class="font-semibold text-green-800 dark:text-green-300 mb-2">Best Case ({{ data.best_case.start_year }}) →</h3>
                     <div class="space-y-1 text-sm">
-                        <p class="text-gray-700 dark:text-gray-300">Final Value: <span class="font-medium">${{ data.best_case.final_portfolio_value|floatformat:0 }}</span></p>
+                        <p class="text-gray-700 dark:text-gray-300">Final Value: <span class="font-medium">${{ data.best_case.final_portfolio_value|floatformat:0|intcomma }}</span></p>
                         <p class="text-gray-700 dark:text-gray-300">Avg Return: <span class="font-medium">{{ data.best_case.average_return|floatformat:1 }}%</span></p>
                     </div>
-                </div>
+                    <p class="text-xs text-green-600 dark:text-green-400 mt-2">Click for year-by-year details</p>
+                </a>
                 <!-- Median Case -->
-                <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <h3 class="font-semibold text-blue-800 dark:text-blue-300 mb-2">Median Case ({{ data.median_case.start_year }})</h3>
+                <a href="{% url 'historical-period-detail' scenario.pk data.median_case.start_year %}" class="block bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800 hover:shadow-lg hover:border-blue-400 dark:hover:border-blue-600 transition-all">
+                    <h3 class="font-semibold text-blue-800 dark:text-blue-300 mb-2">Median Case ({{ data.median_case.start_year }}) →</h3>
                     <div class="space-y-1 text-sm">
-                        <p class="text-gray-700 dark:text-gray-300">Final Value: <span class="font-medium">${{ data.median_case.final_portfolio_value|floatformat:0 }}</span></p>
+                        <p class="text-gray-700 dark:text-gray-300">Final Value: <span class="font-medium">${{ data.median_case.final_portfolio_value|floatformat:0|intcomma }}</span></p>
                         <p class="text-gray-700 dark:text-gray-300">Avg Return: <span class="font-medium">{{ data.median_case.average_return|floatformat:1 }}%</span></p>
                     </div>
-                </div>
+                    <p class="text-xs text-blue-600 dark:text-blue-400 mt-2">Click for year-by-year details</p>
+                </a>
                 <!-- Worst Case -->
-                <div class="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800">
-                    <h3 class="font-semibold text-red-800 dark:text-red-300 mb-2">Worst Case ({{ data.worst_case.start_year }})</h3>
+                <a href="{% url 'historical-period-detail' scenario.pk data.worst_case.start_year %}" class="block bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800 hover:shadow-lg hover:border-red-400 dark:hover:border-red-600 transition-all">
+                    <h3 class="font-semibold text-red-800 dark:text-red-300 mb-2">Worst Case ({{ data.worst_case.start_year }}) →</h3>
                     <div class="space-y-1 text-sm">
                         {% if data.worst_case.final_portfolio_value > 0 %}
-                            <p class="text-gray-700 dark:text-gray-300">Final Value: <span class="font-medium">${{ data.worst_case.final_portfolio_value|floatformat:0 }}</span></p>
+                            <p class="text-gray-700 dark:text-gray-300">Final Value: <span class="font-medium">${{ data.worst_case.final_portfolio_value|floatformat:0|intcomma }}</span></p>
                         {% else %}
                             <p class="text-gray-700 dark:text-gray-300">Lasted: <span class="font-medium text-red-600">{{ data.worst_case.years_lasted }} years</span></p>
                         {% endif %}
                         <p class="text-gray-700 dark:text-gray-300">Avg Return: <span class="font-medium">{{ data.worst_case.average_return|floatformat:1 }}%</span></p>
                     </div>
-                </div>
+                    <p class="text-xs text-red-600 dark:text-red-400 mt-2">Click for year-by-year details</p>
+                </a>
             </div>
 
             <!-- Percentile Chart -->
@@ -864,9 +867,9 @@
                         </thead>
                         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                             {% for period in data.notable_periods %}
-                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer" onclick="window.location='{% url 'historical-period-detail' scenario.pk period.start_year %}'">
                                 <td class="px-4 py-2 font-medium text-gray-900 dark:text-white">{{ period.period_name }}</td>
-                                <td class="px-4 py-2 text-gray-600 dark:text-gray-400">{{ period.start_year }}</td>
+                                <td class="px-4 py-2 text-indigo-600 dark:text-indigo-400 hover:underline">{{ period.start_year }} →</td>
                                 <td class="px-4 py-2 text-gray-600 dark:text-gray-400">{{ period.description }}</td>
                                 <td class="px-4 py-2 text-center">
                                     {% if period.success %}
@@ -875,7 +878,7 @@
                                         <span class="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded-full text-xs">{{ period.years_lasted }} yrs</span>
                                     {% endif %}
                                 </td>
-                                <td class="px-4 py-2 text-right text-gray-900 dark:text-white">${{ period.final_portfolio_value|floatformat:0 }}</td>
+                                <td class="px-4 py-2 text-right text-gray-900 dark:text-white">${{ period.final_portfolio_value|floatformat:0|intcomma }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -900,8 +903,8 @@
                         </thead>
                         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                             {% for period in data.vulnerable_periods %}
-                            <tr class="hover:bg-red-50 dark:hover:bg-red-900/10">
-                                <td class="px-4 py-2 font-medium text-gray-900 dark:text-white">{{ period.start_year }}</td>
+                            <tr class="hover:bg-red-50 dark:hover:bg-red-900/10 cursor-pointer" onclick="window.location='{% url 'historical-period-detail' scenario.pk period.start_year %}'">
+                                <td class="px-4 py-2 font-medium text-indigo-600 dark:text-indigo-400 hover:underline">{{ period.start_year }} →</td>
                                 <td class="px-4 py-2 text-gray-600 dark:text-gray-400">{{ period.years_lasted }} years</td>
                                 <td class="px-4 py-2 text-red-600 dark:text-red-400">{{ period.shortfall_years }} years short</td>
                                 <td class="px-4 py-2 text-gray-600 dark:text-gray-400">{{ period.reason }}</td>
@@ -919,31 +922,31 @@
                 <div class="grid grid-cols-2 md:grid-cols-7 gap-4 text-center">
                     <div>
                         <p class="text-xs text-gray-500 dark:text-gray-400">5th %ile</p>
-                        <p class="font-semibold text-gray-900 dark:text-white">${{ data.final_value_percentiles.p5|floatformat:0 }}</p>
+                        <p class="font-semibold text-gray-900 dark:text-white">${{ data.final_value_percentiles.p5|floatformat:0|intcomma }}</p>
                     </div>
                     <div>
                         <p class="text-xs text-gray-500 dark:text-gray-400">10th %ile</p>
-                        <p class="font-semibold text-gray-900 dark:text-white">${{ data.final_value_percentiles.p10|floatformat:0 }}</p>
+                        <p class="font-semibold text-gray-900 dark:text-white">${{ data.final_value_percentiles.p10|floatformat:0|intcomma }}</p>
                     </div>
                     <div>
                         <p class="text-xs text-gray-500 dark:text-gray-400">25th %ile</p>
-                        <p class="font-semibold text-gray-900 dark:text-white">${{ data.final_value_percentiles.p25|floatformat:0 }}</p>
+                        <p class="font-semibold text-gray-900 dark:text-white">${{ data.final_value_percentiles.p25|floatformat:0|intcomma }}</p>
                     </div>
                     <div class="bg-indigo-100 dark:bg-indigo-900/30 rounded p-2">
                         <p class="text-xs text-indigo-600 dark:text-indigo-400">Median</p>
-                        <p class="font-bold text-indigo-700 dark:text-indigo-300">${{ data.final_value_percentiles.p50|floatformat:0 }}</p>
+                        <p class="font-bold text-indigo-700 dark:text-indigo-300">${{ data.final_value_percentiles.p50|floatformat:0|intcomma }}</p>
                     </div>
                     <div>
                         <p class="text-xs text-gray-500 dark:text-gray-400">75th %ile</p>
-                        <p class="font-semibold text-gray-900 dark:text-white">${{ data.final_value_percentiles.p75|floatformat:0 }}</p>
+                        <p class="font-semibold text-gray-900 dark:text-white">${{ data.final_value_percentiles.p75|floatformat:0|intcomma }}</p>
                     </div>
                     <div>
                         <p class="text-xs text-gray-500 dark:text-gray-400">90th %ile</p>
-                        <p class="font-semibold text-gray-900 dark:text-white">${{ data.final_value_percentiles.p90|floatformat:0 }}</p>
+                        <p class="font-semibold text-gray-900 dark:text-white">${{ data.final_value_percentiles.p90|floatformat:0|intcomma }}</p>
                     </div>
                     <div>
                         <p class="text-xs text-gray-500 dark:text-gray-400">95th %ile</p>
-                        <p class="font-semibold text-gray-900 dark:text-white">${{ data.final_value_percentiles.p95|floatformat:0 }}</p>
+                        <p class="font-semibold text-gray-900 dark:text-white">${{ data.final_value_percentiles.p95|floatformat:0|intcomma }}</p>
                     </div>
                 </div>
             </div>

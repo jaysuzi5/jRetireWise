@@ -8,7 +8,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.contrib.auth.models import User
 from .models import RetirementScenario, CalculationResult
-from jretirewise.calculations.calculators import FourPercentCalculator, FourPointSevenPercentCalculator, MonteCarloCalculator, EnhancedMonteCarloCalculator
+from jretirewise.calculations.calculators import FourPercentCalculator, FourPointSevenPercentCalculator, MonteCarloCalculator, EnhancedMonteCarloCalculator, HistoricalPeriodCalculator
 
 logger = logging.getLogger(__name__)
 
@@ -185,11 +185,35 @@ def run_scenario_calculation(sender, instance, created, **kwargs):
                 periods_per_year=periods_per_year,
             )
         elif instance.calculator_type == 'historical':
-            # Historical analysis calculator not yet implemented
-            result.status = 'failed'
-            result.error_message = 'Historical analysis calculator is not yet implemented. Please use the 4% Rule or 4.7% Rule calculators.'
-            result.save()
-            return
+            # Historical Period Analysis Calculator
+            withdrawal_rate = float(parameters.get('withdrawal_rate', 0.04))
+            stock_allocation = float(parameters.get('stock_allocation', 0.60))
+
+            # Social Security parameters
+            social_security_start_age = parameters.get('social_security_start_age')
+            if social_security_start_age is not None:
+                social_security_start_age = int(social_security_start_age)
+            social_security_annual = float(parameters.get('social_security_annual', 0))
+
+            # Pension from profile if not in parameters
+            pension_annual = float(parameters.get('pension_annual', 0))
+            if pension_annual == 0:
+                try:
+                    if financial_profile.pension_annual:
+                        pension_annual = float(financial_profile.pension_annual)
+                except:
+                    pass
+
+            calculator = HistoricalPeriodCalculator(
+                portfolio_value=portfolio_value,
+                retirement_age=int(retirement_age),
+                life_expectancy=life_expectancy,
+                withdrawal_rate=withdrawal_rate,
+                stock_allocation=stock_allocation,
+                social_security_start_age=social_security_start_age,
+                social_security_annual=social_security_annual,
+                pension_annual=pension_annual,
+            )
         else:
             result.status = 'failed'
             result.error_message = f'Unsupported calculator type: {instance.calculator_type}'

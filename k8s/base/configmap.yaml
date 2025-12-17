@@ -17,11 +17,6 @@ data:
   DATABASE_HOST: "postgres-service"
   DATABASE_PORT: "5432"
 
-  # Redis
-  REDIS_URL: "redis://redis-service:6379/0"
-  CELERY_BROKER_URL: "redis://redis-service:6379/0"
-  CELERY_RESULT_BACKEND: "redis://redis-service:6379/0"
-
   # Email backend
   EMAIL_BACKEND: "django.core.mail.backends.smtp.EmailBackend"
   EMAIL_HOST: "smtp.gmail.com"
@@ -55,9 +50,3 @@ data:
   STATIC_ROOT: "/app/staticfiles"
   MEDIA_ROOT: "/app/media"
   FORCE_SCRIPT_NAME: "/jretirewise"
-
-  # Celery
-  CELERY_TASK_SERIALIZER: "json"
-  CELERY_RESULT_SERIALIZER: "json"
-  CELERY_ACCEPT_CONTENT: "json"
-  CELERY_TIMEZONE: "UTC"

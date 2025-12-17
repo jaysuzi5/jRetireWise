@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Historical Period {{ start_year }} - {{ scenario.name }} - jRetireWise{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <nav class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                    <a href="{% url 'scenarios' %}" class="hover:text-indigo-600 dark:hover:text-indigo-400">Scenarios</a>
+                    <span class="mx-2">/</span>
+                    <a href="{% url 'scenario-detail' scenario.pk %}" class="hover:text-indigo-600 dark:hover:text-indigo-400">{{ scenario.name }}</a>
+                    <span class="mx-2">/</span>
+                    <span class="text-gray-900 dark:text-white">Period {{ start_year }}</span>
+                </nav>
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+                    Historical Period: {{ start_year }} - {{ period.end_year }}
+                </h1>
+                <p class="mt-2 text-gray-600 dark:text-gray-400">
+                    Year-by-year breakdown of your retirement simulation starting in {{ start_year }}
+                </p>
+            </div>
+            <a href="{% url 'scenario-detail' scenario.pk %}" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                &larr; Back to Scenario
+            </a>
+        </div>
+    </div>
+
+    {% if error %}
+        <div class="bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg mb-6">
+            {{ error }}
+        </div>
+    {% else %}
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
+            <p class="text-sm text-gray-600 dark:text-gray-400">Start Year</p>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ period.start_year }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
+            <p class="text-sm text-gray-600 dark:text-gray-400">End Year</p>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ period.end_year }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
+            <p class="text-sm text-gray-600 dark:text-gray-400">Result</p>
+            <p class="text-2xl font-bold {% if period.success %}text-green-600{% else %}text-red-600{% endif %}">
+                {% if period.success %}Success{% else %}Failed{% endif %}
+            </p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
+            <p class="text-sm text-gray-600 dark:text-gray-400">Final Value</p>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white">${{ period.final_portfolio_value|floatformat:0|intcomma|default:"0" }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
+            <p class="text-sm text-gray-600 dark:text-gray-400">Avg Return</p>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ period.average_return|floatformat:1 }}%</p>
+        </div>
+    </div>
+
+    <!-- Portfolio Chart -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Portfolio Value Over Time</h2>
+        <canvas id="portfolioChart" height="100"></canvas>
+    </div>
+
+    <!-- Returns Chart -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Annual Returns & Inflation</h2>
+        <canvas id="returnsChart" height="100"></canvas>
+    </div>
+
+    <!-- Year-by-Year Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Year-by-Year Details</h2>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-100 dark:bg-gray-700 sticky top-0">
+                    <tr>
+                        <th class="px-3 py-2 text-left text-gray-700 dark:text-gray-300">Year</th>
+                        <th class="px-3 py-2 text-left text-gray-700 dark:text-gray-300">Age</th>
+                        <th class="px-3 py-2 text-right text-gray-700 dark:text-gray-300">Portfolio Start</th>
+                        <th class="px-3 py-2 text-right text-gray-700 dark:text-gray-300">S&P 500</th>
+                        <th class="px-3 py-2 text-right text-gray-700 dark:text-gray-300">Bonds</th>
+                        <th class="px-3 py-2 text-right text-gray-700 dark:text-gray-300">Blended</th>
+                        <th class="px-3 py-2 text-right text-gray-700 dark:text-gray-300">Investment Gain</th>
+                        <th class="px-3 py-2 text-right text-gray-700 dark:text-gray-300">Inflation</th>
+                        <th class="px-3 py-2 text-right text-gray-700 dark:text-gray-300">Withdrawal</th>
+                        <th class="px-3 py-2 text-right text-gray-700 dark:text-gray-300">Portfolio End</th>
+                        <th class="px-3 py-2 text-right text-gray-700 dark:text-gray-300">Year Change</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for year in yearly_details %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 {% if year.year_change < 0 %}bg-red-50 dark:bg-red-900/10{% endif %}">
+                        <td class="px-3 py-2 font-medium text-gray-900 dark:text-white">{{ year.calendar_year }}</td>
+                        <td class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ year.age }}</td>
+                        <td class="px-3 py-2 text-right text-gray-900 dark:text-white">${{ year.portfolio_start|floatformat:0|intcomma }}</td>
+                        <td class="px-3 py-2 text-right {% if year.stock_return >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                            {{ year.stock_return|floatformat:1 }}%
+                        </td>
+                        <td class="px-3 py-2 text-right {% if year.bond_return >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                            {{ year.bond_return|floatformat:1 }}%
+                        </td>
+                        <td class="px-3 py-2 text-right font-medium {% if year.blended_return >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                            {{ year.blended_return|floatformat:1 }}%
+                        </td>
+                        <td class="px-3 py-2 text-right {% if year.investment_gain >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                            ${{ year.investment_gain|floatformat:0|intcomma }}
+                        </td>
+                        <td class="px-3 py-2 text-right text-orange-600 dark:text-orange-400">
+                            {{ year.inflation_rate|floatformat:1 }}%
+                        </td>
+                        <td class="px-3 py-2 text-right text-red-600 dark:text-red-400">
+                            -${{ year.net_withdrawal|floatformat:0|intcomma }}
+                        </td>
+                        <td class="px-3 py-2 text-right font-medium text-gray-900 dark:text-white">
+                            ${{ year.portfolio_end|floatformat:0|intcomma }}
+                        </td>
+                        <td class="px-3 py-2 text-right {% if year.year_change >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                            {% if year.year_change >= 0 %}+{% endif %}${{ year.year_change|floatformat:0|intcomma }}
+                            <span class="text-xs">({% if year.year_change_pct >= 0 %}+{% endif %}{{ year.year_change_pct|floatformat:1 }}%)</span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="11" class="px-3 py-4 text-center text-gray-500 dark:text-gray-400">
+                            No yearly details available
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Legend/Notes -->
+    <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-6">
+        <h3 class="font-semibold text-gray-900 dark:text-white mb-3">Understanding This Data</h3>
+        <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+            <li><strong>S&P 500:</strong> Actual total return (including dividends) for the S&P 500 index that year</li>
+            <li><strong>Bonds:</strong> Actual return for intermediate-term government bonds that year</li>
+            <li><strong>Blended:</strong> Your portfolio's return based on {{ parameters.stock_allocation|floatformat:0 }}% stocks / {{ parameters.stock_allocation|floatformat:0|add:"-100"|slice:"1:" }}% bonds allocation</li>
+            <li><strong>Inflation:</strong> Actual CPI inflation rate - your withdrawals increase by this amount each year</li>
+            <li><strong>Year Change:</strong> Net change in portfolio value (investment gains minus withdrawals)</li>
+            <li class="text-red-600 dark:text-red-400"><strong>Red rows:</strong> Years where the portfolio decreased in value</li>
+        </ul>
+    </div>
+
+    {% endif %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const chartData = {{ chart_data|safe }};
+    const yearlyDetails = chartData.yearly_details || [];
+
+    const isDark = document.documentElement.classList.contains('dark');
+    const textColor = isDark ? '#d1d5db' : '#374151';
+    const gridColor = isDark ? 'rgba(107, 114, 128, 0.3)' : 'rgba(209, 213, 219, 0.5)';
+
+    // Portfolio Value Chart
+    if (yearlyDetails.length > 0) {
+        const portfolioCtx = document.getElementById('portfolioChart').getContext('2d');
+        new Chart(portfolioCtx, {
+            type: 'line',
+            data: {
+                labels: yearlyDetails.map(d => d.calendar_year),
+                datasets: [{
+                    label: 'Portfolio Value',
+                    data: yearlyDetails.map(d => d.portfolio_end),
+                    borderColor: '#4f46e5',
+                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Portfolio: $' + context.parsed.y.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Year', color: textColor },
+                        grid: { color: gridColor },
+                        ticks: { color: textColor }
+                    },
+                    y: {
+                        title: { display: true, text: 'Portfolio Value ($)', color: textColor },
+                        grid: { color: gridColor },
+                        ticks: {
+                            color: textColor,
+                            callback: function(value) {
+                                if (value >= 1000000) return '$' + (value / 1000000).toFixed(1) + 'M';
+                                if (value >= 1000) return '$' + (value / 1000).toFixed(0) + 'K';
+                                return '$' + value;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Returns Chart
+        const returnsCtx = document.getElementById('returnsChart').getContext('2d');
+        new Chart(returnsCtx, {
+            type: 'bar',
+            data: {
+                labels: yearlyDetails.map(d => d.calendar_year),
+                datasets: [
+                    {
+                        label: 'S&P 500',
+                        data: yearlyDetails.map(d => d.stock_return),
+                        backgroundColor: yearlyDetails.map(d => d.stock_return >= 0 ? 'rgba(34, 197, 94, 0.7)' : 'rgba(239, 68, 68, 0.7)'),
+                        borderColor: yearlyDetails.map(d => d.stock_return >= 0 ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)'),
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Bonds',
+                        data: yearlyDetails.map(d => d.bond_return),
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                        borderColor: 'rgb(59, 130, 246)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Inflation',
+                        data: yearlyDetails.map(d => d.inflation_rate),
+                        type: 'line',
+                        borderColor: 'rgb(249, 115, 22)',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        pointBackgroundColor: 'rgb(249, 115, 22)'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: { color: textColor }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + '%';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Year', color: textColor },
+                        grid: { color: gridColor },
+                        ticks: { color: textColor }
+                    },
+                    y: {
+                        title: { display: true, text: 'Return (%)', color: textColor },
+                        grid: { color: gridColor },
+                        ticks: {
+                            color: textColor,
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

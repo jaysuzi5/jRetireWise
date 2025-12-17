@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
@@ -15,18 +13,6 @@ services:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Redis Cache and Celery Broker
-  redis:
-    image: redis:7-alpine
-    container_name: jretirewise-redis
-    ports:
-      - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -48,15 +34,11 @@ services:
       DB_PASSWORD: postgres
       DB_HOST: postgres
       DB_PORT: 5432
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
       ALLOWED_HOSTS: localhost,127.0.0.1,web
       CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:8000
       OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4318
     depends_on:
       postgres:
-        condition: service_healthy
-      redis:
         condition: service_healthy
     volumes:
       - .:/app
@@ -65,28 +47,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
-  # Celery Worker
-  celery:
-    build: .
-    container_name: jretirewise-celery
-    command: celery -A config worker -l info
-    environment:
-      DEBUG: "True"
-      SECRET_KEY: django-insecure-dev-key-change-in-production
-      DB_NAME: jretirewise
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_HOST: postgres
-      DB_PORT: 5432
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
-    depends_on:
-      - postgres
-      - redis
-      - web
-    volumes:
-      - .:/app
 
   # OpenTelemetry Collector (optional)
   otel-collector:

@@ -1216,6 +1216,8 @@ class HistoricalPeriodCalculator:
         Returns:
             Dictionary with simulation results for this period
         """
+        from .data import SP500_RETURNS, BOND_RETURNS, INFLATION_RATES
+
         portfolio = self.portfolio_value
 
         # Calculate initial withdrawal
@@ -1227,28 +1229,43 @@ class HistoricalPeriodCalculator:
         current_withdrawal = initial_withdrawal
         total_withdrawals = 0
         yearly_values = [portfolio]
+        yearly_details = []  # Detailed year-by-year breakdown
         depleted_year = None
 
         for year in range(self.years_in_retirement):
             current_age = self.retirement_age + year
+            calendar_year = start_year + year
             annual_return = returns[year] if year < len(returns) else 0.07
             inflation = inflation_rates[year] if year < len(inflation_rates) else 0.03
 
+            # Get individual stock and bond returns for this year
+            stock_return = SP500_RETURNS.get(calendar_year, 0.07)
+            bond_return = BOND_RETURNS.get(calendar_year, 0.04)
+            actual_inflation = INFLATION_RATES.get(calendar_year, 0.03)
+
+            portfolio_start = portfolio
+
             # Apply market return
-            portfolio = portfolio * (1 + annual_return)
+            investment_gain = portfolio * annual_return
+            portfolio = portfolio + investment_gain
 
             # Calculate net withdrawal (reduce by SS and pension if applicable)
+            gross_withdrawal = current_withdrawal
             net_withdrawal = current_withdrawal
+            ss_income = 0
+            pension_income = 0
 
             # Social Security kicks in at specified age
             if self.social_security_annual > 0:
                 ss_start = self.social_security_start_age or 67
                 if current_age >= ss_start:
-                    net_withdrawal = max(0, net_withdrawal - self.social_security_annual)
+                    ss_income = self.social_security_annual
+                    net_withdrawal = max(0, net_withdrawal - ss_income)
 
             # Pension reduces withdrawal need
             if self.pension_annual > 0:
-                net_withdrawal = max(0, net_withdrawal - self.pension_annual)
+                pension_income = self.pension_annual
+                net_withdrawal = max(0, net_withdrawal - pension_income)
 
             # Make withdrawal
             portfolio = portfolio - net_withdrawal
@@ -1259,6 +1276,26 @@ class HistoricalPeriodCalculator:
                 portfolio = 0
                 if depleted_year is None:
                     depleted_year = year + 1
+
+            # Record detailed year data
+            yearly_details.append({
+                'year': year + 1,
+                'calendar_year': calendar_year,
+                'age': current_age,
+                'portfolio_start': portfolio_start,
+                'stock_return': stock_return * 100,
+                'bond_return': bond_return * 100,
+                'blended_return': annual_return * 100,
+                'investment_gain': investment_gain,
+                'inflation_rate': actual_inflation * 100,
+                'gross_withdrawal': gross_withdrawal,
+                'social_security': ss_income,
+                'pension': pension_income,
+                'net_withdrawal': net_withdrawal,
+                'portfolio_end': portfolio,
+                'year_change': portfolio - portfolio_start,
+                'year_change_pct': ((portfolio - portfolio_start) / portfolio_start * 100) if portfolio_start > 0 else 0,
+            })
 
             yearly_values.append(portfolio)
 
@@ -1277,6 +1314,7 @@ class HistoricalPeriodCalculator:
             'total_withdrawals': total_withdrawals,
             'average_return': avg_return * 100,
             'yearly_values': yearly_values,
+            'yearly_details': yearly_details,
         }
 
     def _analyze_vulnerable_periods(self, failed_periods: List[Dict]) -> List[Dict]:
