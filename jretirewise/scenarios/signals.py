@@ -113,19 +113,26 @@ def run_scenario_calculation(sender, instance, created, **kwargs):
         # Time the calculation
         start_time = time.time()
 
-        # Get Social Security benefit based on claiming age (Phase 0)
-        # Try to get TaxProfile for age-specific Social Security lookup
-        social_security_annual = 0
-        social_security_claiming_age = instance.social_security_claiming_age
-        try:
-            tax_profile = instance.user.tax_profile
-            social_security_annual = float(tax_profile.get_social_security_annual(social_security_claiming_age))
-        except:
-            # Fall back to financial profile if tax profile doesn't exist
+        # Get Social Security benefit based on claiming age
+        # First try to get from scenario parameters (most recent/accurate)
+        social_security_claiming_age = int(parameters.get('social_security_start_age', 0)) or instance.social_security_claiming_age
+        social_security_monthly = float(parameters.get('social_security_monthly', 0))
+
+        # Convert monthly to annual
+        if social_security_monthly > 0:
+            social_security_annual = social_security_monthly * 12
+        else:
+            # Fall back to tax profile if not in parameters
+            social_security_annual = 0
             try:
-                social_security_annual = float(financial_profile.social_security_annual)
+                tax_profile = instance.user.tax_profile
+                social_security_annual = float(tax_profile.get_social_security_annual(social_security_claiming_age))
             except:
-                social_security_annual = float(parameters.get('social_security_annual', 0))
+                # Fall back to financial profile if tax profile doesn't exist
+                try:
+                    social_security_annual = float(financial_profile.social_security_annual)
+                except:
+                    social_security_annual = float(parameters.get('social_security_annual', 0))
 
         # Run the appropriate calculator
         if instance.calculator_type == '4_percent':
@@ -173,14 +180,23 @@ def run_scenario_calculation(sender, instance, created, **kwargs):
             # Convert annual to monthly for Monte Carlo calculator
             social_security_monthly = social_security_annual / 12
 
-            # Pension from profile if not in parameters
+            # Pension from parameters or profile
             pension_annual = float(parameters.get('pension_annual', 0))
+            pension_start_age = int(parameters.get('pension_start_age', 0))
+
             if pension_annual == 0:
                 try:
                     if financial_profile.pension_annual:
                         pension_annual = float(financial_profile.pension_annual)
                 except:
                     pass
+
+            if pension_start_age == 0:
+                try:
+                    if financial_profile.pension_start_age:
+                        pension_start_age = int(financial_profile.pension_start_age)
+                except:
+                    pension_start_age = int(retirement_age)  # Default to retirement age
 
             # Time step configuration (default to monthly for more accurate simulation)
             periods_per_year = int(parameters.get('periods_per_year', 12))
@@ -197,9 +213,10 @@ def run_scenario_calculation(sender, instance, created, **kwargs):
                 mode=mode,
                 withdrawal_amount=withdrawal_amount,
                 target_success_rate=target_success_rate,
-                social_security_start_age=social_security_start_age,
+                social_security_start_age=social_security_claiming_age,
                 social_security_monthly_benefit=social_security_monthly,
                 pension_annual=pension_annual,
+                pension_start_age=pension_start_age,
                 periods_per_year=periods_per_year,
             )
         elif instance.calculator_type == 'historical':

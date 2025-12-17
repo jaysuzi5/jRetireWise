@@ -623,6 +623,7 @@ class EnhancedMonteCarloCalculator:
         social_security_monthly_benefit: float = 0,
         # Pension parameters
         pension_annual: float = 0,
+        pension_start_age: int = None,
         # Time step configuration
         periods_per_year: int = 12,  # 12 for monthly, 1 for annual
     ):
@@ -644,6 +645,7 @@ class EnhancedMonteCarloCalculator:
             social_security_start_age: Age when SS benefits begin (62-70)
             social_security_monthly_benefit: Monthly SS benefit amount
             pension_annual: Annual pension income
+            pension_start_age: Age when pension income begins
             periods_per_year: Time steps per year (12 for monthly, 1 for annual)
         """
         self.portfolio_value = float(portfolio_value)
@@ -660,6 +662,7 @@ class EnhancedMonteCarloCalculator:
         self.social_security_start_age = int(social_security_start_age) if social_security_start_age else None
         self.social_security_monthly_benefit = float(social_security_monthly_benefit)
         self.pension_annual = float(pension_annual)
+        self.pension_start_age = int(pension_start_age) if pension_start_age else None
         self.periods_per_year = int(periods_per_year)
 
         # Pre-calculate time step size
@@ -861,9 +864,13 @@ class EnhancedMonteCarloCalculator:
                     ss_adjusted = ss_period * ss_inflation_factor
                     net_withdrawal = max(0, net_withdrawal - ss_adjusted)
 
-                # Subtract pension if applicable (also inflation adjusted from start)
-                if pension_period > 0:
-                    pension_adjusted = pension_period * inflation_factor
+                # Pension kicks in at start age (default to retirement age if not specified)
+                pension_start = self.pension_start_age if self.pension_start_age else self.retirement_age
+                if pension_period > 0 and current_age >= pension_start:
+                    # Pension also increases with inflation from pension start
+                    years_since_pension_start = current_age - pension_start
+                    pension_inflation_factor = (1 + self.inflation_rate) ** years_since_pension_start
+                    pension_adjusted = pension_period * pension_inflation_factor
                     net_withdrawal = max(0, net_withdrawal - pension_adjusted)
 
                 # Make withdrawal
@@ -1024,9 +1031,12 @@ class EnhancedMonteCarloCalculator:
                 ss_adjusted = ss_period * ss_inflation_factor
                 net_withdrawal = max(0, net_withdrawal - ss_adjusted)
 
-            # Pension (inflation adjusted from start)
-            if pension_period > 0:
-                pension_adjusted = pension_period * inflation_factor
+            # Pension kicks in at start age (default to retirement age if not specified)
+            pension_start = self.pension_start_age if self.pension_start_age else self.retirement_age
+            if pension_period > 0 and current_age >= pension_start:
+                years_since_pension_start = current_age - pension_start
+                pension_inflation_factor = (1 + self.inflation_rate) ** years_since_pension_start
+                pension_adjusted = pension_period * pension_inflation_factor
                 net_withdrawal = max(0, net_withdrawal - pension_adjusted)
 
             portfolio = max(0, portfolio - net_withdrawal)
