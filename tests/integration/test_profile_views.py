@@ -42,8 +42,8 @@ class ProfileViewIntegrationTestCase(TestCase):
             'retirement_age': 65,
             'life_expectancy': 95,
             'annual_spending': '80000.00',
-            'social_security_annual': '20000.00',
             'pension_annual': '0.00',
+            'pension_start_age': 65,
         }
         response = self.client.post('/profile/', profile_data, follow=True)
         assert response.status_code == 200
@@ -71,8 +71,8 @@ class ProfileViewIntegrationTestCase(TestCase):
             'retirement_age': 65,
             'life_expectancy': 95,
             'annual_spending': '90000.00',
-            'social_security_annual': '25000.00',
             'pension_annual': '10000.00',
+            'pension_start_age': 62,
         }
         response = self.client.post('/profile/', updated_data, follow=True)
         assert response.status_code == 200
@@ -82,7 +82,8 @@ class ProfileViewIntegrationTestCase(TestCase):
         assert profile.current_age == 35
         assert profile.retirement_age == 65
         assert float(profile.annual_spending) == 90000.00
-        assert float(profile.social_security_annual) == 25000.00
+        assert float(profile.pension_annual) == 10000.00
+        assert profile.pension_start_age == 62
 
     def test_profile_form_validation_error(self):
         """Test that validation errors are displayed."""
@@ -91,8 +92,8 @@ class ProfileViewIntegrationTestCase(TestCase):
             'retirement_age': 65,
             'life_expectancy': 95,
             'annual_spending': '80000.00',
-            'social_security_annual': '0.00',
             'pension_annual': '0.00',
+            'pension_start_age': 65,
         }
         response = self.client.post('/profile/', invalid_data)
         assert response.status_code == 200
@@ -138,8 +139,8 @@ class ProfileViewIntegrationTestCase(TestCase):
             'retirement_age': 65,
             'life_expectancy': 95,
             'annual_spending': '80000.00',
-            'social_security_annual': '20000.00',
             'pension_annual': '0.00',
+            'pension_start_age': 65,
         }
         response = self.client.post('/profile/', profile_data, follow=True)
         assert response.status_code == 200
@@ -161,8 +162,8 @@ class ProfileViewIntegrationTestCase(TestCase):
             'retirement_age': 65,
             'life_expectancy': 95,
             'annual_spending': '80000.00',
-            'social_security_annual': '0.00',
             'pension_annual': '0.00',
+            'pension_start_age': 65,
         }
 
         # Test with each required field missing

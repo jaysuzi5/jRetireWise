@@ -35,14 +35,14 @@ class FinancialProfileFormTestCase(TestCase):
         assert form.is_valid(), f"Form errors: {form.errors}"
 
     def test_profile_form_saves_correctly(self):
-        """Test that form saves all fields correctly."""
+        """Test that form saves all FinancialProfile fields correctly."""
         form_data = {
             'current_age': 40,
             'retirement_age': 67,
             'life_expectancy': 90,
             'annual_spending': '100000.00',
-            'social_security_annual': '25000.00',
             'pension_annual': '15000.00',
+            'pension_start_age': 62,
         }
         form = FinancialProfileForm(data=form_data)
         assert form.is_valid()
@@ -51,14 +51,14 @@ class FinancialProfileFormTestCase(TestCase):
         profile.user = self.user
         profile.save()
 
-        # Verify all fields were saved
+        # Verify all financial profile fields were saved
         saved_profile = FinancialProfile.objects.get(user=self.user)
         assert saved_profile.current_age == 40
         assert saved_profile.retirement_age == 67
         assert saved_profile.life_expectancy == 90
         assert float(saved_profile.annual_spending) == 100000.00
-        assert float(saved_profile.social_security_annual) == 25000.00
         assert float(saved_profile.pension_annual) == 15000.00
+        assert saved_profile.pension_start_age == 62
 
     def test_profile_form_age_validation(self):
         """Test that current_age must be less than retirement_age."""
