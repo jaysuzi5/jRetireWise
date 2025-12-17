@@ -113,6 +113,20 @@ def run_scenario_calculation(sender, instance, created, **kwargs):
         # Time the calculation
         start_time = time.time()
 
+        # Get Social Security benefit based on claiming age (Phase 0)
+        # Try to get TaxProfile for age-specific Social Security lookup
+        social_security_annual = 0
+        social_security_claiming_age = instance.social_security_claiming_age
+        try:
+            tax_profile = instance.user.tax_profile
+            social_security_annual = float(tax_profile.get_social_security_annual(social_security_claiming_age))
+        except:
+            # Fall back to financial profile if tax profile doesn't exist
+            try:
+                social_security_annual = float(financial_profile.social_security_annual)
+            except:
+                social_security_annual = float(parameters.get('social_security_annual', 0))
+
         # Run the appropriate calculator
         if instance.calculator_type == '4_percent':
             calculator = FourPercentCalculator(
@@ -123,6 +137,8 @@ def run_scenario_calculation(sender, instance, created, **kwargs):
                 life_expectancy=life_expectancy,
                 annual_return_rate=annual_return_rate,
                 inflation_rate=inflation_rate,
+                social_security_annual=social_security_annual,
+                social_security_claiming_age=social_security_claiming_age,
             )
         elif instance.calculator_type == '4_7_percent':
             calculator = FourPointSevenPercentCalculator(
@@ -133,6 +149,8 @@ def run_scenario_calculation(sender, instance, created, **kwargs):
                 life_expectancy=life_expectancy,
                 annual_return_rate=annual_return_rate,
                 inflation_rate=inflation_rate,
+                social_security_annual=social_security_annual,
+                social_security_claiming_age=social_security_claiming_age,
             )
         elif instance.calculator_type == 'monte_carlo':
             # Get Monte Carlo specific parameters
@@ -150,10 +168,10 @@ def run_scenario_calculation(sender, instance, created, **kwargs):
                 withdrawal_amount = annual_spending
 
             # Social Security parameters
-            social_security_start_age = parameters.get('social_security_start_age')
-            if social_security_start_age is not None:
-                social_security_start_age = int(social_security_start_age)
-            social_security_monthly = float(parameters.get('social_security_monthly', 0))
+            # Use claiming age to determine start age for Social Security
+            social_security_start_age = social_security_claiming_age
+            # Convert annual to monthly for Monte Carlo calculator
+            social_security_monthly = social_security_annual / 12
 
             # Pension from profile if not in parameters
             pension_annual = float(parameters.get('pension_annual', 0))
@@ -190,10 +208,8 @@ def run_scenario_calculation(sender, instance, created, **kwargs):
             stock_allocation = float(parameters.get('stock_allocation', 0.60))
 
             # Social Security parameters
-            social_security_start_age = parameters.get('social_security_start_age')
-            if social_security_start_age is not None:
-                social_security_start_age = int(social_security_start_age)
-            social_security_annual = float(parameters.get('social_security_annual', 0))
+            # Use claiming age from scenario
+            social_security_start_age = social_security_claiming_age
 
             # Pension from profile if not in parameters
             pension_annual = float(parameters.get('pension_annual', 0))
@@ -213,6 +229,7 @@ def run_scenario_calculation(sender, instance, created, **kwargs):
                 social_security_start_age=social_security_start_age,
                 social_security_annual=social_security_annual,
                 pension_annual=pension_annual,
+                social_security_claiming_age=social_security_claiming_age,
             )
         else:
             result.status = 'failed'

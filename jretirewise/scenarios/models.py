@@ -18,6 +18,13 @@ class RetirementScenario(models.Model):
         ('historical', 'Historical Analysis'),
     ]
 
+    CLAIMING_AGE_CHOICES = [
+        (62, '62 (Reduced benefit)'),
+        (65, '65 (Partial benefit)'),
+        (67, '67 (Full Retirement Age)'),
+        (70, '70 (Delayed benefit)'),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='scenarios')
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
@@ -25,6 +32,13 @@ class RetirementScenario(models.Model):
 
     # Scenario parameters stored as JSON
     parameters = models.JSONField(default=dict)
+
+    # Social Security claiming age (Phase 0 enhancement)
+    social_security_claiming_age = models.IntegerField(
+        default=67,
+        choices=CLAIMING_AGE_CHOICES,
+        help_text='Age at which user will claim Social Security'
+    )
 
     is_default = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)

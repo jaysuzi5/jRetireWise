@@ -27,7 +27,8 @@ class RetirementCalculator:
 
     def __init__(self, portfolio_value: Decimal, annual_spending: Decimal,
                  current_age: int, retirement_age: int, life_expectancy: int,
-                 annual_return_rate: float = 0.07, inflation_rate: float = 0.03):
+                 annual_return_rate: float = 0.07, inflation_rate: float = 0.03,
+                 social_security_annual: float = 0, social_security_claiming_age: int = 67):
         """
         Initialize calculator with user parameters.
 
@@ -39,6 +40,8 @@ class RetirementCalculator:
             life_expectancy: Expected age of death
             annual_return_rate: Expected annual investment return
             inflation_rate: Expected inflation rate
+            social_security_annual: Expected annual Social Security benefit
+            social_security_claiming_age: Age at which Social Security is claimed (62, 65, 67, or 70)
         """
         # Use Decimal for monetary values to ensure precision
         self.portfolio_value = Decimal(str(portfolio_value))
@@ -49,6 +52,8 @@ class RetirementCalculator:
         self.life_expectancy = int(life_expectancy)
         self.annual_return_rate = Decimal(str(annual_return_rate))
         self.inflation_rate = Decimal(str(inflation_rate))
+        self.social_security_annual = Decimal(str(social_security_annual))
+        self.social_security_claiming_age = int(social_security_claiming_age)
 
     def calculate(self) -> Dict:
         """Calculate and return retirement projection."""
@@ -113,6 +118,8 @@ class FourPercentCalculator(RetirementCalculator):
             'projections': [self._projection_to_dict(p) for p in projections],
             'final_portfolio_value': float(projections[-1].ending_balance),
             'total_withdrawals': sum(float(p.annual_withdrawal) for p in projections),
+            'social_security_annual': float(self.social_security_annual),
+            'claiming_age': self.social_security_claiming_age,
         }
 
     def _calculate_success_rate(self, projections: List[YearProjection]) -> float:
@@ -200,6 +207,8 @@ class FourPointSevenPercentCalculator(RetirementCalculator):
             'projections': [self._projection_to_dict(p) for p in projections],
             'final_portfolio_value': float(projections[-1].ending_balance),
             'total_withdrawals': sum(float(p.annual_withdrawal) for p in projections),
+            'social_security_annual': float(self.social_security_annual),
+            'claiming_age': self.social_security_claiming_age,
         }
 
     def _calculate_success_rate(self, projections: List[YearProjection]) -> float:

@@ -447,3 +447,156 @@ class PortfolioSnapshot(models.Model):
 
     def __str__(self):
         return f"Portfolio Snapshot - ${self.total_value:,.2f} on {self.snapshot_date}"
+
+
+# ============================================================================
+# Phase 2 - Tax Planning and Withdrawal Optimization Models
+# ============================================================================
+
+
+class TaxProfile(models.Model):
+    """User's tax information for tax-aware calculations and withdrawal planning.
+
+    Stores tax-related parameters including filing status, income sources,
+    account balances, and Social Security benefit estimates at different
+    claiming ages.
+    """
+
+    FILING_STATUS_CHOICES = [
+        ('single', 'Single'),
+        ('mfj', 'Married Filing Jointly'),
+        ('mfs', 'Married Filing Separately'),
+        ('hoh', 'Head of Household'),
+        ('qw', 'Qualifying Widow(er)'),
+    ]
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='tax_profile')
+
+    # Filing Status and Location
+    filing_status = models.CharField(
+        max_length=10,
+        choices=FILING_STATUS_CHOICES,
+        default='single'
+    )
+    state_of_residence = models.CharField(
+        max_length=50,
+        default='',
+        blank=True,
+        help_text='State of residence for state income tax calculations'
+    )
+
+    # Full Retirement Age Reference
+    full_retirement_age = models.IntegerField(
+        default=67,
+        help_text='Full Retirement Age for Social Security calculations'
+    )
+
+    # Social Security Benefits by Claiming Age
+    # These store the MONTHLY benefit amounts for each possible claiming age
+    social_security_age_62 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        validators=[MinValueValidator(0)],
+        help_text='Monthly Social Security benefit if claiming at age 62'
+    )
+    social_security_age_65 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        validators=[MinValueValidator(0)],
+        help_text='Monthly Social Security benefit if claiming at age 65'
+    )
+    social_security_age_67 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        validators=[MinValueValidator(0)],
+        help_text='Monthly Social Security benefit if claiming at age 67 (Full Retirement Age)'
+    )
+    social_security_age_70 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        validators=[MinValueValidator(0)],
+        help_text='Monthly Social Security benefit if claiming at age 70'
+    )
+
+    # Account Balances for Withdrawal Sequencing
+    traditional_ira_balance = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        validators=[MinValueValidator(0)],
+        help_text='Traditional IRA balance (pre-tax account)'
+    )
+    roth_ira_balance = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        validators=[MinValueValidator(0)],
+        help_text='Roth IRA balance (post-tax account, tax-free growth)'
+    )
+    taxable_account_balance = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        validators=[MinValueValidator(0)],
+        help_text='Taxable brokerage account balance'
+    )
+    hsa_balance = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        validators=[MinValueValidator(0)],
+        help_text='Health Savings Account balance'
+    )
+
+    # Pension and Other Income
+    pension_annual = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        validators=[MinValueValidator(0)],
+        help_text='Expected annual pension income'
+    )
+
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'tax_profile'
+        verbose_name = 'Tax Profile'
+        verbose_name_plural = 'Tax Profiles'
+
+    def __str__(self):
+        return f"Tax Profile for {self.user.email}"
+
+    def get_social_security_annual(self, claiming_age: int) -> Decimal:
+        """
+        Get annual Social Security benefit for a specific claiming age.
+
+        Args:
+            claiming_age: Age at which user will claim Social Security (62, 65, 67, or 70)
+
+        Returns:
+            Annual Social Security benefit amount (monthly benefit * 12)
+
+        Raises:
+            ValueError: If claiming age is not one of the supported ages (62, 65, 67, 70)
+        """
+        age_benefit_map = {
+            62: self.social_security_age_62,
+            65: self.social_security_age_65,
+            67: self.social_security_age_67,
+            70: self.social_security_age_70,
+        }
+
+        if claiming_age not in age_benefit_map:
+            raise ValueError(
+                f"Claiming age must be 62, 65, 67, or 70, got {claiming_age}"
+            )
+
+        monthly_benefit = age_benefit_map[claiming_age]
+        return monthly_benefit * Decimal('12')
