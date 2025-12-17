@@ -33,7 +33,7 @@
     </div>
 
     <!-- Financial Profile Form -->
-    <div class="lg:col-span-2">
+    <div class="lg:col-span-2 space-y-8">
         <div class="bg-white rounded-lg shadow p-6">
             <h2 class="text-xl font-bold text-gray-900 mb-6">Financial Profile</h2>
 
@@ -104,6 +104,141 @@
                     </a>
                     <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
                         Save Profile
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Tax Profile Form (Social Security & Account Balances) -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-2">Tax Planning & Social Security</h2>
+            <p class="text-sm text-gray-600 mb-6">Configure your Social Security benefits at different claiming ages and account balances for tax-aware retirement calculations.</p>
+
+            {% if tax_form.non_field_errors %}
+                <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+                    {% for error in tax_form.non_field_errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+
+                <!-- Filing Status & State -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ tax_form.filing_status.id_for_label }}" class="block text-sm font-medium text-gray-700">Filing Status</label>
+                        {{ tax_form.filing_status }}
+                        {% if tax_form.filing_status.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ tax_form.filing_status.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ tax_form.state_of_residence.id_for_label }}" class="block text-sm font-medium text-gray-700">State of Residence</label>
+                        {{ tax_form.state_of_residence }}
+                        {% if tax_form.state_of_residence.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ tax_form.state_of_residence.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Social Security Benefits Section -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Social Security Monthly Benefits by Claiming Age</h3>
+                    <p class="text-sm text-gray-600 mb-4">Get your benefit estimates at <a href="https://ssa.gov/benefits/retirement/mysocialsecut ity.html" target="_blank" class="text-indigo-600 hover:underline">ssa.gov (My Social Security)</a></p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="{{ tax_form.social_security_age_62.id_for_label }}" class="block text-sm font-medium text-gray-700">Age 62 (Reduced ~70%)</label>
+                            {{ tax_form.social_security_age_62 }}
+                            {% if tax_form.social_security_age_62.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ tax_form.social_security_age_62.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="{{ tax_form.social_security_age_65.id_for_label }}" class="block text-sm font-medium text-gray-700">Age 65 (Partial ~86%)</label>
+                            {{ tax_form.social_security_age_65 }}
+                            {% if tax_form.social_security_age_65.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ tax_form.social_security_age_65.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="{{ tax_form.social_security_age_67.id_for_label }}" class="block text-sm font-medium text-gray-700">Age 67 (Full 100% - FRA)</label>
+                            {{ tax_form.social_security_age_67 }}
+                            {% if tax_form.social_security_age_67.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ tax_form.social_security_age_67.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="{{ tax_form.social_security_age_70.id_for_label }}" class="block text-sm font-medium text-gray-700">Age 70 (Delayed ~124%)</label>
+                            {{ tax_form.social_security_age_70 }}
+                            {% if tax_form.social_security_age_70.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ tax_form.social_security_age_70.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Account Balances Section -->
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Retirement Account Balances</h3>
+                    <p class="text-sm text-gray-600 mb-4">Used for tax-aware withdrawal sequencing and planning</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="{{ tax_form.traditional_ira_balance.id_for_label }}" class="block text-sm font-medium text-gray-700">Traditional IRA (Pre-tax)</label>
+                            {{ tax_form.traditional_ira_balance }}
+                            {% if tax_form.traditional_ira_balance.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ tax_form.traditional_ira_balance.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="{{ tax_form.roth_ira_balance.id_for_label }}" class="block text-sm font-medium text-gray-700">Roth IRA (Tax-free)</label>
+                            {{ tax_form.roth_ira_balance }}
+                            {% if tax_form.roth_ira_balance.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ tax_form.roth_ira_balance.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="{{ tax_form.taxable_account_balance.id_for_label }}" class="block text-sm font-medium text-gray-700">Taxable Brokerage</label>
+                            {{ tax_form.taxable_account_balance }}
+                            {% if tax_form.taxable_account_balance.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ tax_form.taxable_account_balance.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="{{ tax_form.hsa_balance.id_for_label }}" class="block text-sm font-medium text-gray-700">HSA (Triple Tax-free)</label>
+                            {{ tax_form.hsa_balance }}
+                            {% if tax_form.hsa_balance.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ tax_form.hsa_balance.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Other Income -->
+                <div>
+                    <label for="{{ tax_form.pension_annual.id_for_label }}" class="block text-sm font-medium text-gray-700">Annual Pension Income</label>
+                    {{ tax_form.pension_annual }}
+                    {% if tax_form.pension_annual.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ tax_form.pension_annual.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="flex justify-end space-x-4">
+                    <a href="{% url 'dashboard' %}" class="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">
+                        Cancel
+                    </a>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                        Save Tax Profile
                     </button>
                 </div>
             </form>

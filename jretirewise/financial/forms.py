@@ -4,7 +4,7 @@ Forms for financial app.
 
 from django import forms
 from decimal import Decimal
-from .models import FinancialProfile, Asset, IncomeSource, Expense, Portfolio, Account, AccountValueHistory
+from .models import FinancialProfile, Asset, IncomeSource, Expense, Portfolio, Account, AccountValueHistory, TaxProfile
 
 
 class PercentageNumberInput(forms.NumberInput):
@@ -94,6 +94,122 @@ class FinancialProfileForm(forms.ModelForm):
 
         if retirement_age and life_expectancy and retirement_age >= life_expectancy:
             raise forms.ValidationError('Life expectancy must be greater than retirement age.')
+
+        return cleaned_data
+
+
+class TaxProfileForm(forms.ModelForm):
+    """Form for editing tax profile with age-specific Social Security benefits."""
+
+    class Meta:
+        model = TaxProfile
+        fields = [
+            'filing_status',
+            'state_of_residence',
+            'full_retirement_age',
+            'social_security_age_62',
+            'social_security_age_65',
+            'social_security_age_67',
+            'social_security_age_70',
+            'traditional_ira_balance',
+            'roth_ira_balance',
+            'taxable_account_balance',
+            'hsa_balance',
+            'pension_annual',
+        ]
+        widgets = {
+            'filing_status': forms.Select(attrs={
+                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
+            }),
+            'state_of_residence': forms.TextInput(attrs={
+                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
+                'placeholder': 'CA',
+            }),
+            'full_retirement_age': forms.NumberInput(attrs={
+                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
+                'min': '62',
+                'max': '70',
+            }),
+            'social_security_age_62': forms.NumberInput(attrs={
+                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
+                'min': '0',
+                'step': '0.01',
+                'placeholder': 'Monthly benefit at age 62',
+            }),
+            'social_security_age_65': forms.NumberInput(attrs={
+                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
+                'min': '0',
+                'step': '0.01',
+                'placeholder': 'Monthly benefit at age 65',
+            }),
+            'social_security_age_67': forms.NumberInput(attrs={
+                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
+                'min': '0',
+                'step': '0.01',
+                'placeholder': 'Monthly benefit at age 67 (FRA)',
+            }),
+            'social_security_age_70': forms.NumberInput(attrs={
+                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
+                'min': '0',
+                'step': '0.01',
+                'placeholder': 'Monthly benefit at age 70',
+            }),
+            'traditional_ira_balance': forms.NumberInput(attrs={
+                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
+                'min': '0',
+                'step': '0.01',
+            }),
+            'roth_ira_balance': forms.NumberInput(attrs={
+                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
+                'min': '0',
+                'step': '0.01',
+            }),
+            'taxable_account_balance': forms.NumberInput(attrs={
+                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
+                'min': '0',
+                'step': '0.01',
+            }),
+            'hsa_balance': forms.NumberInput(attrs={
+                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
+                'min': '0',
+                'step': '0.01',
+            }),
+            'pension_annual': forms.NumberInput(attrs={
+                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
+                'min': '0',
+                'step': '0.01',
+            }),
+        }
+        labels = {
+            'filing_status': 'Filing Status',
+            'state_of_residence': 'State',
+            'full_retirement_age': 'Full Retirement Age',
+            'social_security_age_62': 'Monthly Benefit at Age 62 (Reduced)',
+            'social_security_age_65': 'Monthly Benefit at Age 65 (Partial)',
+            'social_security_age_67': 'Monthly Benefit at Age 67 (Full)',
+            'social_security_age_70': 'Monthly Benefit at Age 70 (Delayed)',
+            'traditional_ira_balance': 'Traditional IRA Balance',
+            'roth_ira_balance': 'Roth IRA Balance',
+            'taxable_account_balance': 'Taxable Account Balance',
+            'hsa_balance': 'HSA Balance',
+            'pension_annual': 'Annual Pension Income',
+        }
+
+    def clean(self):
+        """Validate form data."""
+        cleaned_data = super().clean()
+        ages_62 = cleaned_data.get('social_security_age_62') or 0
+        ages_65 = cleaned_data.get('social_security_age_65') or 0
+        ages_67 = cleaned_data.get('social_security_age_67') or 0
+        ages_70 = cleaned_data.get('social_security_age_70') or 0
+
+        # Verify that benefits increase with age
+        if ages_62 > 0 and ages_65 > 0 and ages_62 > ages_65:
+            raise forms.ValidationError('Social Security benefit at age 65 should be greater than or equal to age 62.')
+        if ages_65 > 0 and ages_67 > 0 and ages_65 > ages_67:
+            raise forms.ValidationError('Social Security benefit at age 67 should be greater than or equal to age 65.')
+        if ages_67 > 0 and ages_70 > 0 and ages_67 > ages_70:
+            raise forms.ValidationError('Social Security benefit at age 70 should be greater than or equal to age 67.')
 
         return cleaned_data
 
