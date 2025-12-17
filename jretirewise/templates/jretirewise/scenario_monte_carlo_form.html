@@ -254,31 +254,97 @@
 
         <!-- Social Security Section -->
         <div class="p-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Social Security (Optional)</h2>
-            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Include Social Security benefits in your retirement analysis.</p>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label for="{{ form.social_security_start_age.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        SS Start Age
-                    </label>
-                    {{ form.social_security_start_age }}
-                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.social_security_start_age.help_text }}</p>
-                    {% if form.social_security_start_age.errors %}
-                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.social_security_start_age.errors.0 }}</p>
-                    {% endif %}
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Social Security & Pension (Optional)</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Include Social Security and pension benefits in your retirement analysis.</p>
+
+            <!-- Social Security -->
+            <div class="mb-6">
+                <h3 class="text-md font-medium text-gray-900 dark:text-white mb-4">Social Security Benefits</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ form.social_security_start_age.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Claiming Age
+                        </label>
+                        {{ form.social_security_start_age }}
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.social_security_start_age.help_text }}</p>
+                        {% if form.social_security_start_age.errors %}
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.social_security_start_age.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.social_security_monthly.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Monthly Benefit ($)
+                            {% if 'social_security_monthly' in prefilled_fields %}<span class="text-blue-600 dark:text-blue-400 text-xs">(from profile)</span>{% endif %}
+                        </label>
+                        {{ form.social_security_monthly }}
+                        {% if form.social_security_monthly.errors %}
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.social_security_monthly.errors.0 }}</p>
+                        {% endif %}
+                    </div>
                 </div>
-                <div>
-                    <label for="{{ form.social_security_monthly.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        SS Monthly Benefit ($)
-                        {% if 'social_security_monthly' in prefilled_fields %}<span class="text-blue-600 dark:text-blue-400 text-xs">(from profile)</span>{% endif %}
-                    </label>
-                    {{ form.social_security_monthly }}
-                    {% if form.social_security_monthly.errors %}
-                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.social_security_monthly.errors.0 }}</p>
-                    {% endif %}
+            </div>
+
+            <!-- Pension -->
+            <div>
+                <h3 class="text-md font-medium text-gray-900 dark:text-white mb-4">Pension Benefits</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ form.pension_annual.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Annual Pension ($)
+                            {% if 'pension_annual' in prefilled_fields %}<span class="text-blue-600 dark:text-blue-400 text-xs">(from profile)</span>{% endif %}
+                        </label>
+                        {{ form.pension_annual }}
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.pension_annual.help_text }}</p>
+                        {% if form.pension_annual.errors %}
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.pension_annual.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.pension_start_age.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Pension Start Age
+                            {% if 'pension_start_age' in prefilled_fields %}<span class="text-blue-600 dark:text-blue-400 text-xs">(from profile)</span>{% endif %}
+                        </label>
+                        {{ form.pension_start_age }}
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.pension_start_age.help_text }}</p>
+                        {% if form.pension_start_age.errors %}
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.pension_start_age.errors.0 }}</p>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
+
+        <!-- JavaScript for Social Security Benefit Lookup -->
+        <script>
+            // Social Security benefits from user's tax profile
+            const ssiBenefits = {
+                '62': {{ ss_benefits.age_62|default:0 }},
+                '65': {{ ss_benefits.age_65|default:0 }},
+                '67': {{ ss_benefits.age_67|default:0 }},
+                '70': {{ ss_benefits.age_70|default:0 }},
+            };
+
+            // Get the form elements
+            const ageSelect = document.getElementById('id_social_security_start_age');
+            const benefitField = document.querySelector('input[name="social_security_monthly"]');
+
+            // Update SS monthly benefit when age changes
+            if (ageSelect && benefitField) {
+                ageSelect.addEventListener('change', function() {
+                    const selectedAge = this.value;
+                    if (selectedAge && ssiBenefits[selectedAge]) {
+                        benefitField.value = parseFloat(ssiBenefits[selectedAge]).toFixed(2);
+                    } else {
+                        benefitField.value = '';
+                    }
+                });
+
+                // Trigger change on page load to set initial benefit if age is pre-filled
+                if (ageSelect.value) {
+                    ageSelect.dispatchEvent(new Event('change'));
+                }
+            }
+        </script>
 
         <!-- Submit Section -->
         <div class="p-6 bg-white dark:bg-gray-800 flex justify-between items-center">
