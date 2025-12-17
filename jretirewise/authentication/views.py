@@ -18,7 +18,7 @@ from django.utils.decorators import method_decorator
 from .models import UserProfile
 from .serializers import UserSerializer, UserProfileSerializer
 from jretirewise.financial.models import FinancialProfile, TaxProfile
-from jretirewise.financial.forms import FinancialProfileForm, TaxProfileForm
+from jretirewise.financial.forms import FinancialProfileForm
 from jretirewise.scenarios.models import RetirementScenario
 
 
@@ -109,73 +109,60 @@ class ProfileView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         user = self.request.user
 
-        # Handle financial profile form
+        # Get or create financial profile
         try:
             profile = FinancialProfile.objects.get(user=user)
             context['financial_profile'] = profile
-            if 'form' not in context:
-                context['form'] = FinancialProfileForm(instance=profile)
         except FinancialProfile.DoesNotExist:
             context['financial_profile'] = None
-            if 'form' not in context:
-                context['form'] = FinancialProfileForm()
 
-        # Handle tax profile form
-        try:
-            tax_profile = TaxProfile.objects.get(user=user)
-            context['tax_profile'] = tax_profile
-            if 'tax_form' not in context:
-                context['tax_form'] = TaxProfileForm(instance=tax_profile)
-        except TaxProfile.DoesNotExist:
-            context['tax_profile'] = None
-            if 'tax_form' not in context:
-                context['tax_form'] = TaxProfileForm()
+        # Initialize unified form
+        if 'form' not in context:
+            try:
+                profile = FinancialProfile.objects.get(user=user)
+                context['form'] = FinancialProfileForm(instance=profile)
+            except FinancialProfile.DoesNotExist:
+                context['form'] = FinancialProfileForm()
 
         return context
 
     def post(self, request, *args, **kwargs):
-        """Handle profile form submission."""
+        """Handle unified profile form submission."""
         user = request.user
 
-        # Determine which form was submitted by checking for form-specific fields
-        # Financial form has 'current_age', tax form has 'filing_status'
-        if 'current_age' in request.POST:
-            # Process financial profile form
-            try:
-                profile = FinancialProfile.objects.get(user=user)
-                form = FinancialProfileForm(request.POST, instance=profile)
-            except FinancialProfile.DoesNotExist:
-                form = FinancialProfileForm(request.POST)
+        # Get or create financial profile
+        try:
+            profile = FinancialProfile.objects.get(user=user)
+        except FinancialProfile.DoesNotExist:
+            profile = None
 
-            if form.is_valid():
-                profile = form.save(commit=False)
-                profile.user = user
-                profile.save()
-                messages.success(request, 'Financial profile updated successfully!')
-                return redirect('financial-profile')
-            else:
-                context = self.get_context_data()
-                context['form'] = form
-                return render(request, self.template_name, context)
+        # Process unified form
+        form = FinancialProfileForm(request.POST, instance=profile)
 
-        elif 'filing_status' in request.POST:
-            # Process tax profile form
+        if form.is_valid():
+            # Save financial profile
+            profile = form.save(commit=False)
+            profile.user = user
+            profile.save()
+
+            # Get or create and save tax profile
             try:
                 tax_profile = TaxProfile.objects.get(user=user)
-                tax_form = TaxProfileForm(request.POST, instance=tax_profile)
             except TaxProfile.DoesNotExist:
-                tax_form = TaxProfileForm(request.POST)
+                tax_profile = TaxProfile(user=user)
 
-            if tax_form.is_valid():
-                tax_profile = tax_form.save(commit=False)
-                tax_profile.user = user
-                tax_profile.save()
-                messages.success(request, 'Tax profile updated successfully!')
-                return redirect('financial-profile')
-            else:
-                context = self.get_context_data()
-                context['tax_form'] = tax_form
-                return render(request, self.template_name, context)
+            # Update tax profile with form data
+            tax_profile.filing_status = form.cleaned_data.get('filing_status') or tax_profile.filing_status
+            tax_profile.state_of_residence = form.cleaned_data.get('state_of_residence') or tax_profile.state_of_residence
+            tax_profile.social_security_age_62 = form.cleaned_data.get('social_security_age_62') or 0
+            tax_profile.social_security_age_65 = form.cleaned_data.get('social_security_age_65') or 0
+            tax_profile.social_security_age_67 = form.cleaned_data.get('social_security_age_67') or 0
+            tax_profile.social_security_age_70 = form.cleaned_data.get('social_security_age_70') or 0
+            tax_profile.save()
 
-        # If no recognized form field found, redirect to profile
-        return redirect('financial-profile')
+            messages.success(request, 'Profile updated successfully!')
+            return redirect('financial-profile')
+        else:
+            context = self.get_context_data()
+            context['form'] = form
+            return render(request, self.template_name, context)

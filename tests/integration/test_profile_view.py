@@ -58,17 +58,18 @@ class ProfileViewTestCase(TestCase):
         self.assertIn('retirement_age', str(response.content))
 
     def test_profile_page_shows_tax_form(self):
-        """Test that profile page displays tax form."""
+        """Test that profile page displays tax form fields in unified form."""
         self.client.login(username='testuser', password='testpass123')
         response = self.client.get('/profile/')
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn('tax_form', response.context)
-        self.assertIn('tax_profile', response.context)
-        # Check tax form fields are rendered
-        self.assertIn('filing_status', str(response.content))
-        self.assertIn('social_security_age_62', str(response.content))
-        self.assertIn('social_security_age_70', str(response.content))
+        self.assertIn('form', response.context)
+        # Check unified form includes tax planning fields
+        form = response.context['form']
+        self.assertTrue(hasattr(form, 'fields'))
+        self.assertIn('filing_status', form.fields)
+        self.assertIn('social_security_age_62', form.fields)
+        self.assertIn('social_security_age_70', form.fields)
 
     def test_financial_form_submission(self):
         """Test submitting financial profile form."""
@@ -88,21 +89,19 @@ class ProfileViewTestCase(TestCase):
         self.assertEqual(profile.annual_spending, Decimal('85000'))
 
     def test_tax_form_submission(self):
-        """Test submitting tax profile form."""
+        """Test submitting unified profile form with tax planning data."""
         self.client.login(username='testuser', password='testpass123')
         response = self.client.post('/profile/', {
+            'current_age': '60',
+            'retirement_age': '65',
+            'life_expectancy': '95',
+            'annual_spending': '80000',
             'filing_status': 'single',
             'state_of_residence': 'CA',
-            'full_retirement_age': '67',
             'social_security_age_62': '2500.00',
             'social_security_age_65': '3200.00',
             'social_security_age_67': '3700.00',
             'social_security_age_70': '5000.00',
-            'traditional_ira_balance': '250000',
-            'roth_ira_balance': '100000',
-            'taxable_account_balance': '150000',
-            'hsa_balance': '0',
-            'pension_annual': '0',
         }, follow=True)
 
         self.assertEqual(response.status_code, 200)
