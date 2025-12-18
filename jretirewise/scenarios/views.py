@@ -166,6 +166,175 @@ class ScenarioViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+    @action(detail=True, methods=['post'], url_path='sensitivity/calculate', url_name='sensitivity-calculate')
+    def sensitivity_calculate(self, request, pk=None):
+        """
+        Calculate sensitivity analysis for adjusted parameters.
+
+        POST /api/scenarios/{id}/sensitivity/calculate/
+        Body: {
+            "return_adjustment": -0.02,  # -2%
+            "spending_adjustment": 0.20,  # +20%
+            "inflation_adjustment": 0.01  # +1%
+        }
+        """
+        from jretirewise.calculations.sensitivity_analyzer import SensitivityAnalyzer
+        from .serializers import SensitivityCalculationRequestSerializer
+
+        scenario = self.get_object()
+
+        # Validate request data
+        request_serializer = SensitivityCalculationRequestSerializer(data=request.data)
+        if not request_serializer.is_valid():
+            return Response(request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Create sensitivity analyzer
+            analyzer = SensitivityAnalyzer(scenario)
+
+            # Run calculation with adjustments
+            result = analyzer.calculate_with_adjustment(
+                return_adjustment=request_serializer.validated_data['return_adjustment'],
+                spending_adjustment=request_serializer.validated_data['spending_adjustment'],
+                inflation_adjustment=request_serializer.validated_data['inflation_adjustment']
+            )
+
+            return Response(result, status=status.HTTP_200_OK)
+
+        except ValueError as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Sensitivity calculation failed: {str(e)}")
+            return Response(
+                {'error': f'Calculation failed: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=True, methods=['post'], url_path='sensitivity/tornado', url_name='sensitivity-tornado')
+    def sensitivity_tornado(self, request, pk=None):
+        """
+        Generate tornado chart data showing parameter impacts.
+
+        POST /api/scenarios/{id}/sensitivity/tornado/
+        Body: {
+            "return_range_min": -0.05,
+            "return_range_max": 0.05,
+            "return_step": 0.01,
+            "spending_range_min": 0.0,
+            "spending_range_max": 0.50,
+            "spending_step": 0.10,
+            "inflation_range_min": 0.0,
+            "inflation_range_max": 0.04,
+            "inflation_step": 0.01
+        }
+        """
+        from jretirewise.calculations.sensitivity_analyzer import SensitivityAnalyzer
+        from .serializers import TornadoChartRequestSerializer
+
+        scenario = self.get_object()
+
+        # Validate request data
+        request_serializer = TornadoChartRequestSerializer(data=request.data)
+        if not request_serializer.is_valid():
+            return Response(request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Create sensitivity analyzer
+            analyzer = SensitivityAnalyzer(scenario)
+
+            # Generate tornado chart data
+            data = request_serializer.validated_data
+            result = analyzer.generate_tornado_data(
+                return_range=(data['return_range_min'], data['return_range_max'], data['return_step']),
+                spending_range=(data['spending_range_min'], data['spending_range_max'], data['spending_step']),
+                inflation_range=(data['inflation_range_min'], data['inflation_range_max'], data['inflation_step'])
+            )
+
+            return Response(result, status=status.HTTP_200_OK)
+
+        except ValueError as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Tornado chart generation failed: {str(e)}")
+            return Response(
+                {'error': f'Generation failed: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=True, methods=['post'], url_path='sensitivity/save', url_name='sensitivity-save')
+    def sensitivity_save(self, request, pk=None):
+        """
+        Save a sensitivity analysis scenario.
+
+        POST /api/scenarios/{id}/sensitivity/save/
+        Body: {
+            "name": "Conservative Returns",
+            "description": "Testing with 2% lower returns",
+            "return_adjustment": -0.02,
+            "spending_adjustment": 0.0,
+            "inflation_adjustment": 0.0,
+            "result_data": {...}
+        }
+        """
+        from .models import SensitivityAnalysis
+        from .serializers import SensitivityAnalysisSerializer
+
+        scenario = self.get_object()
+
+        # Add scenario to request data
+        data = request.data.copy()
+        data['scenario'] = scenario.id
+
+        # Create serializer and save
+        serializer = SensitivityAnalysisSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['get'], url_path='sensitivity/scenarios', url_name='sensitivity-list')
+    def sensitivity_list(self, request, pk=None):
+        """
+        List all saved sensitivity analyses for a scenario.
+
+        GET /api/scenarios/{id}/sensitivity/scenarios/
+        """
+        from .serializers import SensitivityAnalysisSerializer
+
+        scenario = self.get_object()
+        sensitivity_analyses = scenario.sensitivity_analyses.all()
+        serializer = SensitivityAnalysisSerializer(sensitivity_analyses, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get'], url_path='sensitivity/scenarios/(?P<sensitivity_id>[^/.]+)', url_name='sensitivity-detail')
+    def sensitivity_detail(self, request, pk=None, sensitivity_id=None):
+        """
+        Get details of a specific sensitivity analysis.
+
+        GET /api/scenarios/{id}/sensitivity/scenarios/{sensitivity_id}/
+        """
+        from .models import SensitivityAnalysis
+        from .serializers import SensitivityAnalysisSerializer
+
+        scenario = self.get_object()
+
+        try:
+            sensitivity = SensitivityAnalysis.objects.get(id=sensitivity_id, scenario=scenario)
+            serializer = SensitivityAnalysisSerializer(sensitivity)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except SensitivityAnalysis.DoesNotExist:
+            return Response(
+                {'error': 'Sensitivity analysis not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
 
 class WithdrawalBucketViewSet(viewsets.ModelViewSet):
     """ViewSet for WithdrawalBucket management."""
@@ -1008,5 +1177,55 @@ class HistoricalPeriodDetailView(LoginRequiredMixin, DetailView):
             'yearly_details': period_data.get('yearly_details', []),
             'yearly_values': period_data.get('yearly_values', []),
         })
+
+        return context
+
+
+class SensitivityAnalysisView(LoginRequiredMixin, DetailView):
+    """View for sensitivity analysis page."""
+    model = RetirementScenario
+    template_name = 'jretirewise/sensitivity_analysis.html'
+    context_object_name = 'scenario'
+
+    def get_queryset(self):
+        return RetirementScenario.objects.filter(user=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        scenario = self.get_object()
+
+        # Check if scenario has a completed calculation
+        if not hasattr(scenario, 'result') or scenario.result.status != 'completed':
+            context['error'] = 'Scenario must have a completed calculation before performing sensitivity analysis'
+            return context
+
+        # Get baseline result data
+        result_data = scenario.result.result_data.get('calculation', {})
+
+        # Extract baseline metrics
+        if 'success_rate' in result_data:
+            baseline_success_rate = result_data['success_rate']
+        elif 'summary' in result_data and 'success_rate' in result_data['summary']:
+            baseline_success_rate = result_data['summary']['success_rate']
+        else:
+            baseline_success_rate = 100.0
+
+        if 'final_value_percentiles' in result_data:
+            baseline_final_value = result_data['final_value_percentiles'].get('p50', 0)
+        elif 'projections' in result_data and len(result_data['projections']) > 0:
+            baseline_final_value = result_data['projections'][-1].get('portfolio_value', 0)
+        else:
+            baseline_final_value = 0.0
+
+        context['baseline'] = {
+            'success_rate': baseline_success_rate,
+            'final_value': baseline_final_value
+        }
+
+        # Get saved sensitivity analyses
+        context['saved_analyses'] = scenario.sensitivity_analyses.all()
+
+        # API endpoint for JavaScript
+        context['api_base_url'] = f'/api/scenarios/{scenario.id}/sensitivity'
 
         return context

@@ -3,7 +3,7 @@ Serializers for scenario and calculation models.
 """
 
 from rest_framework import serializers
-from .models import RetirementScenario, CalculationResult, WithdrawalBucket, BucketedWithdrawalResult
+from .models import RetirementScenario, CalculationResult, WithdrawalBucket, BucketedWithdrawalResult, SensitivityAnalysis
 
 
 class WithdrawalBucketSerializer(serializers.ModelSerializer):
@@ -151,3 +151,60 @@ class CalculationResultDetailSerializer(serializers.ModelSerializer):
             'updated_at',
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class SensitivityAnalysisSerializer(serializers.ModelSerializer):
+    """Serializer for SensitivityAnalysis model."""
+
+    scenario_name = serializers.CharField(source='scenario.name', read_only=True)
+
+    class Meta:
+        model = SensitivityAnalysis
+        fields = [
+            'id',
+            'scenario',
+            'scenario_name',
+            'name',
+            'description',
+            'return_adjustment',
+            'spending_adjustment',
+            'inflation_adjustment',
+            'return_range_min',
+            'return_range_max',
+            'return_step',
+            'spending_range_min',
+            'spending_range_max',
+            'spending_step',
+            'inflation_range_min',
+            'inflation_range_max',
+            'inflation_step',
+            'result_data',
+            'execution_time_ms',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = ['id', 'scenario_name', 'result_data', 'execution_time_ms', 'created_at', 'updated_at']
+
+
+class SensitivityCalculationRequestSerializer(serializers.Serializer):
+    """Serializer for sensitivity calculation requests."""
+
+    return_adjustment = serializers.FloatField(default=0.0, help_text="Adjustment to return rate (e.g., -0.02 for -2%)")
+    spending_adjustment = serializers.FloatField(default=0.0, help_text="Adjustment to spending (e.g., 0.20 for +20%)")
+    inflation_adjustment = serializers.FloatField(default=0.0, help_text="Adjustment to inflation (e.g., 0.01 for +1%)")
+
+
+class TornadoChartRequestSerializer(serializers.Serializer):
+    """Serializer for tornado chart generation requests."""
+
+    return_range_min = serializers.FloatField(default=-0.05)
+    return_range_max = serializers.FloatField(default=0.05)
+    return_step = serializers.FloatField(default=0.01)
+
+    spending_range_min = serializers.FloatField(default=0.0)
+    spending_range_max = serializers.FloatField(default=0.50)
+    spending_step = serializers.FloatField(default=0.10)
+
+    inflation_range_min = serializers.FloatField(default=0.0)
+    inflation_range_max = serializers.FloatField(default=0.04)
+    inflation_step = serializers.FloatField(default=0.01)

@@ -1275,6 +1275,16 @@
             Edit Scenario
         </a>
     {% endif %}
+
+    <!-- Sensitivity Analysis Link (only for scenarios with completed calculations) -->
+    {% if scenario.result and scenario.result.status == 'completed' %}
+        {% if scenario.calculator_type == '4_percent' or scenario.calculator_type == '4_7_percent' or scenario.calculator_type == 'monte_carlo' %}
+        <a href="{% url 'scenario-sensitivity' scenario.id %}" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition duration-200">
+            Sensitivity Analysis
+        </a>
+        {% endif %}
+    {% endif %}
+
     <a href="{% url 'scenarios' %}" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition duration-200">
         Back to Scenarios
     </a>

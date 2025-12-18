@@ -11,7 +11,7 @@ from .views import (
     HistoricalScenarioCreateView, HistoricalScenarioUpdateView,
     RunHistoricalCalculationView, HistoricalPeriodDetailView,
     BucketListView, BucketCreateView, BucketUpdateView, BucketDeleteView,
-    RunBucketedCalculationView,
+    RunBucketedCalculationView, SensitivityAnalysisView,
 )
 
 urlpatterns = [
@@ -21,6 +21,7 @@ urlpatterns = [
     path('bucketed-withdrawal/create/', BucketedWithdrawalScenarioCreateView.as_view(), name='scenario-bucketed-create'),
     path('historical/create/', HistoricalScenarioCreateView.as_view(), name='scenario-historical-create'),
     path('<int:pk>/', ScenarioDetailView.as_view(), name='scenario-detail'),
+    path('<int:pk>/sensitivity/', SensitivityAnalysisView.as_view(), name='scenario-sensitivity'),
     path('<int:pk>/edit/', ScenarioUpdateView.as_view(), name='scenario-edit'),
     path('monte-carlo/<int:pk>/edit/', MonteCarloScenarioUpdateView.as_view(), name='scenario-monte-carlo-edit'),
     path('bucketed-withdrawal/<int:pk>/edit/', BucketedWithdrawalScenarioUpdateView.as_view(), name='scenario-bucketed-edit'),
