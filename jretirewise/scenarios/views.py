@@ -1220,9 +1220,21 @@ class SensitivityAnalysisView(LoginRequiredMixin, DetailView):
         else:
             baseline_final_value = 0.0
 
+        # Extract baseline withdrawal amount
+        if 'safe_withdrawal_annual' in result_data:
+            baseline_withdrawal = result_data['safe_withdrawal_annual']
+        elif 'withdrawal_annual' in result_data:
+            baseline_withdrawal = result_data['withdrawal_annual']
+        elif 'projections' in result_data and len(result_data['projections']) > 0:
+            baseline_withdrawal = result_data['projections'][0].get('annual_withdrawal', 0)
+        else:
+            # Fallback to parameters or financial profile
+            baseline_withdrawal = scenario.parameters.get('annual_spending', 0)
+
         context['baseline'] = {
             'success_rate': baseline_success_rate,
-            'final_value': baseline_final_value
+            'final_value': baseline_final_value,
+            'withdrawal': baseline_withdrawal
         }
 
         # Get saved sensitivity analyses

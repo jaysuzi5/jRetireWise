@@ -282,14 +282,23 @@ class SensitivityAnalyzer:
             baseline_return = float(params['annual_return'])
             params['annual_return'] = baseline_return + return_adjustment
 
-        # Adjust spending
+        # Adjust spending/withdrawal
         if 'annual_spending' in params:
             baseline_spending = float(params['annual_spending'])
             params['annual_spending'] = baseline_spending * (1 + spending_adjustment)
 
-        if 'withdrawal_amount' in params:
+        # For withdrawal_amount, check both params and baseline result
+        baseline_withdrawal = None
+        if 'withdrawal_amount' in params and params['withdrawal_amount']:
             baseline_withdrawal = float(params['withdrawal_amount'])
-            params['withdrawal_amount'] = baseline_withdrawal * (1 + spending_adjustment)
+
+        # Also check baseline result for Monte Carlo scenarios
+        if baseline_withdrawal is None or baseline_withdrawal == 0:
+            baseline_calc = self.baseline_result.result_data.get('calculation', {})
+            baseline_withdrawal = baseline_calc.get('safe_withdrawal_annual') or baseline_calc.get('withdrawal_annual')
+
+        if baseline_withdrawal and baseline_withdrawal > 0:
+            params['withdrawal_amount'] = float(baseline_withdrawal) * (1 + spending_adjustment)
 
         # Adjust inflation rate
         if 'inflation_rate' in params:
@@ -358,11 +367,19 @@ class SensitivityAnalyzer:
         elif self.calculator_type == 'monte_carlo':
             return_std_dev = float(parameters.get('return_std_dev', 0.15))
             num_simulations = int(parameters.get('num_simulations', 1000))
-            mode = parameters.get('mode', 'evaluate_success')
+            # For sensitivity analysis, always use evaluate_success mode with the baseline withdrawal
+            mode = 'evaluate_success'
             target_success_rate = float(parameters.get('target_success_rate', 90.0))
-            withdrawal_amount = parameters.get('withdrawal_amount', annual_spending)
-            if withdrawal_amount is not None:
-                withdrawal_amount = float(withdrawal_amount)
+
+            # Get withdrawal amount - priority: adjusted params > baseline result > annual_spending
+            withdrawal_amount = parameters.get('withdrawal_amount')
+            if withdrawal_amount is None or withdrawal_amount == 0:
+                # Get from baseline result (for find_withdrawal mode scenarios)
+                baseline_calc = self.baseline_result.result_data.get('calculation', {})
+                withdrawal_amount = baseline_calc.get('safe_withdrawal_annual') or baseline_calc.get('withdrawal_annual')
+            if withdrawal_amount is None or withdrawal_amount == 0:
+                withdrawal_amount = annual_spending
+            withdrawal_amount = float(withdrawal_amount)
 
             social_security_monthly = social_security_annual / 12
             periods_per_year = int(parameters.get('periods_per_year', 12))

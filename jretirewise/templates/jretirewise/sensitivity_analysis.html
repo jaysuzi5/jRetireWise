@@ -32,7 +32,7 @@
     <!-- Baseline Results -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
         <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Baseline Results</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
                 <h3 class="text-gray-500 dark:text-gray-400 text-sm font-medium">Success Rate</h3>
                 <p class="text-2xl font-bold mt-2">
@@ -45,6 +45,12 @@
                 <h3 class="text-gray-500 dark:text-gray-400 text-sm font-medium">Final Portfolio Value (Median)</h3>
                 <p class="text-2xl font-bold text-gray-900 dark:text-white mt-2">
                     ${{ baseline.final_value|floatformat:0|intcomma }}
+                </p>
+            </div>
+            <div>
+                <h3 class="text-gray-500 dark:text-gray-400 text-sm font-medium">Annual Withdrawal</h3>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white mt-2">
+                    ${{ baseline.withdrawal|floatformat:0|intcomma }}
                 </p>
             </div>
         </div>
