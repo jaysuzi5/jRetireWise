@@ -166,15 +166,15 @@
             <!-- Success Rate -->
             <div>
                 <h3 class="text-gray-500 dark:text-gray-400 text-sm font-medium">Success Rate</h3>
-                <p class="text-2xl font-bold mt-2" x-text="formatSuccessRate(results?.success_rate)"></p>
-                <p class="text-sm mt-1" x-text="formatDelta(results?.comparison_to_baseline?.success_rate_delta, '%')"></p>
+                <p class="text-2xl font-bold mt-2" x-html="formatSuccessRate(results?.success_rate)"></p>
+                <p class="text-sm mt-1" x-html="formatDelta(results?.comparison_to_baseline?.success_rate_delta, '%')"></p>
             </div>
 
             <!-- Final Value -->
             <div>
                 <h3 class="text-gray-500 dark:text-gray-400 text-sm font-medium">Final Portfolio Value</h3>
                 <p class="text-2xl font-bold text-gray-900 dark:text-white mt-2" x-text="formatCurrency(results?.final_value)"></p>
-                <p class="text-sm mt-1" x-text="formatDelta(results?.comparison_to_baseline?.final_value_delta, '$')"></p>
+                <p class="text-sm mt-1" x-html="formatDelta(results?.comparison_to_baseline?.final_value_delta, '$')"></p>
             </div>
 
             <!-- Withdrawal Amount -->
@@ -230,7 +230,7 @@
                         </tr>
                     </thead>
                     <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                        <template x-for="item in tornadoData.tornado_data" :key="item.parameter">
+                        <template x-for="item in (tornadoData?.tornado_data || [])" :key="item.parameter">
                             <tr>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white" x-text="item.parameter"></td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400" x-text="item.low_value.toFixed(1) + '%'"></td>
