@@ -400,6 +400,7 @@ function sensitivityAnalysis() {
             try {
                 const response = await fetch(`${this.apiBaseUrl}/calculate/`, {
                     method: 'POST',
+                    credentials: 'same-origin',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRFToken': this.getCsrfToken(),
@@ -430,6 +431,7 @@ function sensitivityAnalysis() {
             try {
                 const response = await fetch(`${this.apiBaseUrl}/tornado/`, {
                     method: 'POST',
+                    credentials: 'same-origin',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRFToken': this.getCsrfToken(),
@@ -584,6 +586,7 @@ function sensitivityAnalysis() {
             try {
                 const response = await fetch(`${this.apiBaseUrl}/save/`, {
                     method: 'POST',
+                    credentials: 'same-origin',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRFToken': this.getCsrfToken(),
@@ -622,6 +625,7 @@ function sensitivityAnalysis() {
             try {
                 const response = await fetch(`${this.apiBaseUrl}/scenarios/${analysisId}/`, {
                     method: 'GET',
+                    credentials: 'same-origin',
                     headers: {
                         'X-CSRFToken': this.getCsrfToken(),
                     },
