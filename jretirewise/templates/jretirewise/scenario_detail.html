@@ -750,6 +750,20 @@
                 </div>
                 {% endwith %}
 
+                <!-- Charts -->
+                <div class="space-y-6 mb-8">
+                    <!-- Income Chart -->
+                    <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Annual Income Over Time</h3>
+                        <canvas id="incomeChart" height="100"></canvas>
+                    </div>
+                    <!-- Portfolio Value Chart -->
+                    <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Portfolio Value Over Time</h3>
+                        <canvas id="portfolioChart" height="100"></canvas>
+                    </div>
+                </div>
+
                 <!-- Year-by-Year Results Table -->
                 <div class="mb-8">
                     <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Year-by-Year Projections</h3>
@@ -784,20 +798,6 @@
                     {% if scenario.result.bucketed_results.all|length > 100 %}
                         <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Showing first 100 years of {{ scenario.result.bucketed_results.all|length }} total years</p>
                     {% endif %}
-                </div>
-
-                <!-- Charts -->
-                <div class="space-y-6">
-                    <!-- Income Chart -->
-                    <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Annual Income Over Time</h3>
-                        <canvas id="incomeChart" height="100"></canvas>
-                    </div>
-                    <!-- Portfolio Value Chart -->
-                    <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Portfolio Value Over Time</h3>
-                        <canvas id="portfolioChart" height="100"></canvas>
-                    </div>
                 </div>
             </div>
 
