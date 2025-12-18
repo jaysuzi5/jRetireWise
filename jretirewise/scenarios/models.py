@@ -310,3 +310,72 @@ class BucketedWithdrawalResult(models.Model):
 
     def __str__(self):
         return f"Year {self.year}, Age {self.age} - ${self.actual_withdrawal:,.2f} withdrawal"
+
+
+class SensitivityAnalysis(models.Model):
+    """Stores a sensitivity analysis for an existing scenario."""
+
+    scenario = models.ForeignKey(
+        RetirementScenario,
+        on_delete=models.CASCADE,
+        related_name='sensitivity_analyses'
+    )
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+
+    # Baseline adjustments (what was tested)
+    return_adjustment = models.FloatField(
+        default=0.0,
+        help_text="Adjustment to return rate (e.g., -0.02 for -2%)"
+    )
+    spending_adjustment = models.FloatField(
+        default=0.0,
+        help_text="Adjustment to spending (e.g., 0.20 for +20%)"
+    )
+    inflation_adjustment = models.FloatField(
+        default=0.0,
+        help_text="Adjustment to inflation rate (e.g., 0.01 for +1%)"
+    )
+
+    # Parameter ranges tested (for tornado chart generation)
+    return_range_min = models.FloatField(default=-0.05)  # -5%
+    return_range_max = models.FloatField(default=0.05)   # +5%
+    return_step = models.FloatField(default=0.01)        # 1% steps
+
+    spending_range_min = models.FloatField(default=0.0)  # 0%
+    spending_range_max = models.FloatField(default=0.50) # +50%
+    spending_step = models.FloatField(default=0.10)      # 10% steps
+
+    inflation_range_min = models.FloatField(default=0.0) # 0%
+    inflation_range_max = models.FloatField(default=0.04)# +4%
+    inflation_step = models.FloatField(default=0.01)     # 1% steps
+
+    # Calculation results stored as JSON
+    # Structure: {
+    #   'success_rate': float,
+    #   'final_value': float,
+    #   'years_to_depletion': int|null,
+    #   'comparison_to_baseline': {...},
+    #   'tornado_data': [...],
+    #   'portfolio_comparison': [...]
+    # }
+    result_data = models.JSONField(default=dict)
+
+    # Execution metrics
+    execution_time_ms = models.IntegerField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'sensitivity_analysis'
+        verbose_name = 'Sensitivity Analysis'
+        verbose_name_plural = 'Sensitivity Analyses'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['scenario']),
+            models.Index(fields=['created_at']),
+        ]
+
+    def __str__(self):
+        return f"Sensitivity: {self.name} (on {self.scenario.name})"
