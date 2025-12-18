@@ -74,7 +74,7 @@
             </button>
             <button @click="applyPreset('moderate')"
                     class="px-4 py-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-800 transition">
-                Moderate (0% return, +10% spending)
+                Moderate (+0.5% return, +5% spending)
             </button>
             <button @click="applyPreset('aggressive')"
                     class="px-4 py-2 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-200 dark:hover:bg-green-800 transition">
@@ -221,7 +221,9 @@
 
         <!-- Tornado Chart Canvas -->
         <div x-show="tornadoData && !loadingTornado" class="mt-4">
-            <canvas id="tornadoChart" class="w-full" style="height: 300px;"></canvas>
+            <div style="height: 200px; max-height: 200px;">
+                <canvas id="tornadoChart"></canvas>
+            </div>
 
             <!-- Impact Summary Table -->
             <div class="mt-6 overflow-x-auto">
@@ -510,6 +512,8 @@ function sensitivityAnalysis() {
                             backgroundColor: 'rgba(59, 130, 246, 0.7)',
                             borderColor: 'rgba(59, 130, 246, 1)',
                             borderWidth: 1,
+                            barThickness: 20,
+                            maxBarThickness: 25,
                         },
                         {
                             label: 'High Value',
@@ -517,6 +521,8 @@ function sensitivityAnalysis() {
                             backgroundColor: colors,
                             borderColor: colors.map(c => c.replace('0.7', '1')),
                             borderWidth: 1,
+                            barThickness: 20,
+                            maxBarThickness: 25,
                         }
                     ]
                 },
@@ -670,8 +676,8 @@ function sensitivityAnalysis() {
                     this.inflationAdj = 0.00;
                     break;
                 case 'moderate':
-                    this.returnAdj = 0.00;
-                    this.spendingAdj = 0.10;
+                    this.returnAdj = 0.005;
+                    this.spendingAdj = 0.05;
                     this.inflationAdj = 0.00;
                     break;
                 case 'aggressive':
