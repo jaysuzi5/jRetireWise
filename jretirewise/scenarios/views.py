@@ -1226,6 +1226,6 @@ class SensitivityAnalysisView(LoginRequiredMixin, DetailView):
         context['saved_analyses'] = scenario.sensitivity_analyses.all()
 
         # API endpoint for JavaScript
-        context['api_base_url'] = f'/api/scenarios/{scenario.id}/sensitivity'
+        context['api_base_url'] = f'/api/v1/scenarios/{scenario.id}/sensitivity'
 
         return context
