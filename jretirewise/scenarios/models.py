@@ -379,3 +379,237 @@ class SensitivityAnalysis(models.Model):
 
     def __str__(self):
         return f"Sensitivity: {self.name} (on {self.scenario.name})"
+
+
+class WithdrawalStrategy(models.Model):
+    """
+    Saved withdrawal sequencing strategy for tax-aware calculations.
+
+    Defines how to sequence withdrawals from different account types
+    (Taxable, Traditional IRA/401k, Roth, HSA) to optimize tax outcomes.
+    """
+
+    SEQUENCE_CHOICES = [
+        ('taxable_first', 'Taxable First'),
+        ('tax_deferred_first', 'Tax-Deferred First (401k/Traditional IRA)'),
+        ('roth_first', 'Roth First'),
+        ('optimized', 'Optimized (Minimize Taxes)'),
+        ('custom', 'Custom'),
+    ]
+
+    scenario = models.ForeignKey(
+        RetirementScenario,
+        on_delete=models.CASCADE,
+        related_name='withdrawal_strategies'
+    )
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+
+    # Strategy type
+    strategy_type = models.CharField(
+        max_length=20,
+        choices=SEQUENCE_CHOICES,
+        default='optimized'
+    )
+
+    # For custom strategies, specify percentage from each account type
+    # Values are 0.0-1.0 (0% to 100%)
+    taxable_percentage = models.FloatField(
+        default=0.0,
+        help_text='Percentage of withdrawal from taxable accounts (0.0-1.0)'
+    )
+    traditional_percentage = models.FloatField(
+        default=0.0,
+        help_text='Percentage from Traditional IRA/401k (0.0-1.0)'
+    )
+    roth_percentage = models.FloatField(
+        default=0.0,
+        help_text='Percentage from Roth accounts (0.0-1.0)'
+    )
+    hsa_percentage = models.FloatField(
+        default=0.0,
+        help_text='Percentage from HSA (0.0-1.0)'
+    )
+
+    # Strategy constraints/preferences
+    preserve_roth_growth = models.BooleanField(
+        default=True,
+        help_text='Preserve Roth accounts for tax-free growth (delay Roth withdrawals)'
+    )
+    minimize_social_security_taxation = models.BooleanField(
+        default=False,
+        help_text='Minimize taxable income to reduce Social Security taxation'
+    )
+
+    # Results (stored after strategy is evaluated)
+    # Structure: {
+    #   'total_tax_paid': float,
+    #   'effective_tax_rate': float,
+    #   'after_tax_total': float,
+    #   'year_by_year': [...]
+    # }
+    result_data = models.JSONField(default=dict, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'withdrawal_strategy'
+        verbose_name = 'Withdrawal Strategy'
+        verbose_name_plural = 'Withdrawal Strategies'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['scenario']),
+            models.Index(fields=['strategy_type']),
+            models.Index(fields=['created_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.name} ({self.get_strategy_type_display()})"
+
+
+class TaxEstimate(models.Model):
+    """
+    Calculated tax liability for a specific year in a retirement scenario.
+
+    Stores detailed tax breakdown including federal, state, NIIT, Medicare
+    surcharges, and Social Security taxation for a single year.
+    """
+
+    scenario = models.ForeignKey(
+        RetirementScenario,
+        on_delete=models.CASCADE,
+        related_name='tax_estimates'
+    )
+    withdrawal_strategy = models.ForeignKey(
+        WithdrawalStrategy,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='tax_estimates'
+    )
+
+    # Year and age
+    year = models.IntegerField(
+        help_text='Retirement year (1, 2, 3...)'
+    )
+    age = models.IntegerField(
+        help_text='User age in this year'
+    )
+
+    # Income breakdown
+    gross_withdrawal = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='Total gross withdrawal from all accounts'
+    )
+    taxable_withdrawal = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='Withdrawal from taxable accounts'
+    )
+    tax_deferred_withdrawal = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='Withdrawal from Traditional IRA/401k (fully taxable)'
+    )
+    roth_withdrawal = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='Withdrawal from Roth accounts (tax-free)'
+    )
+    hsa_withdrawal = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        help_text='Withdrawal from HSA (tax-free if for medical expenses)'
+    )
+
+    # Tax calculations
+    ordinary_income = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='Ordinary income (from tax-deferred accounts, pensions, etc.)'
+    )
+    capital_gains_income = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        help_text='Long-term capital gains (from taxable accounts)'
+    )
+    social_security_taxable = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        help_text='Portion of Social Security benefits that is taxable (0-85%)'
+    )
+
+    # AGI and MAGI
+    agi = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='Adjusted Gross Income'
+    )
+    magi = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='Modified Adjusted Gross Income (for Medicare/NIIT)'
+    )
+
+    # Tax liability
+    federal_tax = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='Federal income tax liability'
+    )
+    state_tax = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        help_text='State income tax liability'
+    )
+    niit_tax = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        help_text='Net Investment Income Tax (3.8% on investment income)'
+    )
+    medicare_surcharge = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        help_text='Medicare IRMAA surcharge based on MAGI'
+    )
+
+    total_tax = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='Total tax liability for the year'
+    )
+    effective_tax_rate = models.FloatField(
+        help_text='Effective tax rate (total_tax / agi)'
+    )
+
+    # After-tax result
+    after_tax_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='After-tax withdrawal amount available for spending'
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'tax_estimate'
+        verbose_name = 'Tax Estimate'
+        verbose_name_plural = 'Tax Estimates'
+        unique_together = [['scenario', 'year']]
+        ordering = ['scenario', 'year']
+        indexes = [
+            models.Index(fields=['scenario', 'year']),
+            models.Index(fields=['withdrawal_strategy']),
+            models.Index(fields=['age']),
+        ]
+
+    def __str__(self):
+        return f"Tax Estimate: Year {self.year}, Age {self.age} - ${self.total_tax:,.2f}"
