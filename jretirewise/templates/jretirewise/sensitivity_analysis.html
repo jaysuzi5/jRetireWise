@@ -5,6 +5,9 @@
 {% block title %}Sensitivity Analysis - {{ scenario.name }} - jRetireWise{% endblock %}
 
 {% block content %}
+<!-- Hidden CSRF token for JavaScript access -->
+<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+
 <div class="mb-6" x-data="sensitivityAnalysis()">
     <!-- Header -->
     <div class="flex justify-between items-center mb-4">
@@ -682,8 +685,15 @@ function sensitivityAnalysis() {
             this.results = null;
         },
 
-        // Get CSRF token from cookie
+        // Get CSRF token - try form field first, then cookie
         getCsrfToken() {
+            // Try getting from hidden input field first (most reliable)
+            const tokenField = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (tokenField && tokenField.value) {
+                return tokenField.value;
+            }
+
+            // Fall back to cookie
             let cookieValue = null;
             if (document.cookie && document.cookie !== '') {
                 const cookies = document.cookie.split(';');

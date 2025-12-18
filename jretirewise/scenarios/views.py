@@ -11,6 +11,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.utils.decorators import method_decorator
 from decimal import Decimal
 from .models import RetirementScenario, WithdrawalBucket, CalculationResult, BucketedWithdrawalResult
 from .forms import ScenarioForm, MonteCarloScenarioForm, BucketedWithdrawalScenarioForm, WithdrawalBucketForm, HistoricalScenarioForm
@@ -1181,6 +1183,7 @@ class HistoricalPeriodDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
+@method_decorator(ensure_csrf_cookie, name='dispatch')
 class SensitivityAnalysisView(LoginRequiredMixin, DetailView):
     """View for sensitivity analysis page."""
     model = RetirementScenario
