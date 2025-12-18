@@ -14,14 +14,29 @@ from django.contrib import messages
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.decorators import method_decorator
 from decimal import Decimal
-from .models import RetirementScenario, WithdrawalBucket, CalculationResult, BucketedWithdrawalResult
+from .models import (
+    RetirementScenario,
+    WithdrawalBucket,
+    CalculationResult,
+    BucketedWithdrawalResult,
+    WithdrawalStrategy,
+    TaxEstimate,
+)
 from .forms import ScenarioForm, MonteCarloScenarioForm, BucketedWithdrawalScenarioForm, WithdrawalBucketForm, HistoricalScenarioForm
 from .serializers import (
-    RetirementScenarioSerializer, WithdrawalBucketSerializer,
-    CalculationResultSerializer, CalculationResultDetailSerializer,
-    BucketedWithdrawalResultSerializer
+    RetirementScenarioSerializer,
+    WithdrawalBucketSerializer,
+    CalculationResultSerializer,
+    CalculationResultDetailSerializer,
+    BucketedWithdrawalResultSerializer,
+    WithdrawalStrategySerializer,
+    TaxEstimateSerializer,
+    TaxCalculationRequestSerializer,
+    StrategyComparisonRequestSerializer,
 )
 from jretirewise.calculations.calculators import DynamicBucketedWithdrawalCalculator
+from jretirewise.calculations.tax_calculator import TaxCalculator
+from jretirewise.calculations.withdrawal_sequencer import WithdrawalSequencer
 import json
 import logging
 import time
@@ -336,6 +351,210 @@ class ScenarioViewSet(viewsets.ModelViewSet):
                 {'error': 'Sensitivity analysis not found'},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+    # ========================================================================
+    # Tax-Aware Calculation Endpoints (Feature 2.3.4)
+    # ========================================================================
+
+    @action(detail=True, methods=['post'], url_path='tax/calculate', url_name='tax-calculate')
+    def tax_calculate(self, request, pk=None):
+        """
+        Calculate taxes for a specific withdrawal amount.
+
+        POST /api/v1/scenarios/{id}/tax/calculate/
+        Body: {
+            "annual_withdrawal": 80000,
+            "year": 1 (optional)
+        }
+        """
+        scenario = self.get_object()
+
+        # Check if user has a tax profile
+        try:
+            tax_profile = request.user.tax_profile
+        except:
+            return Response(
+                {'error': 'Tax profile not found. Please create a tax profile first.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Validate request
+        serializer = TaxCalculationRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        annual_withdrawal = serializer.validated_data['annual_withdrawal']
+        year = serializer.validated_data.get('year', 1)
+
+        # Get scenario parameters
+        params = scenario.parameters
+        retirement_age = int(params.get('retirement_age', request.user.financial_profile.retirement_age))
+        current_age = retirement_age + year - 1
+
+        # Get Social Security and pension from tax profile or scenario
+        claiming_age = scenario.social_security_claiming_age
+        social_security_annual = tax_profile.get_social_security_annual(claiming_age)
+        pension_annual = tax_profile.pension_annual
+
+        # Create tax calculator
+        tax_calc = TaxCalculator(
+            filing_status=tax_profile.filing_status,
+            state_of_residence=tax_profile.state_of_residence
+        )
+
+        # For simplicity, assume 20% of withdrawal is capital gains, 80% ordinary income
+        ordinary_income = annual_withdrawal * Decimal('0.80')
+        capital_gains = annual_withdrawal * Decimal('0.20')
+
+        # Calculate taxes
+        tax_result = tax_calc.calculate_total_tax_liability(
+            ordinary_income=ordinary_income,
+            capital_gains=capital_gains,
+            social_security_benefits=social_security_annual
+        )
+
+        return Response({
+            'year': year,
+            'age': current_age,
+            'annual_withdrawal': float(annual_withdrawal),
+            'tax_breakdown': {
+                'federal_tax': float(tax_result['federal_tax']),
+                'state_tax': float(tax_result['state_tax']),
+                'niit': float(tax_result['niit']),
+                'medicare_surcharge': float(tax_result['medicare_surcharge']),
+                'total_tax': float(tax_result['total_tax']),
+                'effective_rate': float(tax_result['effective_rate']),
+            },
+            'agi': float(tax_result['agi']),
+            'magi': float(tax_result['magi']),
+            'after_tax_amount': float(annual_withdrawal - tax_result['total_tax']),
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='tax/compare-strategies', url_name='tax-compare')
+    def tax_compare_strategies(self, request, pk=None):
+        """
+        Compare different withdrawal strategies.
+
+        POST /api/v1/scenarios/{id}/tax/compare-strategies/
+        Body: {
+            "strategy_types": ["taxable_first", "tax_deferred_first", "optimized"],
+            "annual_withdrawal": 80000
+        }
+        """
+        scenario = self.get_object()
+
+        # Check if user has a tax profile
+        try:
+            tax_profile = request.user.tax_profile
+        except:
+            return Response(
+                {'error': 'Tax profile not found. Please create a tax profile first.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Validate request
+        serializer = StrategyComparisonRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        strategy_types = serializer.validated_data['strategy_types']
+        annual_withdrawal = serializer.validated_data['annual_withdrawal']
+
+        # Get scenario parameters
+        params = scenario.parameters
+        retirement_age = int(params.get('retirement_age', request.user.financial_profile.retirement_age))
+        life_expectancy = int(params.get('life_expectancy', request.user.financial_profile.life_expectancy))
+
+        # Get Social Security and pension
+        claiming_age = scenario.social_security_claiming_age
+        social_security_annual = tax_profile.get_social_security_annual(claiming_age)
+        pension_annual = tax_profile.pension_annual
+
+        # Create withdrawal sequencer
+        sequencer = WithdrawalSequencer(tax_profile, scenario)
+
+        # Compare strategies
+        results = sequencer.compare_strategies(
+            strategies=strategy_types,
+            annual_withdrawal_need=annual_withdrawal,
+            retirement_age=retirement_age,
+            life_expectancy=life_expectancy,
+            social_security_annual=social_security_annual,
+            pension_annual=pension_annual
+        )
+
+        return Response({
+            'strategies': results,
+            'annual_withdrawal': float(annual_withdrawal),
+            'retirement_age': retirement_age,
+            'life_expectancy': life_expectancy,
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get'], url_path='tax/estimates', url_name='tax-estimates')
+    def tax_estimates_list(self, request, pk=None):
+        """
+        Get all tax estimates for a scenario.
+
+        GET /api/v1/scenarios/{id}/tax/estimates/
+        """
+        scenario = self.get_object()
+        tax_estimates = scenario.tax_estimates.all().order_by('year')
+        serializer = TaxEstimateSerializer(tax_estimates, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get','post'], url_path='tax/strategies', url_name='tax-strategies')
+    def withdrawal_strategies_list(self, request, pk=None):
+        """
+        List or create withdrawal strategies for a scenario.
+
+        GET /api/v1/scenarios/{id}/tax/strategies/
+        POST /api/v1/scenarios/{id}/tax/strategies/
+        """
+        scenario = self.get_object()
+
+        if request.method == 'GET':
+            strategies = scenario.withdrawal_strategies.all()
+            serializer = WithdrawalStrategySerializer(strategies, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        elif request.method == 'POST':
+            serializer = WithdrawalStrategySerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save(scenario=scenario)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['get','put','delete'], url_path='tax/strategies/(?P<strategy_id>[^/.]+)', url_name='tax-strategy-detail')
+    def withdrawal_strategy_detail(self, request, pk=None, strategy_id=None):
+        """
+        Get, update, or delete a specific withdrawal strategy.
+
+        GET/PUT/DELETE /api/v1/scenarios/{id}/tax/strategies/{strategy_id}/
+        """
+        scenario = self.get_object()
+
+        try:
+            strategy = WithdrawalStrategy.objects.get(id=strategy_id, scenario=scenario)
+        except WithdrawalStrategy.DoesNotExist:
+            return Response(
+                {'error': 'Withdrawal strategy not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if request.method == 'GET':
+            serializer = WithdrawalStrategySerializer(strategy)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        elif request.method == 'PUT':
+            serializer = WithdrawalStrategySerializer(strategy, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        elif request.method == 'DELETE':
+            strategy.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class WithdrawalBucketViewSet(viewsets.ModelViewSet):

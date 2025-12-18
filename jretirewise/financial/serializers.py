@@ -13,6 +13,7 @@ from .models import (
     Account,
     AccountValueHistory,
     PortfolioSnapshot,
+    TaxProfile,
 )
 
 
@@ -350,3 +351,76 @@ class AccountDetailedSerializer(AccountSerializer):
         """Get last 12 history entries for trending."""
         history = obj.value_history.all()[:12]
         return AccountValueHistorySerializer(history, many=True).data
+
+
+# ============================================================================
+# Phase 2 Tax Planning Serializers
+# ============================================================================
+
+
+class TaxProfileSerializer(serializers.ModelSerializer):
+    """Serializer for user tax profile and withdrawal optimization."""
+
+    filing_status_display = serializers.CharField(
+        source='get_filing_status_display',
+        read_only=True
+    )
+
+    # Computed fields for Social Security by claiming age
+    social_security_annual_62 = serializers.SerializerMethodField()
+    social_security_annual_65 = serializers.SerializerMethodField()
+    social_security_annual_67 = serializers.SerializerMethodField()
+    social_security_annual_70 = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TaxProfile
+        fields = [
+            'id',
+            'user',
+            'filing_status',
+            'filing_status_display',
+            'state_of_residence',
+            'full_retirement_age',
+            'social_security_age_62',
+            'social_security_age_65',
+            'social_security_age_67',
+            'social_security_age_70',
+            'social_security_annual_62',
+            'social_security_annual_65',
+            'social_security_annual_67',
+            'social_security_annual_70',
+            'traditional_ira_balance',
+            'roth_ira_balance',
+            'taxable_account_balance',
+            'hsa_balance',
+            'pension_annual',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = [
+            'id',
+            'user',
+            'filing_status_display',
+            'social_security_annual_62',
+            'social_security_annual_65',
+            'social_security_annual_67',
+            'social_security_annual_70',
+            'created_at',
+            'updated_at',
+        ]
+
+    def get_social_security_annual_62(self, obj):
+        """Get annual Social Security benefit for age 62."""
+        return float(obj.get_social_security_annual(62))
+
+    def get_social_security_annual_65(self, obj):
+        """Get annual Social Security benefit for age 65."""
+        return float(obj.get_social_security_annual(65))
+
+    def get_social_security_annual_67(self, obj):
+        """Get annual Social Security benefit for age 67."""
+        return float(obj.get_social_security_annual(67))
+
+    def get_social_security_annual_70(self, obj):
+        """Get annual Social Security benefit for age 70."""
+        return float(obj.get_social_security_annual(70))

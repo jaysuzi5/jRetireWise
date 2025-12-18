@@ -33,6 +33,7 @@ from .serializers import (
     AccountDetailedSerializer,
     AccountValueHistorySerializer,
     PortfolioSnapshotSerializer,
+    TaxProfileSerializer,
 )
 
 
@@ -415,3 +416,47 @@ class PortfolioSnapshotViewSet(viewsets.ModelViewSet):
             'difference': float(difference),
             'percent_change': float(percent_change),
         })
+
+
+# ============================================================================
+# Phase 2 Tax Planning ViewSets
+# ============================================================================
+
+
+class TaxProfileViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for user tax profile management.
+
+    Handles tax information including filing status, state of residence,
+    account balances, and Social Security benefits by claiming age.
+    """
+
+    serializer_class = TaxProfileSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """Return only the current user's tax profile."""
+        from .models import TaxProfile
+        return TaxProfile.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        """Set user to current user when creating tax profile."""
+        serializer.save(user=self.request.user)
+
+    @action(detail=False, methods=['get'], url_path='me', url_name='tax-profile-me')
+    def current_user_profile(self, request):
+        """
+        Get the current user's tax profile (or 404 if not exists).
+
+        GET /api/v1/tax-profiles/me/
+        """
+        from .models import TaxProfile
+        try:
+            tax_profile = request.user.tax_profile
+            serializer = TaxProfileSerializer(tax_profile)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except TaxProfile.DoesNotExist:
+            return Response(
+                {'error': 'Tax profile not found. Create one first.'},
+                status=status.HTTP_404_NOT_FOUND
+            )

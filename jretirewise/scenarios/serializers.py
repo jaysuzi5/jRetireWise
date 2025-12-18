@@ -3,7 +3,15 @@ Serializers for scenario and calculation models.
 """
 
 from rest_framework import serializers
-from .models import RetirementScenario, CalculationResult, WithdrawalBucket, BucketedWithdrawalResult, SensitivityAnalysis
+from .models import (
+    RetirementScenario,
+    CalculationResult,
+    WithdrawalBucket,
+    BucketedWithdrawalResult,
+    SensitivityAnalysis,
+    WithdrawalStrategy,
+    TaxEstimate,
+)
 
 
 class WithdrawalBucketSerializer(serializers.ModelSerializer):
@@ -208,3 +216,93 @@ class TornadoChartRequestSerializer(serializers.Serializer):
     inflation_range_min = serializers.FloatField(default=0.0)
     inflation_range_max = serializers.FloatField(default=0.04)
     inflation_step = serializers.FloatField(default=0.01)
+
+
+class WithdrawalStrategySerializer(serializers.ModelSerializer):
+    """Serializer for WithdrawalStrategy model."""
+
+    strategy_type_display = serializers.CharField(source='get_strategy_type_display', read_only=True)
+    scenario_name = serializers.CharField(source='scenario.name', read_only=True)
+
+    class Meta:
+        model = WithdrawalStrategy
+        fields = [
+            'id',
+            'scenario',
+            'scenario_name',
+            'name',
+            'description',
+            'strategy_type',
+            'strategy_type_display',
+            'taxable_percentage',
+            'traditional_percentage',
+            'roth_percentage',
+            'hsa_percentage',
+            'preserve_roth_growth',
+            'minimize_social_security_taxation',
+            'result_data',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = ['id', 'scenario_name', 'strategy_type_display', 'result_data', 'created_at', 'updated_at']
+
+
+class TaxEstimateSerializer(serializers.ModelSerializer):
+    """Serializer for TaxEstimate model."""
+
+    withdrawal_strategy_name = serializers.CharField(source='withdrawal_strategy.name', read_only=True, allow_null=True)
+
+    class Meta:
+        model = TaxEstimate
+        fields = [
+            'id',
+            'scenario',
+            'withdrawal_strategy',
+            'withdrawal_strategy_name',
+            'year',
+            'age',
+            'gross_withdrawal',
+            'taxable_withdrawal',
+            'tax_deferred_withdrawal',
+            'roth_withdrawal',
+            'hsa_withdrawal',
+            'ordinary_income',
+            'capital_gains_income',
+            'social_security_taxable',
+            'agi',
+            'magi',
+            'federal_tax',
+            'state_tax',
+            'niit_tax',
+            'medicare_surcharge',
+            'total_tax',
+            'effective_tax_rate',
+            'after_tax_amount',
+            'created_at',
+        ]
+        read_only_fields = ['id', 'withdrawal_strategy_name', 'created_at']
+
+
+class TaxCalculationRequestSerializer(serializers.Serializer):
+    """Serializer for tax calculation requests."""
+
+    withdrawal_strategy_id = serializers.IntegerField(required=False, allow_null=True)
+    annual_withdrawal = serializers.DecimalField(max_digits=12, decimal_places=2)
+    year = serializers.IntegerField(required=False, default=1)
+
+
+class StrategyComparisonRequestSerializer(serializers.Serializer):
+    """Serializer for withdrawal strategy comparison requests."""
+
+    strategy_types = serializers.ListField(
+        child=serializers.ChoiceField(choices=[
+            'taxable_first',
+            'tax_deferred_first',
+            'roth_first',
+            'optimized',
+            'custom'
+        ]),
+        min_length=1,
+        max_length=5
+    )
+    annual_withdrawal = serializers.DecimalField(max_digits=12, decimal_places=2)
