@@ -334,9 +334,24 @@ class SensitivityAnalyzer:
         inflation_rate = float(parameters.get('inflation_rate', 0.03))
 
         # Social Security and Pension
-        social_security_annual = float(parameters.get('social_security_annual', 0))
+        # Check for both annual and monthly social security parameters
+        if 'social_security_annual' in parameters and parameters['social_security_annual']:
+            social_security_annual = float(parameters['social_security_annual'])
+        elif 'social_security_monthly' in parameters and parameters['social_security_monthly']:
+            social_security_annual = float(parameters['social_security_monthly']) * 12
+        else:
+            social_security_annual = 0.0
+
         social_security_start_age = int(parameters.get('social_security_start_age', 67))
-        pension_annual = float(parameters.get('pension_annual', 0))
+
+        # Check for both annual and monthly pension parameters
+        if 'pension_annual' in parameters and parameters['pension_annual']:
+            pension_annual = float(parameters['pension_annual'])
+        elif 'pension_monthly' in parameters and parameters['pension_monthly']:
+            pension_annual = float(parameters['pension_monthly']) * 12
+        else:
+            pension_annual = 0.0
+
         pension_start_age = int(parameters.get('pension_start_age', retirement_age))
 
         # Create calculator based on type
