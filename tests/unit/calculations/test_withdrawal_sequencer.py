@@ -14,6 +14,7 @@ import pytest
 from decimal import Decimal
 from unittest.mock import Mock, MagicMock
 from jretirewise.calculations.withdrawal_sequencer import WithdrawalSequencer
+from jretirewise.financial.models import TaxProfile
 
 
 @pytest.fixture
@@ -183,6 +184,51 @@ class TestWithdrawalSequencerTaxDeferredFirst:
         withdrawal_plan = first_year['withdrawal_plan']
         assert withdrawal_plan['traditional'] > Decimal('0')
 
+    @pytest.mark.django_db
+    def test_tax_deferred_first_exhausts_accounts(self):
+        """Test tax_deferred_first when traditional exhausted, moves to taxable then Roth."""
+        from jretirewise.authentication.models import User
+        from jretirewise.scenarios.models import RetirementScenario
+
+        # Create real user and scenario
+        user = User.objects.create(email='testuser@example.com', first_name='Test', last_name='User')
+        scenario = RetirementScenario.objects.create(
+            user=user,
+            name='Test Scenario',
+            calculator_type='four_percent',
+            parameters={}
+        )
+
+        # Create tax profile with small traditional, enough taxable and Roth
+        tax_profile = TaxProfile.objects.create(
+            user=user,
+            filing_status='single',
+            state_of_residence='CA',
+            traditional_ira_balance=Decimal('30000'),  # Small traditional
+            roth_ira_balance=Decimal('100000'),
+            taxable_account_balance=Decimal('100000'),
+            hsa_balance=Decimal('10000'),
+            social_security_age_62=Decimal('1500'),
+            social_security_age_65=Decimal('1800'),
+            social_security_age_67=Decimal('2000'),
+            social_security_age_70=Decimal('2400'),
+            pension_annual=Decimal('0')
+        )
+
+        sequencer = WithdrawalSequencer(tax_profile, scenario)
+        result = sequencer.execute_strategy(
+            strategy_type='tax_deferred_first',
+            annual_withdrawal_need=Decimal('50000'),
+            retirement_age=65,
+            life_expectancy=67,  # Short retirement to exhaust traditional
+            social_security_annual=Decimal('0'),
+            pension_annual=Decimal('0')
+        )
+
+        # Check that taxable and roth were used after traditional exhausted
+        last_year = result['year_by_year'][-1]
+        assert last_year['withdrawal_plan']['taxable'] > Decimal('0') or last_year['withdrawal_plan']['roth'] > Decimal('0')
+
 
 class TestWithdrawalSequencerRothFirst:
     """Test Roth-first withdrawal strategy."""
@@ -206,6 +252,51 @@ class TestWithdrawalSequencerRothFirst:
         first_year = result['year_by_year'][0]
         withdrawal_plan = first_year['withdrawal_plan']
         assert withdrawal_plan['roth'] > Decimal('0')
+
+    @pytest.mark.django_db
+    def test_roth_first_exhausts_accounts(self):
+        """Test roth_first when Roth exhausted, moves to taxable then traditional."""
+        from jretirewise.authentication.models import User
+        from jretirewise.scenarios.models import RetirementScenario
+
+        # Create real user and scenario
+        user = User.objects.create(email='testuser2@example.com', first_name='Test', last_name='User')
+        scenario = RetirementScenario.objects.create(
+            user=user,
+            name='Test Scenario',
+            calculator_type='four_percent',
+            parameters={}
+        )
+
+        # Create tax profile with small Roth, enough taxable and traditional
+        tax_profile = TaxProfile.objects.create(
+            user=user,
+            filing_status='single',
+            state_of_residence='CA',
+            traditional_ira_balance=Decimal('200000'),
+            roth_ira_balance=Decimal('30000'),  # Small Roth
+            taxable_account_balance=Decimal('100000'),
+            hsa_balance=Decimal('10000'),
+            social_security_age_62=Decimal('1500'),
+            social_security_age_65=Decimal('1800'),
+            social_security_age_67=Decimal('2000'),
+            social_security_age_70=Decimal('2400'),
+            pension_annual=Decimal('0')
+        )
+
+        sequencer = WithdrawalSequencer(tax_profile, scenario)
+        result = sequencer.execute_strategy(
+            strategy_type='roth_first',
+            annual_withdrawal_need=Decimal('50000'),
+            retirement_age=65,
+            life_expectancy=67,  # Short retirement to exhaust Roth
+            social_security_annual=Decimal('0'),
+            pension_annual=Decimal('0')
+        )
+
+        # Check that taxable and traditional were used after Roth exhausted
+        last_year = result['year_by_year'][-1]
+        assert last_year['withdrawal_plan']['taxable'] > Decimal('0') or last_year['withdrawal_plan']['traditional'] > Decimal('0')
 
 
 class TestWithdrawalSequencerOptimized:
@@ -251,6 +342,52 @@ class TestWithdrawalSequencerOptimized:
             1 if withdrawal_plan['taxable'] > 0 else 0,
         ])
         assert account_types_used >= 1  # At least one account type used
+
+    @pytest.mark.django_db
+    def test_optimized_exhausts_taxable_uses_roth(self):
+        """Test optimized strategy falls back to Roth when traditional and taxable exhausted."""
+        from jretirewise.authentication.models import User
+        from jretirewise.scenarios.models import RetirementScenario
+
+        # Create real user and scenario
+        user = User.objects.create(email='testuser3@example.com', first_name='Test', last_name='User')
+        scenario = RetirementScenario.objects.create(
+            user=user,
+            name='Test Scenario',
+            calculator_type='four_percent',
+            parameters={}
+        )
+
+        # Create tax profile with small traditional and taxable, large Roth
+        tax_profile = TaxProfile.objects.create(
+            user=user,
+            filing_status='single',
+            state_of_residence='CA',
+            traditional_ira_balance=Decimal('50000'),  # Small traditional
+            roth_ira_balance=Decimal('200000'),  # Large Roth
+            taxable_account_balance=Decimal('50000'),  # Small taxable
+            hsa_balance=Decimal('10000'),
+            social_security_age_62=Decimal('1500'),
+            social_security_age_65=Decimal('1800'),
+            social_security_age_67=Decimal('2000'),
+            social_security_age_70=Decimal('2400'),
+            pension_annual=Decimal('0')
+        )
+
+        sequencer = WithdrawalSequencer(tax_profile, scenario)
+        result = sequencer.execute_strategy(
+            strategy_type='optimized',
+            annual_withdrawal_need=Decimal('60000'),
+            retirement_age=65,
+            life_expectancy=68,  # Longer retirement to exhaust traditional and taxable
+            social_security_annual=Decimal('0'),
+            pension_annual=Decimal('0')
+        )
+
+        # Check that Roth was eventually used after traditional and taxable exhausted
+        # Look for a year where Roth withdrawal occurred
+        roth_used = any(year['withdrawal_plan']['roth'] > Decimal('0') for year in result['year_by_year'])
+        assert roth_used, "Optimized strategy should use Roth when traditional and taxable exhausted"
 
 
 class TestWithdrawalSequencerCustom:
