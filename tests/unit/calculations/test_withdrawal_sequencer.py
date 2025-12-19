@@ -21,12 +21,17 @@ from jretirewise.financial.models import TaxProfile
 def mock_tax_profile():
     """Create a mock tax profile for testing."""
     profile = Mock()
-    profile.traditional_ira_balance = Decimal('500000')
-    profile.roth_ira_balance = Decimal('300000')
-    profile.taxable_account_balance = Decimal('200000')
-    profile.hsa_balance = Decimal('50000')
     profile.filing_status = 'mfj'
     profile.state_of_residence = 'CA'
+
+    # Mock the get_account_balances_from_portfolio method
+    profile.get_account_balances_from_portfolio.return_value = {
+        'traditional': Decimal('500000'),
+        'roth': Decimal('300000'),
+        'taxable': Decimal('200000'),
+        'hsa': Decimal('50000'),
+    }
+
     return profile
 
 
@@ -144,7 +149,12 @@ class TestWithdrawalSequencerTaxableFirst:
     def test_taxable_first_exhausts_taxable_then_traditional(self, mock_tax_profile, mock_scenario):
         """Test strategy moves to traditional after exhausting taxable."""
         # Set up small taxable balance
-        mock_tax_profile.taxable_account_balance = Decimal('30000')
+        mock_tax_profile.get_account_balances_from_portfolio.return_value = {
+            'traditional': Decimal('500000'),
+            'roth': Decimal('300000'),
+            'taxable': Decimal('30000'),  # Small taxable
+            'hsa': Decimal('50000'),
+        }
         sequencer = WithdrawalSequencer(mock_tax_profile, mock_scenario)
 
         result = sequencer.execute_strategy(
@@ -189,6 +199,7 @@ class TestWithdrawalSequencerTaxDeferredFirst:
         """Test tax_deferred_first when traditional exhausted, moves to taxable then Roth."""
         from jretirewise.authentication.models import User
         from jretirewise.scenarios.models import RetirementScenario
+        from jretirewise.financial.models import Portfolio, Account
 
         # Create real user and scenario
         user = User.objects.create(email='testuser@example.com', first_name='Test', last_name='User')
@@ -199,20 +210,42 @@ class TestWithdrawalSequencerTaxDeferredFirst:
             parameters={}
         )
 
-        # Create tax profile with small traditional, enough taxable and Roth
+        # Create tax profile (only filing status and state)
         tax_profile = TaxProfile.objects.create(
             user=user,
             filing_status='single',
-            state_of_residence='CA',
-            traditional_ira_balance=Decimal('30000'),  # Small traditional
-            roth_ira_balance=Decimal('100000'),
-            taxable_account_balance=Decimal('100000'),
-            hsa_balance=Decimal('10000'),
-            social_security_age_62=Decimal('1500'),
-            social_security_age_65=Decimal('1800'),
-            social_security_age_67=Decimal('2000'),
-            social_security_age_70=Decimal('2400'),
-            pension_annual=Decimal('0')
+            state_of_residence='CA'
+        )
+
+        # Create portfolio with accounts for balances
+        portfolio = Portfolio.objects.create(user=user, name='Test Portfolio')
+        Account.objects.create(
+            portfolio=portfolio,
+            account_name='Traditional IRA',
+            account_type='trad_ira',
+            current_value=Decimal('30000'),  # Small traditional
+            status='active'
+        )
+        Account.objects.create(
+            portfolio=portfolio,
+            account_name='Roth IRA',
+            account_type='roth_ira',
+            current_value=Decimal('100000'),
+            status='active'
+        )
+        Account.objects.create(
+            portfolio=portfolio,
+            account_name='Taxable',
+            account_type='taxable_brokerage',
+            current_value=Decimal('100000'),
+            status='active'
+        )
+        Account.objects.create(
+            portfolio=portfolio,
+            account_name='HSA',
+            account_type='hsa',
+            current_value=Decimal('10000'),
+            status='active'
         )
 
         sequencer = WithdrawalSequencer(tax_profile, scenario)
@@ -258,6 +291,7 @@ class TestWithdrawalSequencerRothFirst:
         """Test roth_first when Roth exhausted, moves to taxable then traditional."""
         from jretirewise.authentication.models import User
         from jretirewise.scenarios.models import RetirementScenario
+        from jretirewise.financial.models import Portfolio, Account
 
         # Create real user and scenario
         user = User.objects.create(email='testuser2@example.com', first_name='Test', last_name='User')
@@ -268,20 +302,42 @@ class TestWithdrawalSequencerRothFirst:
             parameters={}
         )
 
-        # Create tax profile with small Roth, enough taxable and traditional
+        # Create tax profile (only filing status and state)
         tax_profile = TaxProfile.objects.create(
             user=user,
             filing_status='single',
-            state_of_residence='CA',
-            traditional_ira_balance=Decimal('200000'),
-            roth_ira_balance=Decimal('30000'),  # Small Roth
-            taxable_account_balance=Decimal('100000'),
-            hsa_balance=Decimal('10000'),
-            social_security_age_62=Decimal('1500'),
-            social_security_age_65=Decimal('1800'),
-            social_security_age_67=Decimal('2000'),
-            social_security_age_70=Decimal('2400'),
-            pension_annual=Decimal('0')
+            state_of_residence='CA'
+        )
+
+        # Create portfolio with accounts for balances - small Roth, enough taxable and traditional
+        portfolio = Portfolio.objects.create(user=user, name='Test Portfolio')
+        Account.objects.create(
+            portfolio=portfolio,
+            account_name='Traditional IRA',
+            account_type='trad_ira',
+            current_value=Decimal('200000'),
+            status='active'
+        )
+        Account.objects.create(
+            portfolio=portfolio,
+            account_name='Roth IRA',
+            account_type='roth_ira',
+            current_value=Decimal('30000'),  # Small Roth
+            status='active'
+        )
+        Account.objects.create(
+            portfolio=portfolio,
+            account_name='Taxable',
+            account_type='taxable_brokerage',
+            current_value=Decimal('100000'),
+            status='active'
+        )
+        Account.objects.create(
+            portfolio=portfolio,
+            account_name='HSA',
+            account_type='hsa',
+            current_value=Decimal('10000'),
+            status='active'
         )
 
         sequencer = WithdrawalSequencer(tax_profile, scenario)
@@ -348,6 +404,7 @@ class TestWithdrawalSequencerOptimized:
         """Test optimized strategy falls back to Roth when traditional and taxable exhausted."""
         from jretirewise.authentication.models import User
         from jretirewise.scenarios.models import RetirementScenario
+        from jretirewise.financial.models import Portfolio, Account
 
         # Create real user and scenario
         user = User.objects.create(email='testuser3@example.com', first_name='Test', last_name='User')
@@ -358,20 +415,42 @@ class TestWithdrawalSequencerOptimized:
             parameters={}
         )
 
-        # Create tax profile with small traditional and taxable, large Roth
+        # Create tax profile (only filing status and state)
         tax_profile = TaxProfile.objects.create(
             user=user,
             filing_status='single',
-            state_of_residence='CA',
-            traditional_ira_balance=Decimal('50000'),  # Small traditional
-            roth_ira_balance=Decimal('200000'),  # Large Roth
-            taxable_account_balance=Decimal('50000'),  # Small taxable
-            hsa_balance=Decimal('10000'),
-            social_security_age_62=Decimal('1500'),
-            social_security_age_65=Decimal('1800'),
-            social_security_age_67=Decimal('2000'),
-            social_security_age_70=Decimal('2400'),
-            pension_annual=Decimal('0')
+            state_of_residence='CA'
+        )
+
+        # Create portfolio with accounts for balances - small traditional and taxable, large Roth
+        portfolio = Portfolio.objects.create(user=user, name='Test Portfolio')
+        Account.objects.create(
+            portfolio=portfolio,
+            account_name='Traditional IRA',
+            account_type='trad_ira',
+            current_value=Decimal('50000'),  # Small traditional
+            status='active'
+        )
+        Account.objects.create(
+            portfolio=portfolio,
+            account_name='Roth IRA',
+            account_type='roth_ira',
+            current_value=Decimal('200000'),  # Large Roth
+            status='active'
+        )
+        Account.objects.create(
+            portfolio=portfolio,
+            account_name='Taxable',
+            account_type='taxable_brokerage',
+            current_value=Decimal('50000'),  # Small taxable
+            status='active'
+        )
+        Account.objects.create(
+            portfolio=portfolio,
+            account_name='HSA',
+            account_type='hsa',
+            current_value=Decimal('10000'),
+            status='active'
         )
 
         sequencer = WithdrawalSequencer(tax_profile, scenario)
@@ -631,10 +710,12 @@ class TestWithdrawalSequencerYearByYear:
     def test_year_by_year_stops_when_depleted(self, mock_tax_profile, mock_scenario):
         """Test year-by-year stops when all accounts depleted."""
         # Set very low balances and high withdrawal
-        mock_tax_profile.traditional_ira_balance = Decimal('100000')
-        mock_tax_profile.roth_ira_balance = Decimal('50000')
-        mock_tax_profile.taxable_account_balance = Decimal('50000')
-        mock_tax_profile.hsa_balance = Decimal('0')
+        mock_tax_profile.get_account_balances_from_portfolio.return_value = {
+            'traditional': Decimal('100000'),
+            'roth': Decimal('50000'),
+            'taxable': Decimal('50000'),
+            'hsa': Decimal('0'),
+        }
 
         sequencer = WithdrawalSequencer(mock_tax_profile, mock_scenario)
 
@@ -736,12 +817,16 @@ class TestWithdrawalSequencerEdgeCases:
     def test_all_accounts_zero_balance(self):
         """Test handling of all zero account balances."""
         mock_profile = Mock()
-        mock_profile.traditional_ira_balance = Decimal('0')
-        mock_profile.roth_ira_balance = Decimal('0')
-        mock_profile.taxable_account_balance = Decimal('0')
-        mock_profile.hsa_balance = Decimal('0')
         mock_profile.filing_status = 'single'
         mock_profile.state_of_residence = 'CA'
+
+        # Mock the get_account_balances_from_portfolio method
+        mock_profile.get_account_balances_from_portfolio.return_value = {
+            'traditional': Decimal('0'),
+            'roth': Decimal('0'),
+            'taxable': Decimal('0'),
+            'hsa': Decimal('0'),
+        }
 
         mock_scenario = Mock()
         mock_scenario.parameters = {}
