@@ -13,6 +13,7 @@ from .portfolio_views import (
     AccountRecordValueView,
     AccountValueHistoryUpdateView,
     AccountValueHistoryDeleteView,
+    TaxProfileManageView,
 )
 
 app_name = 'financial'
@@ -33,4 +34,7 @@ urlpatterns = [
     path('accounts/<int:account_id>/record-value/', AccountRecordValueView.as_view(), name='account-record-value'),
     path('value-history/<int:pk>/edit/', AccountValueHistoryUpdateView.as_view(), name='value-history-edit'),
     path('value-history/<int:pk>/delete/', AccountValueHistoryDeleteView.as_view(), name='value-history-delete'),
+
+    # Tax Profile URL
+    path('tax-profile/', TaxProfileManageView.as_view(), name='tax-profile'),
 ]

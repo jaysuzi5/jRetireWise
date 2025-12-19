@@ -10,8 +10,8 @@ from django.urls import reverse_lazy, reverse
 from django.contrib import messages
 from datetime import date
 
-from .models import Portfolio, Account, AccountValueHistory
-from .forms import PortfolioForm, AccountForm, AccountValueHistoryForm
+from .models import Portfolio, Account, AccountValueHistory, TaxProfile
+from .forms import PortfolioForm, AccountForm, AccountValueHistoryForm, TaxProfileForm
 
 
 class PortfolioRedirectView(LoginRequiredMixin, View):
@@ -449,3 +449,56 @@ class AccountValueHistoryDeleteView(LoginRequiredMixin, DeleteView):
         account_name = history.account.account_name
         messages.success(request, f'Value record deleted for {account_name}!')
         return super().delete(request, *args, **kwargs)
+
+
+class TaxProfileManageView(LoginRequiredMixin, View):
+    """View for creating or updating tax profile (one per user)."""
+
+    login_url = 'account_login'
+
+    def get(self, request, *args, **kwargs):
+        """Display tax profile form (create or update based on existence)."""
+        try:
+            tax_profile = request.user.tax_profile
+            form = TaxProfileForm(instance=tax_profile)
+            page_title = 'Edit Tax Profile'
+        except TaxProfile.DoesNotExist:
+            form = TaxProfileForm()
+            page_title = 'Create Tax Profile'
+
+        return self.render_form(request, form, page_title)
+
+    def post(self, request, *args, **kwargs):
+        """Handle form submission (create or update)."""
+        try:
+            tax_profile = request.user.tax_profile
+            form = TaxProfileForm(request.POST, instance=tax_profile)
+            page_title = 'Edit Tax Profile'
+            is_update = True
+        except TaxProfile.DoesNotExist:
+            form = TaxProfileForm(request.POST)
+            page_title = 'Create Tax Profile'
+            is_update = False
+
+        if form.is_valid():
+            tax_profile = form.save(commit=False)
+            tax_profile.user = request.user
+            tax_profile.save()
+
+            if is_update:
+                messages.success(request, 'Tax profile updated successfully!')
+            else:
+                messages.success(request, 'Tax profile created successfully!')
+
+            return redirect('financial:tax-profile')
+        else:
+            return self.render_form(request, form, page_title)
+
+    def render_form(self, request, form, page_title):
+        """Render the tax profile form template."""
+        from django.shortcuts import render
+        context = {
+            'form': form,
+            'page_title': page_title,
+        }
+        return render(request, 'jretirewise/tax_profile_form.html', context)

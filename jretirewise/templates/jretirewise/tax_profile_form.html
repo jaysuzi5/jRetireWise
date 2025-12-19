@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} - jRetireWise{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="mb-8">
+        <a href="{% url 'scenarios:scenario-list' %}" class="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium">
+            ← Back to Scenarios
+        </a>
+    </div>
+
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">{{ page_title }}</h1>
+        <p class="mt-2 text-gray-600 dark:text-gray-400">
+            Configure your tax profile for tax-aware retirement planning. This information is used to calculate tax-optimized withdrawal strategies.
+        </p>
+    </div>
+
+    {% if form.non_field_errors %}
+        <div class="mb-4 p-4 bg-red-100 dark:bg-red-900 dark:bg-opacity-20 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-400 rounded">
+            {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+
+        <!-- Tax Filing Information -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Tax Filing Information</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Filing Status -->
+                <div>
+                    <label for="{{ form.filing_status.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Filing Status *</label>
+                    {{ form.filing_status }}
+                    {% if form.filing_status.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.filing_status.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- State of Residence -->
+                <div>
+                    <label for="{{ form.state_of_residence.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">State of Residence *</label>
+                    {{ form.state_of_residence }}
+                    {% if form.state_of_residence.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.state_of_residence.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Full Retirement Age -->
+            <div class="mt-6">
+                <label for="{{ form.full_retirement_age.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Full Retirement Age *</label>
+                {{ form.full_retirement_age }}
+                {% if form.full_retirement_age.errors %}
+                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.full_retirement_age.errors.0 }}</p>
+                {% endif %}
+                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Your full retirement age for Social Security benefits (typically 66-67)</p>
+            </div>
+        </div>
+
+        <!-- Social Security Benefits by Claiming Age -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Social Security Benefits by Claiming Age</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Enter your <strong>monthly</strong> Social Security benefit estimates for different claiming ages. These amounts will be used to optimize your withdrawal strategy.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Age 62 -->
+                <div>
+                    <label for="{{ form.social_security_age_62.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Monthly Benefit at Age 62</label>
+                    {{ form.social_security_age_62 }}
+                    {% if form.social_security_age_62.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.social_security_age_62.errors.0 }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Early claiming (reduced benefit)</p>
+                </div>
+
+                <!-- Age 65 -->
+                <div>
+                    <label for="{{ form.social_security_age_65.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Monthly Benefit at Age 65</label>
+                    {{ form.social_security_age_65 }}
+                    {% if form.social_security_age_65.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.social_security_age_65.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Age 67 -->
+                <div>
+                    <label for="{{ form.social_security_age_67.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Monthly Benefit at Age 67</label>
+                    {{ form.social_security_age_67 }}
+                    {% if form.social_security_age_67.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.social_security_age_67.errors.0 }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Full retirement age benefit</p>
+                </div>
+
+                <!-- Age 70 -->
+                <div>
+                    <label for="{{ form.social_security_age_70.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Monthly Benefit at Age 70</label>
+                    {{ form.social_security_age_70 }}
+                    {% if form.social_security_age_70.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.social_security_age_70.errors.0 }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Delayed claiming (maximum benefit)</p>
+                </div>
+            </div>
+
+            <div class="mt-4 p-4 bg-blue-50 dark:bg-blue-900 dark:bg-opacity-20 border border-blue-200 dark:border-blue-800 rounded">
+                <p class="text-sm text-blue-800 dark:text-blue-300">
+                    <strong>Tip:</strong> You can find your benefit estimates on your Social Security statement at
+                    <a href="https://www.ssa.gov/myaccount/" target="_blank" class="underline hover:text-blue-600 dark:hover:text-blue-200">ssa.gov/myaccount</a>
+                </p>
+            </div>
+        </div>
+
+        <!-- Retirement Account Balances -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Retirement Account Balances</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Enter current balances for each account type. These balances are used for withdrawal sequencing optimization.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Traditional IRA Balance -->
+                <div>
+                    <label for="{{ form.traditional_ira_balance.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Traditional IRA/401(k) Balance *</label>
+                    {{ form.traditional_ira_balance }}
+                    {% if form.traditional_ira_balance.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.traditional_ira_balance.errors.0 }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Pre-tax retirement accounts</p>
+                </div>
+
+                <!-- Roth IRA Balance -->
+                <div>
+                    <label for="{{ form.roth_ira_balance.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Roth IRA/Roth 401(k) Balance *</label>
+                    {{ form.roth_ira_balance }}
+                    {% if form.roth_ira_balance.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.roth_ira_balance.errors.0 }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">After-tax retirement accounts</p>
+                </div>
+
+                <!-- Taxable Account Balance -->
+                <div>
+                    <label for="{{ form.taxable_account_balance.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Taxable Brokerage Balance *</label>
+                    {{ form.taxable_account_balance }}
+                    {% if form.taxable_account_balance.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.taxable_account_balance.errors.0 }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Regular brokerage/investment accounts</p>
+                </div>
+
+                <!-- HSA Balance -->
+                <div>
+                    <label for="{{ form.hsa_balance.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Health Savings Account (HSA) Balance *</label>
+                    {{ form.hsa_balance }}
+                    {% if form.hsa_balance.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.hsa_balance.errors.0 }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Tax-advantaged health savings</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Other Income -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Other Income Sources</h2>
+
+            <div>
+                <label for="{{ form.pension_annual.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Annual Pension Income</label>
+                {{ form.pension_annual }}
+                {% if form.pension_annual.errors %}
+                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.pension_annual.errors.0 }}</p>
+                {% endif %}
+                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Expected annual pension income (if applicable)</p>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="flex justify-end space-x-4 pt-6">
+            <a href="{% url 'scenarios:scenario-list' %}" class="px-6 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition duration-200">
+                Cancel
+            </a>
+            <button type="submit" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition duration-200">
+                Save Tax Profile
+            </button>
+        </div>
+    </form>
+</div>
+
+<style>
+    input[type="text"],
+    input[type="number"],
+    select {
+        @apply w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent mt-1;
+    }
+</style>
+{% endblock %}

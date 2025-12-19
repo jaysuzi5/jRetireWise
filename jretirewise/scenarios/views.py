@@ -1463,3 +1463,50 @@ class SensitivityAnalysisView(LoginRequiredMixin, DetailView):
         context['api_base_url'] = f'/api/v1/scenarios/{scenario.id}/sensitivity'
 
         return context
+
+
+class WithdrawalStrategyView(LoginRequiredMixin, DetailView):
+    """View for withdrawal strategy comparison and tax optimization."""
+    model = RetirementScenario
+    template_name = 'jretirewise/withdrawal_strategy.html'
+    context_object_name = 'scenario'
+
+    def get_queryset(self):
+        return RetirementScenario.objects.filter(user=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        scenario = self.get_object()
+
+        # Check if user has a tax profile
+        try:
+            tax_profile = self.request.user.tax_profile
+            context['tax_profile'] = tax_profile
+            context['has_tax_profile'] = True
+        except Exception:
+            context['has_tax_profile'] = False
+            context['error'] = 'You must create a tax profile before using tax-aware withdrawal strategies'
+            return context
+
+        # Get scenario parameters for withdrawal calculations
+        params = scenario.parameters
+        context['annual_withdrawal'] = params.get('annual_spending', 0)
+        context['retirement_age'] = params.get('retirement_age', 65)
+        context['life_expectancy'] = params.get('life_expectancy', 95)
+
+        # Get saved withdrawal strategies
+        context['saved_strategies'] = scenario.withdrawal_strategies.all()
+
+        # API endpoint for JavaScript
+        context['api_base_url'] = f'/api/v1/scenarios/{scenario.id}/tax'
+
+        # Available strategy types
+        context['strategy_types'] = [
+            {'key': 'taxable_first', 'name': 'Taxable First', 'description': 'Withdraw from taxable accounts first, then tax-deferred, then Roth'},
+            {'key': 'tax_deferred_first', 'name': 'Tax-Deferred First', 'description': 'Withdraw from Traditional IRA/401(k) first'},
+            {'key': 'roth_first', 'name': 'Roth First', 'description': 'Withdraw from Roth accounts first (preserve tax-free growth)'},
+            {'key': 'optimized', 'name': 'Optimized', 'description': 'Automatically minimize lifetime taxes'},
+            {'key': 'custom', 'name': 'Custom Allocation', 'description': 'Manually specify withdrawal percentages'},
+        ]
+
+        return context

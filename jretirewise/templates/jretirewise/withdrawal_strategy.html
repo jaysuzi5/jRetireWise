@@ -1,0 +1,371 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% load custom_filters %}
+
+{% block title %}Withdrawal Strategy - {{ scenario.name }} - jRetireWise{% endblock %}
+
+{% block content %}
+<!-- Hidden CSRF token for JavaScript access -->
+<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+
+<div class="mb-6" x-data="withdrawalStrategy()">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-4">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Tax-Aware Withdrawal Strategy</h1>
+            <p class="text-gray-600 dark:text-gray-400 mt-2">{{ scenario.name }}</p>
+        </div>
+        <a href="{% url 'scenario-detail' scenario.id %}"
+           class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+            Back to Scenario
+        </a>
+    </div>
+
+    {% if error %}
+    <!-- Error Message -->
+    <div class="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 px-4 py-3 rounded mb-6">
+        <p class="font-bold">Error</p>
+        <p>{{ error }}</p>
+        <p class="mt-2">
+            <a href="{% url 'financial:tax-profile' %}" class="underline hover:text-red-800 dark:hover:text-red-100">
+                Create Tax Profile →
+            </a>
+        </p>
+    </div>
+    {% else %}
+
+    <!-- Scenario Parameters -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Scenario Parameters</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+                <h3 class="text-gray-500 dark:text-gray-400 text-sm font-medium">Annual Withdrawal Need</h3>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white mt-2">
+                    ${{ annual_withdrawal|floatformat:0|intcomma }}
+                </p>
+            </div>
+            <div>
+                <h3 class="text-gray-500 dark:text-gray-400 text-sm font-medium">Retirement Age</h3>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white mt-2">
+                    {{ retirement_age }}
+                </p>
+            </div>
+            <div>
+                <h3 class="text-gray-500 dark:text-gray-400 text-sm font-medium">Life Expectancy</h3>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white mt-2">
+                    {{ life_expectancy }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tax Profile Summary -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Tax Profile & Account Balances</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div>
+                <h3 class="text-gray-500 dark:text-gray-400 text-sm font-medium">Traditional IRA/401k</h3>
+                <p class="text-xl font-bold text-gray-900 dark:text-white mt-2">
+                    ${{ tax_profile.traditional_ira_balance|floatformat:0|intcomma }}
+                </p>
+            </div>
+            <div>
+                <h3 class="text-gray-500 dark:text-gray-400 text-sm font-medium">Roth IRA</h3>
+                <p class="text-xl font-bold text-gray-900 dark:text-white mt-2">
+                    ${{ tax_profile.roth_ira_balance|floatformat:0|intcomma }}
+                </p>
+            </div>
+            <div>
+                <h3 class="text-gray-500 dark:text-gray-400 text-sm font-medium">Taxable Accounts</h3>
+                <p class="text-xl font-bold text-gray-900 dark:text-white mt-2">
+                    ${{ tax_profile.taxable_account_balance|floatformat:0|intcomma }}
+                </p>
+            </div>
+            <div>
+                <h3 class="text-gray-500 dark:text-gray-400 text-sm font-medium">HSA</h3>
+                <p class="text-xl font-bold text-gray-900 dark:text-white mt-2">
+                    ${{ tax_profile.hsa_balance|floatformat:0|intcomma }}
+                </p>
+            </div>
+        </div>
+        <div class="mt-4 text-sm text-gray-600 dark:text-gray-400">
+            Filing Status: <span class="font-medium">{{ tax_profile.get_filing_status_display }}</span> |
+            State: <span class="font-medium">{{ tax_profile.state_of_residence }}</span>
+        </div>
+    </div>
+
+    <!-- Strategy Selection -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Compare Withdrawal Strategies</h2>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            Select strategies to compare. The calculator will show which approach minimizes your lifetime taxes.
+        </p>
+
+        <!-- Strategy Checkboxes -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {% for strategy in strategy_types %}
+            <label class="flex items-start p-4 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                <input type="checkbox"
+                       value="{{ strategy.key }}"
+                       x-model="selectedStrategies"
+                       class="mt-1 mr-3 h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                <div>
+                    <div class="font-medium text-gray-900 dark:text-white">{{ strategy.name }}</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ strategy.description }}</div>
+                </div>
+            </label>
+            {% endfor %}
+        </div>
+
+        <!-- Compare Button -->
+        <div class="flex gap-4">
+            <button @click="compareStrategies()"
+                    :disabled="loading || selectedStrategies.length === 0"
+                    class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition">
+                <span x-show="!loading">Compare Strategies</span>
+                <span x-show="loading">Calculating...</span>
+            </button>
+            <button @click="selectedStrategies = []"
+                    :disabled="selectedStrategies.length === 0"
+                    class="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:bg-gray-100 disabled:cursor-not-allowed transition">
+                Clear Selection
+            </button>
+        </div>
+    </div>
+
+    <!-- Results -->
+    <div x-show="results" class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Strategy Comparison Results</h2>
+
+        <!-- Results Summary -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Strategy
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Total Tax Paid
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Avg Tax Rate
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Tax Savings
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Ranking
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    <template x-for="(strategy, index) in results.strategies" :key="strategy.strategy_type">
+                        <tr :class="{'bg-green-50 dark:bg-green-900 dark:bg-opacity-20': index === 0}">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <svg x-show="index === 0" class="h-5 w-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span class="text-sm font-medium text-gray-900 dark:text-white" x-text="formatStrategyName(strategy.strategy_type)"></span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900 dark:text-white" x-text="formatCurrency(strategy.total_tax_paid)"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900 dark:text-white" x-text="strategy.effective_tax_rate.toFixed(2) + '%'"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right">
+                                <span x-show="index === 0" class="text-sm text-gray-500 dark:text-gray-400">Best</span>
+                                <span x-show="index > 0" class="text-sm font-medium" :class="{'text-red-600 dark:text-red-400': index > 0}" x-text="'$' + (strategy.total_tax_paid - results.strategies[0].total_tax_paid).toLocaleString()"></span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full"
+                                      :class="{
+                                          'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200': index === 0,
+                                          'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200': index > 0
+                                      }"
+                                      x-text="'#' + (index + 1)">
+                                </span>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Tax Comparison Chart -->
+        <div class="mt-8">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Lifetime Tax Comparison</h3>
+            <div class="h-80">
+                <canvas id="taxComparisonChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    {% endif %}
+</div>
+
+<script>
+function withdrawalStrategy() {
+    return {
+        selectedStrategies: ['taxable_first', 'tax_deferred_first', 'optimized'],
+        results: null,
+        loading: false,
+        apiBaseUrl: '{{ api_base_url }}',
+        annualWithdrawal: {{ annual_withdrawal }},
+
+        init() {
+            console.log('Withdrawal strategy analyzer initialized');
+        },
+
+        async compareStrategies() {
+            if (this.selectedStrategies.length === 0) {
+                alert('Please select at least one strategy to compare');
+                return;
+            }
+
+            this.loading = true;
+            try {
+                const response = await fetch(`${this.apiBaseUrl}/compare-strategies/`, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': this.getCsrfToken(),
+                    },
+                    body: JSON.stringify({
+                        strategy_types: this.selectedStrategies,
+                        annual_withdrawal: this.annualWithdrawal,
+                    }),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Calculation failed');
+                }
+
+                const data = await response.json();
+                this.results = data;
+
+                // Wait for DOM to update, then render chart
+                this.$nextTick(() => {
+                    this.renderTaxComparisonChart();
+                });
+
+            } catch (error) {
+                console.error('Error comparing strategies:', error);
+                alert('Failed to compare strategies: ' + error.message);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        renderTaxComparisonChart() {
+            const canvas = document.getElementById('taxComparisonChart');
+            if (!canvas) {
+                console.error('Chart canvas not found');
+                return;
+            }
+
+            const ctx = canvas.getContext('2d');
+
+            // Destroy existing chart if present
+            if (window.taxComparisonChartInstance) {
+                window.taxComparisonChartInstance.destroy();
+            }
+
+            const strategies = this.results.strategies;
+            const labels = strategies.map(s => this.formatStrategyName(s.strategy_type));
+            const taxData = strategies.map(s => s.total_tax_paid);
+            const colors = strategies.map((s, i) => i === 0 ? 'rgba(34, 197, 94, 0.8)' : 'rgba(99, 102, 241, 0.8)');
+
+            window.taxComparisonChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Total Lifetime Tax Paid',
+                        data: taxData,
+                        backgroundColor: colors,
+                        borderColor: colors.map(c => c.replace('0.8', '1')),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Lifetime Tax Comparison by Strategy',
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => {
+                                    const value = context.parsed.y;
+                                    const rate = strategies[context.dataIndex].effective_tax_rate;
+                                    return [
+                                        `Total Tax: ${this.formatCurrency(value)}`,
+                                        `Avg Rate: ${rate.toFixed(2)}%`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Total Tax Paid ($)'
+                            },
+                            ticks: {
+                                callback: (value) => '$' + value.toLocaleString()
+                            }
+                        }
+                    }
+                }
+            });
+        },
+
+        formatStrategyName(key) {
+            const names = {
+                'taxable_first': 'Taxable First',
+                'tax_deferred_first': 'Tax-Deferred First',
+                'roth_first': 'Roth First',
+                'optimized': 'Optimized',
+                'custom': 'Custom'
+            };
+            return names[key] || key;
+        },
+
+        formatCurrency(value) {
+            return '$' + Math.round(value).toLocaleString();
+        },
+
+        getCsrfToken() {
+            const tokenField = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (tokenField && tokenField.value) {
+                return tokenField.value;
+            }
+
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, 10) === 'csrftoken=') {
+                        cookieValue = decodeURIComponent(cookie.substring(10));
+                        break;
+                    }
+                }
+            }
+            return cookieValue || '';
+        },
+    };
+}
+</script>
+
+{% endblock %}
