@@ -160,7 +160,7 @@
                     </tr>
                 </thead>
                 <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    <template x-for="(strategy, index) in results.strategies" :key="strategy.strategy_type">
+                    <template x-for="(strategy, index) in (results && results.strategies) || []" :key="strategy.strategy_type">
                         <tr :class="{'bg-green-50 dark:bg-green-900 dark:bg-opacity-20': index === 0}">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
