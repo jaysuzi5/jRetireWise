@@ -391,10 +391,10 @@ class ScenarioViewSet(viewsets.ModelViewSet):
         retirement_age = int(params.get('retirement_age', request.user.financial_profile.retirement_age))
         current_age = retirement_age + year - 1
 
-        # Get Social Security and pension from tax profile or scenario
-        claiming_age = scenario.social_security_claiming_age
-        social_security_annual = tax_profile.get_social_security_annual(claiming_age)
-        pension_annual = tax_profile.pension_annual
+        # Get Social Security and pension from financial profile
+        financial_profile = request.user.financial_profile
+        social_security_annual = Decimal(str(financial_profile.social_security_annual or 0))
+        pension_annual = Decimal(str(financial_profile.pension_annual or 0))
 
         # Create tax calculator
         tax_calc = TaxCalculator(
@@ -465,10 +465,10 @@ class ScenarioViewSet(viewsets.ModelViewSet):
         retirement_age = int(params.get('retirement_age', request.user.financial_profile.retirement_age))
         life_expectancy = int(params.get('life_expectancy', request.user.financial_profile.life_expectancy))
 
-        # Get Social Security and pension
-        claiming_age = scenario.social_security_claiming_age
-        social_security_annual = tax_profile.get_social_security_annual(claiming_age)
-        pension_annual = tax_profile.pension_annual
+        # Get Social Security and pension from financial profile
+        financial_profile = request.user.financial_profile
+        social_security_annual = Decimal(str(financial_profile.social_security_annual or 0))
+        pension_annual = Decimal(str(financial_profile.pension_annual or 0))
 
         # Create withdrawal sequencer
         sequencer = WithdrawalSequencer(tax_profile, scenario)
@@ -742,17 +742,9 @@ class MonteCarloScenarioCreateView(LoginRequiredMixin, CreateView):
         if form and hasattr(form, 'get_prefilled_fields'):
             context['prefilled_fields'] = form.get_prefilled_fields()
 
-        # Pass tax profile SS benefits to JavaScript for dynamic benefit lookup
-        try:
-            tax_profile = self.request.user.tax_profile
-            context['ss_benefits'] = {
-                'age_62': float(tax_profile.social_security_age_62 or 0),
-                'age_65': float(tax_profile.social_security_age_65 or 0),
-                'age_67': float(tax_profile.social_security_age_67 or 0),
-                'age_70': float(tax_profile.social_security_age_70 or 0),
-            }
-        except:
-            context['ss_benefits'] = {'age_62': 0, 'age_65': 0, 'age_67': 0, 'age_70': 0}
+        # Social Security is now entered as annual amount in FinancialProfile
+        # No longer need age-specific benefits for JavaScript
+        context['ss_benefits'] = {}
         return context
 
     def form_valid(self, form):
@@ -826,60 +818,10 @@ class MonteCarloScenarioUpdateView(LoginRequiredMixin, UpdateView):
         if form and hasattr(form, 'get_prefilled_fields'):
             context['prefilled_fields'] = form.get_prefilled_fields()
 
-        # Pass tax profile SS benefits to JavaScript for dynamic benefit lookup
-        try:
-            tax_profile = self.request.user.tax_profile
-            context['ss_benefits'] = {
-                'age_62': float(tax_profile.social_security_age_62 or 0),
-                'age_65': float(tax_profile.social_security_age_65 or 0),
-                'age_67': float(tax_profile.social_security_age_67 or 0),
-                'age_70': float(tax_profile.social_security_age_70 or 0),
-            }
-        except:
-            context['ss_benefits'] = {'age_62': 0, 'age_65': 0, 'age_67': 0, 'age_70': 0}
+        # Social Security is now entered as annual amount in FinancialProfile
+        # No longer need age-specific benefits for JavaScript
+        context['ss_benefits'] = {}
         return context
-
-    def get_initial(self):
-        """Pre-populate form with existing scenario parameters."""
-        initial = super().get_initial()
-        scenario = self.get_object()
-        params = scenario.parameters or {}
-
-        # Map stored parameters back to form fields
-        if 'mode' in params:
-            initial['calculation_mode'] = params['mode']
-        if 'retirement_age' in params:
-            initial['retirement_age'] = params['retirement_age']
-        if 'life_expectancy' in params:
-            initial['life_expectancy'] = params['life_expectancy']
-        if 'portfolio_value' in params:
-            initial['portfolio_value'] = params['portfolio_value']
-        # Convert decimals back to percentages
-        if 'annual_return_rate' in params:
-            initial['expected_return'] = float(params['annual_return_rate']) * 100
-        if 'inflation_rate' in params:
-            initial['inflation_rate'] = float(params['inflation_rate']) * 100
-        if 'return_std_dev' in params:
-            initial['volatility'] = float(params['return_std_dev']) * 100
-        if 'num_simulations' in params:
-            initial['num_simulations'] = params['num_simulations']
-        if 'target_success_rate' in params:
-            initial['target_success_rate'] = int(params['target_success_rate'])
-        if 'withdrawal_amount' in params:
-            initial['withdrawal_amount'] = params['withdrawal_amount']
-        if 'withdrawal_frequency' in params:
-            initial['withdrawal_frequency'] = params['withdrawal_frequency']
-        if 'social_security_start_age' in params:
-            initial['social_security_start_age'] = params['social_security_start_age']
-        if 'social_security_monthly' in params:
-            initial['social_security_monthly'] = params['social_security_monthly']
-        # Add pension field mapping
-        if 'pension_annual' in params:
-            initial['pension_annual'] = params['pension_annual']
-        if 'pension_start_age' in params:
-            initial['pension_start_age'] = params['pension_start_age']
-
-        return initial
 
     def form_valid(self, form):
         """Show success message."""

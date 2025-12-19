@@ -25,9 +25,14 @@ class PercentageNumberInput(forms.NumberInput):
 
 
 class FinancialProfileForm(forms.ModelForm):
-    """Combined form for editing financial and tax profile."""
+    """Combined form for editing financial and tax profile.
 
-    # Tax profile fields
+    Account balances are managed in the Portfolio section.
+    Social Security is entered as annual amount in this form.
+    Tax filing status and state are stored in TaxProfile.
+    """
+
+    # Tax profile fields (only filing-specific data)
     filing_status = forms.ChoiceField(
         choices=TaxProfile.FILING_STATUS_CHOICES,
         required=False,
@@ -37,45 +42,11 @@ class FinancialProfileForm(forms.ModelForm):
     )
     state_of_residence = forms.CharField(
         required=False,
+        max_length=2,
         widget=forms.TextInput(attrs={
             'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
             'placeholder': 'CA',
-        })
-    )
-    social_security_age_62 = forms.DecimalField(
-        required=False,
-        widget=forms.NumberInput(attrs={
-            'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
-            'min': '0',
-            'step': '0.01',
-            'placeholder': 'Monthly benefit at age 62',
-        })
-    )
-    social_security_age_65 = forms.DecimalField(
-        required=False,
-        widget=forms.NumberInput(attrs={
-            'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
-            'min': '0',
-            'step': '0.01',
-            'placeholder': 'Monthly benefit at age 65',
-        })
-    )
-    social_security_age_67 = forms.DecimalField(
-        required=False,
-        widget=forms.NumberInput(attrs={
-            'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
-            'min': '0',
-            'step': '0.01',
-            'placeholder': 'Monthly benefit at age 67 (FRA)',
-        })
-    )
-    social_security_age_70 = forms.DecimalField(
-        required=False,
-        widget=forms.NumberInput(attrs={
-            'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
-            'min': '0',
-            'step': '0.01',
-            'placeholder': 'Monthly benefit at age 70',
+            'maxlength': '2',
         })
     )
 
@@ -95,10 +66,6 @@ class FinancialProfileForm(forms.ModelForm):
                 tax_profile = self.instance.user.tax_profile
                 self.initial['filing_status'] = tax_profile.filing_status
                 self.initial['state_of_residence'] = tax_profile.state_of_residence
-                self.initial['social_security_age_62'] = tax_profile.social_security_age_62
-                self.initial['social_security_age_65'] = tax_profile.social_security_age_65
-                self.initial['social_security_age_67'] = tax_profile.social_security_age_67
-                self.initial['social_security_age_70'] = tax_profile.social_security_age_70
             except TaxProfile.DoesNotExist:
                 pass
 
@@ -161,40 +128,20 @@ class FinancialProfileForm(forms.ModelForm):
         if retirement_age and life_expectancy and retirement_age >= life_expectancy:
             raise forms.ValidationError('Life expectancy must be greater than retirement age.')
 
-        # Validate SS benefits increase with age
-        ages_62 = cleaned_data.get('social_security_age_62') or 0
-        ages_65 = cleaned_data.get('social_security_age_65') or 0
-        ages_67 = cleaned_data.get('social_security_age_67') or 0
-        ages_70 = cleaned_data.get('social_security_age_70') or 0
-
-        if ages_62 > 0 and ages_65 > 0 and ages_62 > ages_65:
-            raise forms.ValidationError('Social Security benefit at age 65 should be greater than or equal to age 62.')
-        if ages_65 > 0 and ages_67 > 0 and ages_65 > ages_67:
-            raise forms.ValidationError('Social Security benefit at age 67 should be greater than or equal to age 65.')
-        if ages_67 > 0 and ages_70 > 0 and ages_67 > ages_70:
-            raise forms.ValidationError('Social Security benefit at age 70 should be greater than or equal to age 67.')
-
         return cleaned_data
 
 
 class TaxProfileForm(forms.ModelForm):
-    """Form for editing tax profile with age-specific Social Security benefits."""
+    """Form for editing tax filing information (status and state).
+
+    Other data is now sourced from FinancialProfile and Portfolio models.
+    """
 
     class Meta:
         model = TaxProfile
         fields = [
             'filing_status',
             'state_of_residence',
-            'full_retirement_age',
-            'social_security_age_62',
-            'social_security_age_65',
-            'social_security_age_67',
-            'social_security_age_70',
-            'traditional_ira_balance',
-            'roth_ira_balance',
-            'taxable_account_balance',
-            'hsa_balance',
-            'pension_annual',
         ]
         widgets = {
             'filing_status': forms.Select(attrs={
@@ -203,94 +150,13 @@ class TaxProfileForm(forms.ModelForm):
             'state_of_residence': forms.TextInput(attrs={
                 'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
                 'placeholder': 'CA',
-            }),
-            'full_retirement_age': forms.NumberInput(attrs={
-                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
-                'min': '62',
-                'max': '70',
-            }),
-            'social_security_age_62': forms.NumberInput(attrs={
-                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
-                'min': '0',
-                'step': '0.01',
-                'placeholder': 'Monthly benefit at age 62',
-            }),
-            'social_security_age_65': forms.NumberInput(attrs={
-                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
-                'min': '0',
-                'step': '0.01',
-                'placeholder': 'Monthly benefit at age 65',
-            }),
-            'social_security_age_67': forms.NumberInput(attrs={
-                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
-                'min': '0',
-                'step': '0.01',
-                'placeholder': 'Monthly benefit at age 67 (FRA)',
-            }),
-            'social_security_age_70': forms.NumberInput(attrs={
-                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
-                'min': '0',
-                'step': '0.01',
-                'placeholder': 'Monthly benefit at age 70',
-            }),
-            'traditional_ira_balance': forms.NumberInput(attrs={
-                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
-                'min': '0',
-                'step': '0.01',
-            }),
-            'roth_ira_balance': forms.NumberInput(attrs={
-                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
-                'min': '0',
-                'step': '0.01',
-            }),
-            'taxable_account_balance': forms.NumberInput(attrs={
-                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
-                'min': '0',
-                'step': '0.01',
-            }),
-            'hsa_balance': forms.NumberInput(attrs={
-                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
-                'min': '0',
-                'step': '0.01',
-            }),
-            'pension_annual': forms.NumberInput(attrs={
-                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
-                'min': '0',
-                'step': '0.01',
+                'maxlength': '2',
             }),
         }
         labels = {
-            'filing_status': 'Filing Status',
-            'state_of_residence': 'State',
-            'full_retirement_age': 'Full Retirement Age',
-            'social_security_age_62': 'Monthly Benefit at Age 62 (Reduced)',
-            'social_security_age_65': 'Monthly Benefit at Age 65 (Partial)',
-            'social_security_age_67': 'Monthly Benefit at Age 67 (Full)',
-            'social_security_age_70': 'Monthly Benefit at Age 70 (Delayed)',
-            'traditional_ira_balance': 'Traditional IRA Balance',
-            'roth_ira_balance': 'Roth IRA Balance',
-            'taxable_account_balance': 'Taxable Account Balance',
-            'hsa_balance': 'HSA Balance',
-            'pension_annual': 'Annual Pension Income',
+            'filing_status': 'Tax Filing Status',
+            'state_of_residence': 'State of Residence',
         }
-
-    def clean(self):
-        """Validate form data."""
-        cleaned_data = super().clean()
-        ages_62 = cleaned_data.get('social_security_age_62') or 0
-        ages_65 = cleaned_data.get('social_security_age_65') or 0
-        ages_67 = cleaned_data.get('social_security_age_67') or 0
-        ages_70 = cleaned_data.get('social_security_age_70') or 0
-
-        # Verify that benefits increase with age
-        if ages_62 > 0 and ages_65 > 0 and ages_62 > ages_65:
-            raise forms.ValidationError('Social Security benefit at age 65 should be greater than or equal to age 62.')
-        if ages_65 > 0 and ages_67 > 0 and ages_65 > ages_67:
-            raise forms.ValidationError('Social Security benefit at age 67 should be greater than or equal to age 65.')
-        if ages_67 > 0 and ages_70 > 0 and ages_67 > ages_70:
-            raise forms.ValidationError('Social Security benefit at age 70 should be greater than or equal to age 67.')
-
-        return cleaned_data
 
 
 class AssetForm(forms.ModelForm):

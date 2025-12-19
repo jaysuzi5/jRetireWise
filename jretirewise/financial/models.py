@@ -456,11 +456,10 @@ class PortfolioSnapshot(models.Model):
 
 
 class TaxProfile(models.Model):
-    """User's tax information for tax-aware calculations and withdrawal planning.
+    """User's tax filing information for tax-aware calculations.
 
-    Stores tax-related parameters including filing status, income sources,
-    account balances, and Social Security benefit estimates at different
-    claiming ages.
+    Stores only tax-specific data (filing status and state).
+    Other data is pulled from FinancialProfile and Portfolio models.
     """
 
     FILING_STATUS_CHOICES = [
@@ -473,93 +472,18 @@ class TaxProfile(models.Model):
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='tax_profile')
 
-    # Filing Status and Location
+    # Tax Filing Information
     filing_status = models.CharField(
         max_length=10,
         choices=FILING_STATUS_CHOICES,
-        default='single'
+        default='single',
+        help_text='Tax filing status for federal income tax calculations'
     )
     state_of_residence = models.CharField(
         max_length=50,
         default='',
         blank=True,
         help_text='State of residence for state income tax calculations'
-    )
-
-    # Full Retirement Age Reference
-    full_retirement_age = models.IntegerField(
-        default=67,
-        help_text='Full Retirement Age for Social Security calculations'
-    )
-
-    # Social Security Benefits by Claiming Age
-    # These store the MONTHLY benefit amounts for each possible claiming age
-    social_security_age_62 = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        default=0,
-        validators=[MinValueValidator(0)],
-        help_text='Monthly Social Security benefit if claiming at age 62'
-    )
-    social_security_age_65 = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        default=0,
-        validators=[MinValueValidator(0)],
-        help_text='Monthly Social Security benefit if claiming at age 65'
-    )
-    social_security_age_67 = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        default=0,
-        validators=[MinValueValidator(0)],
-        help_text='Monthly Social Security benefit if claiming at age 67 (Full Retirement Age)'
-    )
-    social_security_age_70 = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        default=0,
-        validators=[MinValueValidator(0)],
-        help_text='Monthly Social Security benefit if claiming at age 70'
-    )
-
-    # Account Balances for Withdrawal Sequencing
-    traditional_ira_balance = models.DecimalField(
-        max_digits=15,
-        decimal_places=2,
-        default=0,
-        validators=[MinValueValidator(0)],
-        help_text='Traditional IRA balance (pre-tax account)'
-    )
-    roth_ira_balance = models.DecimalField(
-        max_digits=15,
-        decimal_places=2,
-        default=0,
-        validators=[MinValueValidator(0)],
-        help_text='Roth IRA balance (post-tax account, tax-free growth)'
-    )
-    taxable_account_balance = models.DecimalField(
-        max_digits=15,
-        decimal_places=2,
-        default=0,
-        validators=[MinValueValidator(0)],
-        help_text='Taxable brokerage account balance'
-    )
-    hsa_balance = models.DecimalField(
-        max_digits=15,
-        decimal_places=2,
-        default=0,
-        validators=[MinValueValidator(0)],
-        help_text='Health Savings Account balance'
-    )
-
-    # Pension and Other Income
-    pension_annual = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        default=0,
-        validators=[MinValueValidator(0)],
-        help_text='Expected annual pension income'
     )
 
     # Metadata
@@ -572,32 +496,51 @@ class TaxProfile(models.Model):
         verbose_name_plural = 'Tax Profiles'
 
     def __str__(self):
-        return f"Tax Profile for {self.user.email}"
+        return f"Tax Profile for {self.user.email} ({self.get_filing_status_display()})"
 
-    def get_social_security_annual(self, claiming_age: int) -> Decimal:
+    def get_account_balances_from_portfolio(self):
         """
-        Get annual Social Security benefit for a specific claiming age.
-
-        Args:
-            claiming_age: Age at which user will claim Social Security (62, 65, 67, or 70)
+        Get account balances grouped by tax treatment from user's portfolio.
 
         Returns:
-            Annual Social Security benefit amount (monthly benefit * 12)
-
-        Raises:
-            ValueError: If claiming age is not one of the supported ages (62, 65, 67, 70)
+            dict: Account balances by type:
+                {
+                    'traditional': Decimal,  # Pre-tax accounts (Traditional IRA, 401k)
+                    'roth': Decimal,          # Roth accounts (Roth IRA, Roth 401k)
+                    'taxable': Decimal,       # Taxable brokerage accounts
+                    'hsa': Decimal,           # Health Savings Accounts
+                }
         """
-        age_benefit_map = {
-            62: self.social_security_age_62,
-            65: self.social_security_age_65,
-            67: self.social_security_age_67,
-            70: self.social_security_age_70,
+        balances = {
+            'traditional': Decimal('0'),
+            'roth': Decimal('0'),
+            'taxable': Decimal('0'),
+            'hsa': Decimal('0'),
         }
 
-        if claiming_age not in age_benefit_map:
-            raise ValueError(
-                f"Claiming age must be 62, 65, 67, or 70, got {claiming_age}"
-            )
+        try:
+            portfolio = self.user.portfolio
+            for account in portfolio.accounts.filter(status='active'):
+                # Traditional (pre-tax) accounts
+                if account.account_type in ('trad_401k', 'trad_ira', 'sep_ira', 'solo_401k') or \
+                   account.tax_treatment == 'pre_tax':
+                    balances['traditional'] += account.current_value
 
-        monthly_benefit = age_benefit_map[claiming_age]
-        return monthly_benefit * Decimal('12')
+                # Roth (post-tax retirement) accounts
+                elif account.account_type in ('roth_401k', 'roth_ira'):
+                    balances['roth'] += account.current_value
+
+                # HSA accounts
+                elif account.account_type in ('hsa', 'msa'):
+                    balances['hsa'] += account.current_value
+
+                # Taxable accounts (everything else post-tax)
+                elif account.account_type in ('taxable_brokerage', 'joint_account') or \
+                     account.tax_treatment == 'post_tax':
+                    balances['taxable'] += account.current_value
+
+        except Exception:
+            # If no portfolio exists, return zeros
+            pass
+
+        return balances

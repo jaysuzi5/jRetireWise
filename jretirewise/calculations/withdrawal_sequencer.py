@@ -44,17 +44,18 @@ class WithdrawalSequencer:
         Initialize WithdrawalSequencer.
 
         Args:
-            tax_profile: User's tax profile with account balances and tax info
+            tax_profile: User's tax profile with filing status and state
             scenario: Retirement scenario with parameters
         """
         self.tax_profile = tax_profile
         self.scenario = scenario
 
-        # Extract account balances
-        self.traditional_balance = float(tax_profile.traditional_ira_balance)
-        self.roth_balance = float(tax_profile.roth_ira_balance)
-        self.taxable_balance = float(tax_profile.taxable_account_balance)
-        self.hsa_balance = float(tax_profile.hsa_balance)
+        # Get account balances from user's portfolio
+        balances = tax_profile.get_account_balances_from_portfolio()
+        self.traditional_balance = float(balances['traditional'])
+        self.roth_balance = float(balances['roth'])
+        self.taxable_balance = float(balances['taxable'])
+        self.hsa_balance = float(balances['hsa'])
 
         # Initialize tax calculator
         self.tax_calc = TaxCalculator(

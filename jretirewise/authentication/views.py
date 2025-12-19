@@ -145,7 +145,7 @@ class ProfileView(LoginRequiredMixin, TemplateView):
             profile.user = user
             profile.save()
 
-            # Get or create and save tax profile
+            # Get or create and save tax profile (only filing_status and state)
             try:
                 tax_profile = TaxProfile.objects.get(user=user)
             except TaxProfile.DoesNotExist:
@@ -159,22 +159,6 @@ class ProfileView(LoginRequiredMixin, TemplateView):
             state = form.cleaned_data.get('state_of_residence')
             if state:
                 tax_profile.state_of_residence = state
-
-            ss_62 = form.cleaned_data.get('social_security_age_62')
-            if ss_62:
-                tax_profile.social_security_age_62 = ss_62
-
-            ss_65 = form.cleaned_data.get('social_security_age_65')
-            if ss_65:
-                tax_profile.social_security_age_65 = ss_65
-
-            ss_67 = form.cleaned_data.get('social_security_age_67')
-            if ss_67:
-                tax_profile.social_security_age_67 = ss_67
-
-            ss_70 = form.cleaned_data.get('social_security_age_70')
-            if ss_70:
-                tax_profile.social_security_age_70 = ss_70
 
             tax_profile.save()
 
