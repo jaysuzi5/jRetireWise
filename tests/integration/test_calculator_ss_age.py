@@ -231,18 +231,16 @@ class CalculatorSocialSecurityAgeTestCase(TestCase):
         )
         self.assertEqual(scenario.social_security_claiming_age, 67)
 
-    def test_tax_profile_age_specific_methods(self):
-        """Test TaxProfile.get_social_security_annual() for all ages."""
-        # Test all ages
-        for age in [62, 65, 67, 70]:
-            annual = self.tax_profile.get_social_security_annual(age)
-            self.assertIsInstance(annual, Decimal)
-            self.assertGreater(annual, 0)
-
-        # Age 62 should be less than age 70
-        annual_62 = self.tax_profile.get_social_security_annual(62)
-        annual_70 = self.tax_profile.get_social_security_annual(70)
-        self.assertLess(annual_62, annual_70)
+    def test_scenario_with_tax_profile_basic(self):
+        """Test scenario can be created with refactored TaxProfile."""
+        # Verify tax profile exists and has tax-specific fields
+        self.assertEqual(self.tax_profile.filing_status, 'mfj')
+        self.assertEqual(self.tax_profile.state_of_residence, 'CA')
+        # Verify account balances are calculated from portfolio
+        balances = self.tax_profile.get_account_balances_from_portfolio()
+        self.assertIsInstance(balances, dict)
+        self.assertIn('traditional', balances)
+        self.assertIn('roth', balances)
 
 
 class ScenarioCalculationWithClaimingAgeTestCase(TestCase):
@@ -272,11 +270,7 @@ class ScenarioCalculationWithClaimingAgeTestCase(TestCase):
         TaxProfile.objects.create(
             user=self.user,
             filing_status='mfj',
-            full_retirement_age=67,
-            social_security_age_62=Decimal('2500.00'),
-            social_security_age_65=Decimal('3200.00'),
-            social_security_age_67=Decimal('3700.00'),
-            social_security_age_70=Decimal('4600.00'),
+            state_of_residence='CA',
         )
 
     def test_multiple_scenarios_different_claiming_ages(self):

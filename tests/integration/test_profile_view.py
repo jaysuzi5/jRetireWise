@@ -57,11 +57,10 @@ class ProfileViewTestCase(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn('form', response.context)
-        # Check unified form includes tax planning fields from FinancialProfile
-        # (social security amounts are now on FinancialProfile)
+        # Check unified form includes tax-specific fields
         form = response.context['form']
         self.assertTrue(hasattr(form, 'fields'))
-        self.assertIn('social_security_annual', form.fields)
+        self.assertIn('filing_status', form.fields)
         self.assertIn('pension_annual', form.fields)
 
     def test_financial_form_submission(self):
