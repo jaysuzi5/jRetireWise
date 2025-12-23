@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Delete Withdrawal Bucket - jRetireWise{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="mb-8">
+        <a href="{% url 'bucket-list' object.scenario.id %}" class="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium">
+            ← Back to Buckets
+        </a>
+    </div>
+
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Delete Withdrawal Bucket</h1>
+    <p class="text-gray-600 dark:text-gray-400 mb-8">{{ object.scenario.name }}</p>
+
+    <div class="bg-red-50 dark:bg-red-900 dark:bg-opacity-20 border border-red-200 dark:border-red-700 rounded-lg p-6 mb-8">
+        <p class="text-red-800 dark:text-red-300 mb-4">
+            <strong>Warning:</strong> You are about to delete the withdrawal bucket <strong>{{ object.bucket_name }}</strong>.
+        </p>
+        <p class="text-red-700 dark:text-red-400">
+            Age Range: <strong class="text-lg">{{ object.start_age }} - {{ object.end_age }}</strong>
+        </p>
+        <p class="text-red-700 dark:text-red-400 mt-2">
+            Withdrawal Rate: <strong class="text-lg">{{ object.target_withdrawal_rate }}%</strong>
+        </p>
+        <p class="text-red-700 dark:text-red-400 mt-2">
+            This action cannot be undone.
+        </p>
+    </div>
+
+    <form method="post" class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
+        {% csrf_token %}
+        <div class="flex justify-end space-x-4">
+            <a href="{% url 'bucket-list' object.scenario.id %}" class="px-6 py-3 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition duration-200">
+                Cancel
+            </a>
+            <button type="submit" class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition duration-200">
+                Delete Bucket
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
