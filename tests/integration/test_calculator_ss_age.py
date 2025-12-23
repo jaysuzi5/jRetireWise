@@ -42,18 +42,11 @@ class CalculatorSocialSecurityAgeTestCase(TestCase):
             current_portfolio_value=Decimal('1000000'),
         )
 
-        # Create tax profile with age-specific Social Security benefits
+        # Create tax profile (filing status and state only)
         self.tax_profile = TaxProfile.objects.create(
             user=self.user,
             filing_status='mfj',
-            full_retirement_age=67,
-            social_security_age_62=Decimal('2500.00'),   # $30,000/year
-            social_security_age_65=Decimal('3200.00'),   # $38,400/year
-            social_security_age_67=Decimal('3700.00'),   # $44,400/year
-            social_security_age_70=Decimal('4600.00'),   # $55,200/year
-            traditional_ira_balance=Decimal('250000'),
-            roth_ira_balance=Decimal('100000'),
-            taxable_account_balance=Decimal('150000'),
+            state_of_residence='CA'
         )
 
     def test_four_percent_calculator_with_ss_age_62(self):

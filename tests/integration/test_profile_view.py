@@ -35,14 +35,7 @@ class ProfileViewTestCase(TestCase):
         self.tax_profile = TaxProfile.objects.create(
             user=self.user,
             filing_status='mfj',
-            full_retirement_age=67,
-            social_security_age_62=Decimal('2500.00'),
-            social_security_age_65=Decimal('3200.00'),
-            social_security_age_67=Decimal('3700.00'),
-            social_security_age_70=Decimal('4600.00'),
-            traditional_ira_balance=Decimal('250000'),
-            roth_ira_balance=Decimal('100000'),
-            taxable_account_balance=Decimal('150000'),
+            state_of_residence='CA'
         )
 
     def test_profile_page_shows_financial_form(self):
@@ -64,12 +57,12 @@ class ProfileViewTestCase(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn('form', response.context)
-        # Check unified form includes tax planning fields
+        # Check unified form includes tax planning fields from FinancialProfile
+        # (social security amounts are now on FinancialProfile)
         form = response.context['form']
         self.assertTrue(hasattr(form, 'fields'))
-        self.assertIn('filing_status', form.fields)
-        self.assertIn('social_security_age_62', form.fields)
-        self.assertIn('social_security_age_70', form.fields)
+        self.assertIn('social_security_annual', form.fields)
+        self.assertIn('pension_annual', form.fields)
 
     def test_financial_form_submission(self):
         """Test submitting financial profile form."""
@@ -96,14 +89,11 @@ class ProfileViewTestCase(TestCase):
             'retirement_age': '65',
             'life_expectancy': '95',
             'annual_spending': '80000',
+            'social_security_annual': '44400',
             'pension_annual': '12000',
             'pension_start_age': '62',
             'filing_status': 'single',
-            'state_of_residence': 'CA',
-            'social_security_age_62': '2500.00',
-            'social_security_age_65': '3200.00',
-            'social_security_age_67': '3700.00',
-            'social_security_age_70': '5000.00',
+            'state_of_residence': 'TX',
         }, follow=True)
 
         self.assertEqual(response.status_code, 200)
@@ -113,4 +103,5 @@ class ProfileViewTestCase(TestCase):
         self.assertEqual(profile.pension_start_age, 62)
         # Verify tax profile was updated
         tax_profile = TaxProfile.objects.get(user=self.user)
-        self.assertEqual(tax_profile.social_security_age_70, Decimal('5000.00'))
+        self.assertEqual(tax_profile.filing_status, 'single')
+        self.assertEqual(tax_profile.state_of_residence, 'TX')
