@@ -518,25 +518,33 @@ class TaxProfile(models.Model):
             'hsa': Decimal('0'),
         }
 
+        # Define account type categories (account_type takes precedence over tax_treatment)
+        TRADITIONAL_TYPES = ('trad_401k', 'trad_ira', 'sep_ira', 'solo_401k')
+        ROTH_TYPES = ('roth_401k', 'roth_ira')
+        HSA_TYPES = ('hsa', 'msa')
+        TAXABLE_TYPES = (
+            'taxable_brokerage', 'joint_account', 'partnership',  # Investment accounts
+            'savings', 'hysa', 'money_market',  # Savings accounts (taxable interest)
+            'certificate_cd', 'bonds', 'treasuries',  # Fixed income (taxable)
+            '529_plan', 'custom'  # Other (default to taxable)
+        )
+
         try:
             portfolio = self.user.portfolio
             for account in portfolio.accounts.filter(status='active'):
-                # Traditional (pre-tax) accounts
-                if account.account_type in ('trad_401k', 'trad_ira', 'sep_ira', 'solo_401k') or \
-                   account.tax_treatment == 'pre_tax':
+                account_type = account.account_type
+
+                # Classify by account_type first (most reliable)
+                if account_type in TRADITIONAL_TYPES:
                     balances['traditional'] += account.current_value
-
-                # Roth (post-tax retirement) accounts
-                elif account.account_type in ('roth_401k', 'roth_ira'):
+                elif account_type in ROTH_TYPES:
                     balances['roth'] += account.current_value
-
-                # HSA accounts
-                elif account.account_type in ('hsa', 'msa'):
+                elif account_type in HSA_TYPES:
                     balances['hsa'] += account.current_value
-
-                # Taxable accounts (everything else post-tax)
-                elif account.account_type in ('taxable_brokerage', 'joint_account') or \
-                     account.tax_treatment == 'post_tax':
+                elif account_type in TAXABLE_TYPES:
+                    balances['taxable'] += account.current_value
+                else:
+                    # Unknown account type - default to taxable
                     balances['taxable'] += account.current_value
 
         except Exception:

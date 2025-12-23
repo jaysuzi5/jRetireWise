@@ -1436,7 +1436,25 @@ class WithdrawalStrategyView(LoginRequiredMixin, DetailView):
 
         # Get scenario parameters for withdrawal calculations
         params = scenario.parameters
-        context['annual_withdrawal'] = params.get('withdrawal_amount', params.get('annual_spending', 0))
+        annual_withdrawal = params.get('withdrawal_amount', params.get('annual_spending', 0))
+
+        # If withdrawal is 0 (e.g., "find_withdrawal" mode), try to get from results or calculate
+        if not annual_withdrawal or annual_withdrawal == 0:
+            # Check if scenario has calculation results with safe withdrawal
+            try:
+                latest_result = scenario.results.order_by('-created_at').first()
+                if latest_result and latest_result.result_data:
+                    annual_withdrawal = latest_result.result_data.get('safe_withdrawal_amount', 0)
+            except Exception:
+                pass
+
+            # If still 0, use 4% rule as default
+            if not annual_withdrawal or annual_withdrawal == 0:
+                portfolio_value = params.get('portfolio_value', 0)
+                if portfolio_value:
+                    annual_withdrawal = float(portfolio_value) * 0.04  # 4% rule
+
+        context['annual_withdrawal'] = annual_withdrawal
         context['retirement_age'] = params.get('retirement_age', 65)
         context['life_expectancy'] = params.get('life_expectancy', 95)
 
