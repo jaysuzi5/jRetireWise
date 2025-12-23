@@ -268,6 +268,9 @@ spec:
           echo "Database ready, running migrations..."
           python manage.py migrate
 
+          echo "Initializing Google OAuth provider..."
+          python manage.py init_google_oauth
+
           # Create superuser if credentials are provided
           if [ -n "$DJANGO_SUPERUSER_USERNAME" ] && [ -n "$DJANGO_SUPERUSER_PASSWORD" ] && [ -n "$DJANGO_SUPERUSER_EMAIL" ]; then
             echo "Creating superuser..."
@@ -375,6 +378,16 @@ spec:
             secretKeyRef:
               name: jretirewise-secret
               key: DJANGO_SUPERUSER_PASSWORD
+        - name: SOCIAL_AUTH_GOOGLE_OAUTH2_KEY
+          valueFrom:
+            secretKeyRef:
+              name: jretirewise-secret
+              key: SOCIAL_AUTH_GOOGLE_OAUTH2_KEY
+        - name: SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: jretirewise-secret
+              key: SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET
 
       volumes:
       - name: static-files
