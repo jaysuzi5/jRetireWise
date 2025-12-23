@@ -1464,13 +1464,12 @@ class WithdrawalStrategyView(LoginRequiredMixin, DetailView):
         # API endpoint for JavaScript
         context['api_base_url'] = f'/api/v1/scenarios/{scenario.id}/tax'
 
-        # Available strategy types
+        # Available strategy types (custom removed - requires UI for percentage input)
         context['strategy_types'] = [
             {'key': 'taxable_first', 'name': 'Taxable First', 'description': 'Withdraw from taxable accounts first, then tax-deferred, then Roth'},
             {'key': 'tax_deferred_first', 'name': 'Tax-Deferred First', 'description': 'Withdraw from Traditional IRA/401(k) first'},
             {'key': 'roth_first', 'name': 'Roth First', 'description': 'Withdraw from Roth accounts first (preserve tax-free growth)'},
             {'key': 'optimized', 'name': 'Optimized', 'description': 'Automatically minimize lifetime taxes'},
-            {'key': 'custom', 'name': 'Custom Allocation', 'description': 'Manually specify withdrawal percentages'},
         ]
 
         return context

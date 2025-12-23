@@ -183,7 +183,7 @@
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900 dark:text-white" x-text="strategy.effective_tax_rate.toFixed(2) + '%'"></td>
                             <td class="px-6 py-4 whitespace-nowrap text-right">
                                 <span x-show="index === 0" class="text-sm text-gray-500 dark:text-gray-400">Best</span>
-                                <span x-show="index > 0" class="text-sm font-medium" :class="{'text-red-600 dark:text-red-400': index > 0}" x-text="'$' + (strategy.total_tax_paid - results.strategies[0].total_tax_paid).toLocaleString()"></span>
+                                <span x-show="index > 0" class="text-sm font-medium" :class="{'text-red-600 dark:text-red-400': index > 0}" x-text="'$' + Math.round(strategy.total_tax_paid - results.strategies[0].total_tax_paid).toLocaleString()"></span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-center">
                                 <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full"
