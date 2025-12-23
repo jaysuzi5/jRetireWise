@@ -66,25 +66,25 @@
             <div>
                 <h3 class="text-gray-500 dark:text-gray-400 text-sm font-medium">Traditional IRA/401k</h3>
                 <p class="text-xl font-bold text-gray-900 dark:text-white mt-2">
-                    ${{ tax_profile.traditional_ira_balance|floatformat:0|intcomma }}
+                    ${{ account_balances.traditional|floatformat:0|intcomma }}
                 </p>
             </div>
             <div>
                 <h3 class="text-gray-500 dark:text-gray-400 text-sm font-medium">Roth IRA</h3>
                 <p class="text-xl font-bold text-gray-900 dark:text-white mt-2">
-                    ${{ tax_profile.roth_ira_balance|floatformat:0|intcomma }}
+                    ${{ account_balances.roth|floatformat:0|intcomma }}
                 </p>
             </div>
             <div>
                 <h3 class="text-gray-500 dark:text-gray-400 text-sm font-medium">Taxable Accounts</h3>
                 <p class="text-xl font-bold text-gray-900 dark:text-white mt-2">
-                    ${{ tax_profile.taxable_account_balance|floatformat:0|intcomma }}
+                    ${{ account_balances.taxable|floatformat:0|intcomma }}
                 </p>
             </div>
             <div>
                 <h3 class="text-gray-500 dark:text-gray-400 text-sm font-medium">HSA</h3>
                 <p class="text-xl font-bold text-gray-900 dark:text-white mt-2">
-                    ${{ tax_profile.hsa_balance|floatformat:0|intcomma }}
+                    ${{ account_balances.hsa|floatformat:0|intcomma }}
                 </p>
             </div>
         </div>
@@ -92,6 +92,15 @@
             Filing Status: <span class="font-medium">{{ tax_profile.get_filing_status_display }}</span> |
             State: <span class="font-medium">{{ tax_profile.state_of_residence }}</span>
         </div>
+        {% if not account_balances.traditional and not account_balances.roth and not account_balances.taxable and not account_balances.hsa %}
+        <div class="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-200 dark:border-yellow-800 rounded">
+            <p class="text-sm text-yellow-800 dark:text-yellow-300">
+                <strong>Note:</strong> No account balances found. Please add accounts to your
+                <a href="{% url 'financial:portfolio-list' %}" class="underline hover:text-yellow-600 dark:hover:text-yellow-200">Portfolio</a>
+                to enable tax-aware withdrawal calculations.
+            </p>
+        </div>
+        {% endif %}
     </div>
 
     <!-- Strategy Selection -->

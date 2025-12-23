@@ -1425,6 +1425,10 @@ class WithdrawalStrategyView(LoginRequiredMixin, DetailView):
             tax_profile = self.request.user.tax_profile
             context['tax_profile'] = tax_profile
             context['has_tax_profile'] = True
+
+            # Get account balances from portfolio
+            account_balances = tax_profile.get_account_balances_from_portfolio()
+            context['account_balances'] = account_balances
         except Exception:
             context['has_tax_profile'] = False
             context['error'] = 'You must create a tax profile before using tax-aware withdrawal strategies'
@@ -1432,7 +1436,7 @@ class WithdrawalStrategyView(LoginRequiredMixin, DetailView):
 
         # Get scenario parameters for withdrawal calculations
         params = scenario.parameters
-        context['annual_withdrawal'] = params.get('annual_spending', 0)
+        context['annual_withdrawal'] = params.get('withdrawal_amount', params.get('annual_spending', 0))
         context['retirement_age'] = params.get('retirement_age', 65)
         context['life_expectancy'] = params.get('life_expectancy', 95)
 
