@@ -8,7 +8,7 @@ It should be run after migrations during application initialization.
 import os
 from django.core.management.base import BaseCommand
 from django.contrib.sites.models import Site
-from socialaccount.models import SocialApp
+from allauth.socialaccount.models import SocialApp
 
 
 class Command(BaseCommand):

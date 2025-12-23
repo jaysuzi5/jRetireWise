@@ -269,7 +269,7 @@ spec:
           python manage.py migrate
 
           echo "Initializing Google OAuth provider..."
-          python manage.py init_google_oauth
+          python manage.py init_google_oauth || echo "WARNING: Google OAuth initialization failed"
 
           # Create superuser if credentials are provided
           if [ -n "$DJANGO_SUPERUSER_USERNAME" ] && [ -n "$DJANGO_SUPERUSER_PASSWORD" ] && [ -n "$DJANGO_SUPERUSER_EMAIL" ]; then
