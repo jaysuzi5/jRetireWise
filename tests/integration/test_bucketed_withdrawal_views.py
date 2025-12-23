@@ -121,9 +121,9 @@ class BucketedWithdrawalScenarioViewIntegrationTestCase(TestCase):
             parameters={
                 'retirement_age': 65,
                 'life_expectancy': 90,
-                'portfolio_value': Decimal('1000000.00'),
-                'annual_return_rate': Decimal('0.07'),
-                'inflation_rate': Decimal('0.03'),
+                'portfolio_value': 1000000.00,
+                'annual_return_rate': 0.07,
+                'inflation_rate': 0.03,
             }
         )
         response = self.client.get(reverse('scenario-bucketed-edit', args=[scenario.id]))
@@ -140,9 +140,9 @@ class BucketedWithdrawalScenarioViewIntegrationTestCase(TestCase):
             parameters={
                 'retirement_age': 65,
                 'life_expectancy': 90,
-                'portfolio_value': Decimal('1000000.00'),
-                'annual_return_rate': Decimal('0.07'),
-                'inflation_rate': Decimal('0.03'),
+                'portfolio_value': 1000000.00,
+                'annual_return_rate': 0.07,
+                'inflation_rate': 0.03,
             }
         )
 
@@ -181,9 +181,9 @@ class BucketedWithdrawalScenarioViewIntegrationTestCase(TestCase):
             parameters={
                 'retirement_age': 65,
                 'life_expectancy': 90,
-                'portfolio_value': Decimal('1000000.00'),
-                'annual_return_rate': Decimal('0.07'),
-                'inflation_rate': Decimal('0.03'),
+                'portfolio_value': 1000000.00,
+                'annual_return_rate': 0.07,
+                'inflation_rate': 0.03,
             }
         )
 
@@ -210,9 +210,9 @@ class WithdrawalBucketViewIntegrationTestCase(TestCase):
             parameters={
                 'retirement_age': 65,
                 'life_expectancy': 90,
-                'portfolio_value': Decimal('1000000.00'),
-                'annual_return_rate': Decimal('0.07'),
-                'inflation_rate': Decimal('0.03'),
+                'portfolio_value': 1000000.00,
+                'annual_return_rate': 0.07,
+                'inflation_rate': 0.03,
             }
         )
 
