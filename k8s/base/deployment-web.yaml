@@ -83,16 +83,6 @@ spec:
             configMapKeyRef:
               name: jretirewise-config
               key: DATABASE_PORT
-        - name: REDIS_URL
-          valueFrom:
-            configMapKeyRef:
-              name: jretirewise-config
-              key: REDIS_URL
-        - name: CELERY_BROKER_URL
-          valueFrom:
-            configMapKeyRef:
-              name: jretirewise-config
-              key: CELERY_BROKER_URL
         - name: EMAIL_BACKEND
           valueFrom:
             configMapKeyRef:
