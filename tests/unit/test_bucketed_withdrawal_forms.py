@@ -198,8 +198,6 @@ class WithdrawalBucketFormTestCase(TestCase):
             'expected_pension_income': '0.00',
             'expected_social_security_income': '0.00',
             'healthcare_cost_adjustment': '0.00',
-            'tax_loss_harvesting_enabled': False,
-            'roth_conversion_enabled': False,
         }
         form = WithdrawalBucketForm(data=form_data)
         assert form.is_valid(), f"Form errors: {form.errors}"
@@ -219,8 +217,6 @@ class WithdrawalBucketFormTestCase(TestCase):
             'expected_pension_income': '0.00',
             'expected_social_security_income': '0.00',
             'healthcare_cost_adjustment': '0.00',
-            'tax_loss_harvesting_enabled': False,
-            'roth_conversion_enabled': False,
         }
         form = WithdrawalBucketForm(data=form_data)
         assert not form.is_valid()
@@ -241,8 +237,6 @@ class WithdrawalBucketFormTestCase(TestCase):
             'expected_pension_income': '0.00',
             'expected_social_security_income': '0.00',
             'healthcare_cost_adjustment': '0.00',
-            'tax_loss_harvesting_enabled': False,
-            'roth_conversion_enabled': False,
         }
         form = WithdrawalBucketForm(data=form_data)
         assert not form.is_valid()
@@ -263,8 +257,6 @@ class WithdrawalBucketFormTestCase(TestCase):
             'expected_pension_income': '0.00',
             'expected_social_security_income': '0.00',
             'healthcare_cost_adjustment': '0.00',
-            'tax_loss_harvesting_enabled': False,
-            'roth_conversion_enabled': False,
         }
         form = WithdrawalBucketForm(data=form_data)
         assert not form.is_valid()
@@ -296,8 +288,6 @@ class WithdrawalBucketFormTestCase(TestCase):
             'expected_pension_income': '0.00',
             'expected_social_security_income': '0.00',
             'healthcare_cost_adjustment': '0.00',
-            'tax_loss_harvesting_enabled': False,
-            'roth_conversion_enabled': False,
         }
         form = WithdrawalBucketForm(data=form_data)
         assert not form.is_valid()
@@ -318,8 +308,6 @@ class WithdrawalBucketFormTestCase(TestCase):
             'expected_pension_income': '20000.00',
             'expected_social_security_income': '25000.00',
             'healthcare_cost_adjustment': '5000.00',
-            'tax_loss_harvesting_enabled': True,
-            'roth_conversion_enabled': False,
         }
         form = WithdrawalBucketForm(data=form_data)
         assert form.is_valid(), f"Form errors: {form.errors}"
@@ -339,8 +327,6 @@ class WithdrawalBucketFormTestCase(TestCase):
             'expected_pension_income': '0.00',
             'expected_social_security_income': '0.00',
             'healthcare_cost_adjustment': '0.00',
-            'tax_loss_harvesting_enabled': False,
-            'roth_conversion_enabled': False,
         }
         form = WithdrawalBucketForm(data=form_data)
         # Should be valid if manual override is provided
@@ -361,15 +347,14 @@ class WithdrawalBucketFormTestCase(TestCase):
             'expected_pension_income': '0.00',
             'expected_social_security_income': '0.00',
             'healthcare_cost_adjustment': '0.00',
-            'tax_loss_harvesting_enabled': True,
-            'roth_conversion_enabled': True,
         }
         form = WithdrawalBucketForm(data=form_data)
         assert form.is_valid()
 
         bucket = form.save(commit=False)
-        assert bucket.tax_loss_harvesting_enabled is True
-        assert bucket.roth_conversion_enabled is True
+        # Test that the bucket was created successfully
+        assert bucket.bucket_name == 'Advanced Options'
+        assert bucket.target_withdrawal_rate == Decimal('4.5')
 
     def test_form_saves_all_fields(self):
         """Test that all fields are saved correctly."""
@@ -386,8 +371,6 @@ class WithdrawalBucketFormTestCase(TestCase):
             'expected_pension_income': '15000.00',
             'expected_social_security_income': '30000.00',
             'healthcare_cost_adjustment': '2000.00',
-            'tax_loss_harvesting_enabled': True,
-            'roth_conversion_enabled': False,
         }
         form = WithdrawalBucketForm(data=form_data)
         assert form.is_valid()
@@ -406,6 +389,4 @@ class WithdrawalBucketFormTestCase(TestCase):
         assert bucket.expected_pension_income == Decimal('15000.00')
         assert bucket.expected_social_security_income == Decimal('30000.00')
         assert bucket.healthcare_cost_adjustment == Decimal('2000.00')
-        assert bucket.tax_loss_harvesting_enabled is True
-        assert bucket.roth_conversion_enabled is False
         assert bucket.scenario == self.scenario

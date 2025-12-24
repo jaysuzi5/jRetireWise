@@ -41,6 +41,7 @@ class FinancialProfileFormTestCase(TestCase):
             'retirement_age': 67,
             'life_expectancy': 90,
             'annual_spending': '100000.00',
+            'social_security_annual': '20000.00',
             'pension_annual': '15000.00',
             'pension_start_age': 62,
         }
