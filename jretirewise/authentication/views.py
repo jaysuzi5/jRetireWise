@@ -188,7 +188,16 @@ class ProfileView(LoginRequiredMixin, TemplateView):
             # Log validation errors for debugging
             logger.error(f"Profile form validation failed for user {user.email}")
             logger.error(f"Form errors: {form.errors.as_json()}")
-            messages.error(request, f'Profile update failed. Please check the form for errors.')
+
+            # Display all errors to user for debugging
+            error_details = []
+            for field, errors in form.errors.items():
+                for error in errors:
+                    error_details.append(f"{field}: {error}")
+
+            error_message = "Profile update failed. Errors: " + "; ".join(error_details) if error_details else "Profile update failed with unknown errors."
+            messages.error(request, error_message)
+
             context = self.get_context_data()
             context['form'] = form
             return render(request, self.template_name, context)
