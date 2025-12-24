@@ -11,7 +11,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth.models import User
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts.shortcuts import render, redirect
+from django.shortcuts import render, redirect
 from django.contrib.auth import logout as auth_logout
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
