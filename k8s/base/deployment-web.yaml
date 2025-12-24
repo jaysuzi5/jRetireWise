@@ -83,16 +83,6 @@ spec:
             configMapKeyRef:
               name: jretirewise-config
               key: DATABASE_PORT
-        - name: REDIS_URL
-          valueFrom:
-            configMapKeyRef:
-              name: jretirewise-config
-              key: REDIS_URL
-        - name: CELERY_BROKER_URL
-          valueFrom:
-            configMapKeyRef:
-              name: jretirewise-config
-              key: CELERY_BROKER_URL
         - name: EMAIL_BACKEND
           valueFrom:
             configMapKeyRef:
@@ -268,6 +258,9 @@ spec:
           echo "Database ready, running migrations..."
           python manage.py migrate
 
+          echo "Initializing Google OAuth provider..."
+          python manage.py init_google_oauth || echo "WARNING: Google OAuth initialization failed"
+
           # Create superuser if credentials are provided
           if [ -n "$DJANGO_SUPERUSER_USERNAME" ] && [ -n "$DJANGO_SUPERUSER_PASSWORD" ] && [ -n "$DJANGO_SUPERUSER_EMAIL" ]; then
             echo "Creating superuser..."
@@ -375,6 +368,16 @@ spec:
             secretKeyRef:
               name: jretirewise-secret
               key: DJANGO_SUPERUSER_PASSWORD
+        - name: SOCIAL_AUTH_GOOGLE_OAUTH2_KEY
+          valueFrom:
+            secretKeyRef:
+              name: jretirewise-secret
+              key: SOCIAL_AUTH_GOOGLE_OAUTH2_KEY
+        - name: SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: jretirewise-secret
+              key: SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET
 
       volumes:
       - name: static-files
