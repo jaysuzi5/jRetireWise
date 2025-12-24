@@ -88,12 +88,14 @@ class MonteCarloScenarioForm(forms.ModelForm):
     )
 
     # Age Parameters
-    retirement_age = forms.IntegerField(
+    retirement_age = forms.DecimalField(
         min_value=18,
         max_value=100,
+        decimal_places=1,
         widget=forms.NumberInput(attrs={
             'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
-            'placeholder': '65',
+            'placeholder': '65.0',
+            'step': '0.1',
         }),
         label='Retirement Age',
     )
@@ -116,7 +118,7 @@ class MonteCarloScenarioForm(forms.ModelForm):
         widget=forms.NumberInput(attrs={
             'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
             'placeholder': '1,000,000',
-            'step': '1000',
+            'step': '0.01',
         }),
         label='Portfolio Balance ($)',
     )
@@ -165,12 +167,12 @@ class MonteCarloScenarioForm(forms.ModelForm):
 
     # Simulation Parameters
     num_simulations = forms.IntegerField(
-        min_value=100,
-        max_value=10000,
+        min_value=1,
+        max_value=20000,
         initial=1000,
         widget=forms.NumberInput(attrs={
             'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
-            'step': '100',
+            'step': '1',
         }),
         label='Number of Simulations',
     )
@@ -253,7 +255,7 @@ class MonteCarloScenarioForm(forms.ModelForm):
         widget=forms.NumberInput(attrs={
             'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
             'placeholder': '20,000',
-            'step': '100',
+            'step': '0.01',
         }),
         label='Pension - Annual Amount ($)',
         help_text='Annual pension income; leave blank if no pension',
@@ -429,12 +431,14 @@ class BucketedWithdrawalScenarioForm(forms.ModelForm):
     """
 
     # Age Parameters
-    retirement_age = forms.IntegerField(
+    retirement_age = forms.DecimalField(
         min_value=18,
         max_value=100,
+        decimal_places=1,
         widget=forms.NumberInput(attrs={
             'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
-            'placeholder': '65',
+            'placeholder': '65.0',
+            'step': '0.1',
         }),
         label='Retirement Age',
     )
@@ -457,7 +461,7 @@ class BucketedWithdrawalScenarioForm(forms.ModelForm):
         widget=forms.NumberInput(attrs={
             'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
             'placeholder': '1,000,000',
-            'step': '1000',
+            'step': '0.01',
         }),
         label='Portfolio Balance ($)',
     )
@@ -612,8 +616,6 @@ class WithdrawalBucketForm(forms.ModelForm):
             'expected_pension_income',
             'expected_social_security_income',
             'healthcare_cost_adjustment',
-            'tax_loss_harvesting_enabled',
-            'roth_conversion_enabled',
         ]
         widgets = {
             'bucket_name': forms.TextInput(attrs={
@@ -666,23 +668,17 @@ class WithdrawalBucketForm(forms.ModelForm):
             'expected_pension_income': forms.NumberInput(attrs={
                 'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
                 'placeholder': '0',
-                'step': '1000',
+                'step': '0.01',
             }),
             'expected_social_security_income': forms.NumberInput(attrs={
                 'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
                 'placeholder': '0',
-                'step': '1000',
+                'step': '0.01',
             }),
             'healthcare_cost_adjustment': forms.NumberInput(attrs={
                 'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
                 'placeholder': '0',
                 'step': '1000',
-            }),
-            'tax_loss_harvesting_enabled': forms.CheckboxInput(attrs={
-                'class': 'rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500',
-            }),
-            'roth_conversion_enabled': forms.CheckboxInput(attrs={
-                'class': 'rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500',
             }),
         }
 
@@ -750,7 +746,7 @@ class HistoricalScenarioForm(forms.ModelForm):
         widget=forms.NumberInput(attrs={
             'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
             'placeholder': '1,000,000',
-            'step': '1000',
+            'step': '0.01',
         }),
         label='Portfolio Balance ($)',
     )

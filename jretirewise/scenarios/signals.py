@@ -204,7 +204,7 @@ def run_scenario_calculation(sender, instance, created, **kwargs):
             # Use EnhancedMonteCarloCalculator for new mode-based scenarios
             calculator = EnhancedMonteCarloCalculator(
                 portfolio_value=portfolio_value,
-                retirement_age=int(retirement_age),
+                retirement_age=float(retirement_age),
                 life_expectancy=life_expectancy,
                 annual_return_rate=annual_return_rate,
                 inflation_rate=inflation_rate,
@@ -246,7 +246,6 @@ def run_scenario_calculation(sender, instance, created, **kwargs):
                 social_security_start_age=social_security_start_age,
                 social_security_annual=social_security_annual,
                 pension_annual=pension_annual,
-                social_security_claiming_age=social_security_claiming_age,
             )
         else:
             result.status = 'failed'

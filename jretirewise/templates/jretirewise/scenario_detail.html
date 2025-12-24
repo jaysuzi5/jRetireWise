@@ -145,6 +145,11 @@
     const pensionAnnual = {{ calc.parameters.pension_annual|default:0 }};
     const retirementAge = {{ calc.parameters.retirement_age }};
 
+    // Detect dark mode for chart colors
+    const isDark = document.documentElement.classList.contains('dark');
+    const textColor = isDark ? '#f3f4f6' : '#374151';  // gray-100 for dark mode, gray-700 for light
+    const gridColor = isDark ? 'rgba(156, 163, 175, 0.3)' : 'rgba(209, 213, 219, 0.5)';  // Brighter grid in dark mode
+
     const ages = yearlyPercentiles.map(p => p.age);
     const p10 = yearlyPercentiles.map(p => p.p10);  // Target success rate (~90% success)
     const p50 = yearlyPercentiles.map(p => p.p50);  // Median
@@ -242,26 +247,26 @@
                     title: {
                         display: true,
                         text: 'Age',
-                        color: '#9CA3AF'
+                        color: textColor
                     },
                     grid: {
-                        color: 'rgba(107, 114, 128, 0.2)'
+                        color: gridColor
                     },
                     ticks: {
-                        color: '#9CA3AF'
+                        color: textColor
                     }
                 },
                 y: {
                     title: {
                         display: true,
                         text: 'Portfolio Value',
-                        color: '#9CA3AF'
+                        color: textColor
                     },
                     grid: {
-                        color: 'rgba(107, 114, 128, 0.2)'
+                        color: gridColor
                     },
                     ticks: {
-                        color: '#9CA3AF',
+                        color: textColor,
                         callback: function(value) {
                             if (value >= 1000000) {
                                 return '$' + (value / 1000000).toFixed(1) + 'M';
@@ -278,7 +283,7 @@
                     display: true,
                     position: 'bottom',
                     labels: {
-                        color: '#9CA3AF',
+                        color: textColor,
                         usePointStyle: true,
                         padding: 20
                     }
@@ -548,6 +553,11 @@
     const ctx = document.getElementById('projectionChart').getContext('2d');
     const projections = {{ scenario.result.result_data.calculation.projections|safe }};
 
+    // Detect dark mode for chart colors
+    const isDark = document.documentElement.classList.contains('dark');
+    const textColor = isDark ? '#f3f4f6' : '#6B7280';  // gray-100 for dark mode, gray-500 for light
+    const gridColor = isDark ? 'rgba(156, 163, 175, 0.15)' : 'rgba(107, 114, 128, 0.1)';
+
     const ages = projections.map(p => p.age);
     const portfolioValues = projections.map(p => p.portfolio_value);
     const withdrawals = projections.map(p => p.annual_withdrawal);
@@ -592,13 +602,13 @@
                     title: {
                         display: true,
                         text: 'Portfolio Value ($)',
-                        color: '#6B7280'
+                        color: textColor
                     },
                     ticks: {
-                        color: '#6B7280'
+                        color: textColor
                     },
                     grid: {
-                        color: 'rgba(107, 114, 128, 0.1)'
+                        color: gridColor
                     }
                 },
                 y1: {
@@ -608,10 +618,10 @@
                     title: {
                         display: true,
                         text: 'Annual Withdrawal ($)',
-                        color: '#6B7280'
+                        color: textColor
                     },
                     ticks: {
-                        color: '#6B7280'
+                        color: textColor
                     },
                     grid: {
                         drawOnChartArea: false
@@ -623,7 +633,7 @@
                     display: true,
                     position: 'top',
                     labels: {
-                        color: '#6B7280'
+                        color: textColor
                     }
                 }
             }
@@ -806,8 +816,8 @@
                 // Use projections from result_data (already JSON)
                 const bucketedData = {{ scenario.result.result_data.projections|safe }};
                 const isDark = document.documentElement.classList.contains('dark');
-                const textColor = isDark ? '#d1d5db' : '#374151';
-                const gridColor = isDark ? 'rgba(107, 114, 128, 0.3)' : 'rgba(209, 213, 219, 0.5)';
+                const textColor = isDark ? '#f3f4f6' : '#374151';  // Use gray-100 for dark mode (brighter)
+                const gridColor = isDark ? 'rgba(156, 163, 175, 0.3)' : 'rgba(209, 213, 219, 0.5)';  // Brighter grid in dark mode
 
                 // Prepare data for charts
                 const labels = bucketedData.map(d => d.age);
@@ -1128,8 +1138,8 @@
         <script>
             const yearlyData = {{ data.yearly_percentiles|safe }};
             const isDark = document.documentElement.classList.contains('dark');
-            const textColor = isDark ? '#d1d5db' : '#374151';
-            const gridColor = isDark ? 'rgba(107, 114, 128, 0.3)' : 'rgba(209, 213, 219, 0.5)';
+            const textColor = isDark ? '#f3f4f6' : '#374151';  // gray-100 for dark mode, gray-700 for light
+            const gridColor = isDark ? 'rgba(156, 163, 175, 0.3)' : 'rgba(209, 213, 219, 0.5)';  // Brighter grid in dark mode
 
             const labels = yearlyData.map(d => d.age);
 
