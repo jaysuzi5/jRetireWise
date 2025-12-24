@@ -28,7 +28,7 @@ class FinancialProfileForm(forms.ModelForm):
     """Combined form for editing financial and tax profile.
 
     Account balances are managed in the Portfolio section.
-    Social Security is entered as annual amount in this form.
+    Social Security benefits are entered as monthly amounts by claiming age in TaxProfile.
     Tax filing status and state are stored in TaxProfile.
     """
 
@@ -118,7 +118,6 @@ class FinancialProfileForm(forms.ModelForm):
             'retirement_age',
             'life_expectancy',
             'annual_spending',
-            'social_security_annual',
             'pension_annual',
             'pension_start_age',
         ]
@@ -141,11 +140,6 @@ class FinancialProfileForm(forms.ModelForm):
                 'step': '1',
             }),
             'annual_spending': forms.NumberInput(attrs={
-                'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
-                'min': '0',
-                'step': '0.01',
-            }),
-            'social_security_annual': forms.NumberInput(attrs={
                 'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
                 'min': '0',
                 'step': '0.01',
