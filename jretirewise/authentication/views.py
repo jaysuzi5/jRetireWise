@@ -2,6 +2,7 @@
 Views for authentication.
 """
 
+import logging
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -10,7 +11,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth.models import User
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import render, redirect
+from django.shortcuts.shortcuts import render, redirect
 from django.contrib.auth import logout as auth_logout
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
@@ -20,6 +21,8 @@ from .serializers import UserSerializer, UserProfileSerializer
 from jretirewise.financial.models import FinancialProfile, TaxProfile
 from jretirewise.financial.forms import FinancialProfileForm
 from jretirewise.scenarios.models import RetirementScenario
+
+logger = logging.getLogger(__name__)
 
 
 class LoginView(APIView):
@@ -182,6 +185,10 @@ class ProfileView(LoginRequiredMixin, TemplateView):
             messages.success(request, 'Profile updated successfully!')
             return redirect('financial-profile')
         else:
+            # Log validation errors for debugging
+            logger.error(f"Profile form validation failed for user {user.email}")
+            logger.error(f"Form errors: {form.errors.as_json()}")
+            messages.error(request, f'Profile update failed. Please check the form for errors.')
             context = self.get_context_data()
             context['form'] = form
             return render(request, self.template_name, context)
