@@ -665,7 +665,7 @@
             </label>
             <p class="mt-1 text-lg text-gray-900 dark:text-white">
                 {% if key in 'annual_return_rate,inflation_rate,annual_return' %}
-                    {{ value|floatformat:1 }}%
+                    {{ value|to_percentage|floatformat:1 }}%
                 {% elif key in 'current_age,retirement_age' %}
                     {{ value|floatformat:1 }}
                 {% elif key in 'portfolio_value,annual_spending' %}

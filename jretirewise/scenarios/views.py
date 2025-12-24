@@ -742,9 +742,23 @@ class MonteCarloScenarioCreateView(LoginRequiredMixin, CreateView):
         if form and hasattr(form, 'get_prefilled_fields'):
             context['prefilled_fields'] = form.get_prefilled_fields()
 
-        # Social Security is now entered as annual amount in FinancialProfile
-        # No longer need age-specific benefits for JavaScript
-        context['ss_benefits'] = {}
+        # Get Social Security benefits from TaxProfile for JavaScript dropdown updates
+        ss_benefits = {
+            'age_62': 0,
+            'age_65': 0,
+            'age_67': 0,
+            'age_70': 0,
+        }
+        try:
+            tax_profile = self.request.user.tax_profile
+            ss_benefits['age_62'] = int(tax_profile.social_security_age_62 or 0)
+            ss_benefits['age_65'] = int(tax_profile.social_security_age_65 or 0)
+            ss_benefits['age_67'] = int(tax_profile.social_security_age_67 or 0)
+            ss_benefits['age_70'] = int(tax_profile.social_security_age_70 or 0)
+        except:
+            pass  # Use default zeros if TaxProfile doesn't exist
+
+        context['ss_benefits'] = ss_benefits
         return context
 
     def form_valid(self, form):
@@ -818,9 +832,23 @@ class MonteCarloScenarioUpdateView(LoginRequiredMixin, UpdateView):
         if form and hasattr(form, 'get_prefilled_fields'):
             context['prefilled_fields'] = form.get_prefilled_fields()
 
-        # Social Security is now entered as annual amount in FinancialProfile
-        # No longer need age-specific benefits for JavaScript
-        context['ss_benefits'] = {}
+        # Get Social Security benefits from TaxProfile for JavaScript dropdown updates
+        ss_benefits = {
+            'age_62': 0,
+            'age_65': 0,
+            'age_67': 0,
+            'age_70': 0,
+        }
+        try:
+            tax_profile = self.request.user.tax_profile
+            ss_benefits['age_62'] = int(tax_profile.social_security_age_62 or 0)
+            ss_benefits['age_65'] = int(tax_profile.social_security_age_65 or 0)
+            ss_benefits['age_67'] = int(tax_profile.social_security_age_67 or 0)
+            ss_benefits['age_70'] = int(tax_profile.social_security_age_70 or 0)
+        except:
+            pass  # Use default zeros if TaxProfile doesn't exist
+
+        context['ss_benefits'] = ss_benefits
         return context
 
     def form_valid(self, form):
