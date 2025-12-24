@@ -117,8 +117,8 @@ class WithdrawalBucket(models.Model):
     order = models.IntegerField(default=0)
 
     # Time period (age range OR year range)
-    start_age = models.IntegerField(null=True, blank=True)
-    end_age = models.IntegerField(null=True, blank=True)
+    start_age = models.DecimalField(max_digits=5, decimal_places=1, null=True, blank=True)
+    end_age = models.DecimalField(max_digits=5, decimal_places=1, null=True, blank=True)
     start_year = models.IntegerField(null=True, blank=True)
     end_year = models.IntegerField(null=True, blank=True)
 

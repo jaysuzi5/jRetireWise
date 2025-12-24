@@ -635,13 +635,15 @@ class WithdrawalBucketForm(forms.ModelForm):
                 'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
                 'min': '18',
                 'max': '120',
-                'placeholder': '55',
+                'step': '0.1',
+                'placeholder': '55.0',
             }),
             'end_age': forms.NumberInput(attrs={
                 'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
                 'min': '18',
                 'max': '120',
-                'placeholder': '65',
+                'step': '0.1',
+                'placeholder': '65.0',
             }),
             'target_withdrawal_rate': forms.NumberInput(attrs={
                 'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',

@@ -149,28 +149,6 @@
             </div>
         </div>
 
-        <!-- Advanced Options Section -->
-        <div class="p-6">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Advanced Options</h2>
-            <div class="space-y-4">
-                <div class="flex items-center">
-                    <input type="checkbox" id="{{ form.tax_loss_harvesting_enabled.id_for_label }}" name="tax_loss_harvesting_enabled" {% if form.tax_loss_harvesting_enabled.value %}checked{% endif %} class="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500">
-                    <label for="{{ form.tax_loss_harvesting_enabled.id_for_label }}" class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Enable Tax Loss Harvesting
-                        <p class="text-xs text-gray-500 dark:text-gray-400 font-normal mt-0.5">Automatically harvest tax losses to offset gains</p>
-                    </label>
-                </div>
-
-                <div class="flex items-center">
-                    <input type="checkbox" id="{{ form.roth_conversion_enabled.id_for_label }}" name="roth_conversion_enabled" {% if form.roth_conversion_enabled.value %}checked{% endif %} class="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500">
-                    <label for="{{ form.roth_conversion_enabled.id_for_label }}" class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Enable Roth Conversions
-                        <p class="text-xs text-gray-500 dark:text-gray-400 font-normal mt-0.5">Consider Roth conversions during low-income years</p>
-                    </label>
-                </div>
-            </div>
-        </div>
-
         <!-- Form Actions -->
         <div class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700 flex justify-between">
             <a href="{% url 'bucket-list' scenario.pk %}" class="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
