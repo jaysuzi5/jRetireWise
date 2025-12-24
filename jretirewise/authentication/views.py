@@ -160,6 +160,23 @@ class ProfileView(LoginRequiredMixin, TemplateView):
             if state:
                 tax_profile.state_of_residence = state
 
+            # Update Social Security benefit amounts
+            ss_age_62 = form.cleaned_data.get('social_security_age_62')
+            if ss_age_62 is not None:
+                tax_profile.social_security_age_62 = ss_age_62
+
+            ss_age_65 = form.cleaned_data.get('social_security_age_65')
+            if ss_age_65 is not None:
+                tax_profile.social_security_age_65 = ss_age_65
+
+            ss_age_67 = form.cleaned_data.get('social_security_age_67')
+            if ss_age_67 is not None:
+                tax_profile.social_security_age_67 = ss_age_67
+
+            ss_age_70 = form.cleaned_data.get('social_security_age_70')
+            if ss_age_70 is not None:
+                tax_profile.social_security_age_70 = ss_age_70
+
             tax_profile.save()
 
             messages.success(request, 'Profile updated successfully!')
