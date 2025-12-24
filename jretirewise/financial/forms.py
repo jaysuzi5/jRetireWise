@@ -50,41 +50,41 @@ class FinancialProfileForm(forms.ModelForm):
         })
     )
 
-    # Social Security monthly benefits by claiming age
-    social_security_age_62 = forms.DecimalField(
+    # Social Security monthly benefits by claiming age (in whole dollars)
+    social_security_age_62 = forms.IntegerField(
         required=False,
         min_value=0,
         widget=forms.NumberInput(attrs={
             'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
-            'placeholder': '0.00',
-            'step': '0.01',
+            'placeholder': '0',
+            'step': '1',
         })
     )
-    social_security_age_65 = forms.DecimalField(
+    social_security_age_65 = forms.IntegerField(
         required=False,
         min_value=0,
         widget=forms.NumberInput(attrs={
             'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
-            'placeholder': '0.00',
-            'step': '0.01',
+            'placeholder': '0',
+            'step': '1',
         })
     )
-    social_security_age_67 = forms.DecimalField(
+    social_security_age_67 = forms.IntegerField(
         required=False,
         min_value=0,
         widget=forms.NumberInput(attrs={
             'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
-            'placeholder': '0.00',
-            'step': '0.01',
+            'placeholder': '0',
+            'step': '1',
         })
     )
-    social_security_age_70 = forms.DecimalField(
+    social_security_age_70 = forms.IntegerField(
         required=False,
         min_value=0,
         widget=forms.NumberInput(attrs={
             'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500',
-            'placeholder': '0.00',
-            'step': '0.01',
+            'placeholder': '0',
+            'step': '1',
         })
     )
 

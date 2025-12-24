@@ -486,33 +486,25 @@ class TaxProfile(models.Model):
         help_text='State of residence for state income tax calculations'
     )
 
-    # Social Security monthly benefits by claiming age
-    social_security_age_62 = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
+    # Social Security monthly benefits by claiming age (in whole dollars)
+    social_security_age_62 = models.IntegerField(
         default=0,
-        validators=[MinValueValidator(Decimal('0.00'))],
+        validators=[MinValueValidator(0)],
         help_text='Estimated monthly Social Security benefit if claimed at age 62 (~70% of FRA)'
     )
-    social_security_age_65 = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
+    social_security_age_65 = models.IntegerField(
         default=0,
-        validators=[MinValueValidator(Decimal('0.00'))],
+        validators=[MinValueValidator(0)],
         help_text='Estimated monthly Social Security benefit if claimed at age 65 (~86% of FRA)'
     )
-    social_security_age_67 = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
+    social_security_age_67 = models.IntegerField(
         default=0,
-        validators=[MinValueValidator(Decimal('0.00'))],
+        validators=[MinValueValidator(0)],
         help_text='Estimated monthly Social Security benefit if claimed at age 67 (100% - Full Retirement Age)'
     )
-    social_security_age_70 = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
+    social_security_age_70 = models.IntegerField(
         default=0,
-        validators=[MinValueValidator(Decimal('0.00'))],
+        validators=[MinValueValidator(0)],
         help_text='Estimated monthly Social Security benefit if claimed at age 70 (~124% of FRA with delayed credits)'
     )
 
