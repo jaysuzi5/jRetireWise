@@ -42,6 +42,7 @@ class ProfileViewIntegrationTestCase(TestCase):
             'retirement_age': 65,
             'life_expectancy': 95,
             'annual_spending': '80000.00',
+            'social_security_annual': '20000.00',
             'pension_annual': '0.00',
             'pension_start_age': 65,
         }
@@ -71,6 +72,7 @@ class ProfileViewIntegrationTestCase(TestCase):
             'retirement_age': 65,
             'life_expectancy': 95,
             'annual_spending': '90000.00',
+            'social_security_annual': '25000.00',
             'pension_annual': '10000.00',
             'pension_start_age': 62,
         }
@@ -139,6 +141,7 @@ class ProfileViewIntegrationTestCase(TestCase):
             'retirement_age': 65,
             'life_expectancy': 95,
             'annual_spending': '80000.00',
+            'social_security_annual': '20000.00',
             'pension_annual': '0.00',
             'pension_start_age': 65,
         }
