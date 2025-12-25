@@ -226,11 +226,13 @@ jobs:
         echo "- Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
 
   # E2E Tests job: Post-deployment smoke tests
+  # DISABLED: GitHub Actions cannot reach home cluster (192.168.86.229)
+  # TODO: Re-enable when external access is configured or use public URL
   e2e:
     runs-on: ubuntu-latest
     name: End-to-End Smoke Tests
     needs: deploy
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: false  # Disabled - GitHub Actions cannot reach home cluster
 
     steps:
     - uses: actions/checkout@v4
