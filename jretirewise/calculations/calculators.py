@@ -490,16 +490,25 @@ class DynamicBucketedWithdrawalCalculator:
         }
 
     def _find_applicable_bucket(self, age: int, year: int, buckets: List[Dict]) -> Dict:
-        """Find the bucket that applies for the given age/year."""
+        """Find the bucket that applies for the given age/year.
+
+        Supports decimal bucket ages (e.g., 57.5) by using floor/ceil comparison:
+        - A bucket with start_age=57.5 will match integer age 57 (floor(57.5)=57)
+        - A bucket with end_age=59.5 will match integer ages up to 59 (floor(59.5)=59)
+        """
+        import math
         for bucket in buckets:
             # Check age range
             start_age = bucket.get('start_age')
             end_age = bucket.get('end_age')
 
-            if start_age and end_age:
-                if start_age <= age <= end_age:
+            if start_age is not None and end_age is not None:
+                # Use floor of decimal ages for comparison with integer age
+                start_floor = math.floor(float(start_age))
+                end_floor = math.floor(float(end_age))
+                if start_floor <= age <= end_floor:
                     return bucket
-            elif start_age and age >= start_age:
+            elif start_age is not None and age >= math.floor(float(start_age)):
                 return bucket
 
         return None
