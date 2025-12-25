@@ -67,14 +67,14 @@ def run_scenario_calculation(sender, instance, created, **kwargs):
 
                 if portfolio_total_value > 0:
                     # Calculate weighted average growth rate from accounts
-                    # Note: default_growth_rate is stored as percentage (e.g., 6.0 for 6%)
-                    # so we divide by 100 to convert to decimal form for calculations
+                    # Note: default_growth_rate is stored as decimal (e.g., 0.07 for 7%)
+                    # so we use it directly without conversion
                     weighted_growth = sum(
                         float(acc.default_growth_rate) * (float(acc.current_value) / portfolio_total_value)
                         for acc in accounts if acc.current_value > 0
                     )
                     if weighted_growth > 0:
-                        annual_return_rate = weighted_growth / 100  # Convert from percentage to decimal (6.0 -> 0.06)
+                        annual_return_rate = weighted_growth  # Already in decimal form (0.07 = 7%)
             except:
                 pass  # Use default 0.07
 
