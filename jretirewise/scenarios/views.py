@@ -768,6 +768,24 @@ class MonteCarloScenarioCreateView(LoginRequiredMixin, CreateView):
         response = super().form_valid(form)
         return response
 
+    def form_invalid(self, form):
+        """Handle form validation errors."""
+        # Collect all errors for display
+        error_messages = []
+        for field, errors in form.errors.items():
+            if field == '__all__':
+                error_messages.extend(errors)
+            else:
+                field_label = form.fields[field].label if field in form.fields else field
+                for error in errors:
+                    error_messages.append(f'{field_label}: {error}')
+
+        if error_messages:
+            messages.error(self.request, 'Please correct the following errors: ' + '; '.join(error_messages))
+        else:
+            messages.error(self.request, 'Please correct the errors below.')
+        return super().form_invalid(form)
+
     def get_success_url(self):
         """Redirect to scenario detail page."""
         return reverse_lazy('scenario-detail', kwargs={'pk': self.object.pk})
@@ -855,6 +873,24 @@ class MonteCarloScenarioUpdateView(LoginRequiredMixin, UpdateView):
         """Show success message."""
         messages.success(self.request, f'Monte Carlo scenario "{form.instance.name}" updated successfully!')
         return super().form_valid(form)
+
+    def form_invalid(self, form):
+        """Handle form validation errors."""
+        # Collect all errors for display
+        error_messages = []
+        for field, errors in form.errors.items():
+            if field == '__all__':
+                error_messages.extend(errors)
+            else:
+                field_label = form.fields[field].label if field in form.fields else field
+                for error in errors:
+                    error_messages.append(f'{field_label}: {error}')
+
+        if error_messages:
+            messages.error(self.request, 'Please correct the following errors: ' + '; '.join(error_messages))
+        else:
+            messages.error(self.request, 'Please correct the errors below.')
+        return super().form_invalid(form)
 
     def get_success_url(self):
         """Redirect to scenario detail page."""

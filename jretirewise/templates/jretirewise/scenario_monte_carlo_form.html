@@ -66,9 +66,11 @@
         <div class="p-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Calculation Mode</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <label class="relative cursor-pointer" @click="mode = 'find_withdrawal'">
+                <label class="relative cursor-pointer">
                     <input type="radio" name="calculation_mode" value="find_withdrawal"
-                           class="peer sr-only" x-bind:checked="mode === 'find_withdrawal'">
+                           class="peer sr-only"
+                           x-model="mode"
+                           :checked="mode === 'find_withdrawal'">
                     <div class="p-4 border-2 rounded-lg transition-all duration-200"
                          :class="mode === 'find_withdrawal' ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-indigo-300'">
                         <div class="flex items-center mb-2">
@@ -85,9 +87,11 @@
                     </div>
                 </label>
 
-                <label class="relative cursor-pointer" @click="mode = 'evaluate_success'">
+                <label class="relative cursor-pointer">
                     <input type="radio" name="calculation_mode" value="evaluate_success"
-                           class="peer sr-only" x-bind:checked="mode === 'evaluate_success'">
+                           class="peer sr-only"
+                           x-model="mode"
+                           :checked="mode === 'evaluate_success'">
                     <div class="p-4 border-2 rounded-lg transition-all duration-200"
                          :class="mode === 'evaluate_success' ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-indigo-300'">
                         <div class="flex items-center mb-2">
