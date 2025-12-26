@@ -365,7 +365,7 @@
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                {% with withdrawal=calc.withdrawal_annual|default:calc.safe_withdrawal_annual pension=calc.parameters.pension_annual|default:0 pension_age=calc.parameters.pension_start_age|default:999 ss=calc.parameters.social_security_annual|default:0 ss_age=calc.parameters.social_security_start_age|default:999 ret_age=calc.parameters.retirement_age|default:65 life_exp=calc.parameters.life_expectancy|default:95 %}
+                {% with withdrawal=calc.withdrawal_annual|default:0 pension=calc.parameters.pension_annual|default:0 pension_age=calc.parameters.pension_start_age|default:999 ss=calc.parameters.social_security_annual|default:0 ss_age=calc.parameters.social_security_start_age|default:999 ret_age=calc.parameters.retirement_age|default:65 life_exp=calc.parameters.life_expectancy|default:95 %}
 
                 <!-- Band 1: Early Retirement (before any income sources) -->
                 {% if pension_age < ss_age %}

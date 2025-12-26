@@ -744,6 +744,10 @@ class EnhancedMonteCarloCalculator:
             'safe_withdrawal_annual': best_withdrawal,
             'safe_withdrawal_monthly': best_withdrawal / 12,
             'safe_withdrawal_rate': (best_withdrawal / self.portfolio_value) * 100,
+            # Include withdrawal_annual for template compatibility with evaluate_success mode
+            'withdrawal_annual': best_withdrawal,
+            'withdrawal_monthly': best_withdrawal / 12,
+            'withdrawal_rate': (best_withdrawal / self.portfolio_value) * 100,
             'four_percent_comparison': {
                 'withdrawal_annual': four_percent_withdrawal,
                 'withdrawal_monthly': four_percent_withdrawal / 12,
