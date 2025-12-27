@@ -823,6 +823,9 @@
                 const textColor = isDark ? '#ffffff' : '#374151';  // White for dark mode, gray-700 for light
                 const gridColor = isDark ? 'rgba(156, 163, 175, 0.3)' : 'rgba(209, 213, 219, 0.5)';  // Brighter grid in dark mode
 
+                // Debug logging
+                console.log('Bucket charts - isDark:', isDark, 'textColor:', textColor, 'html classes:', document.documentElement.className);
+
                 // Prepare data for charts
                 const labels = bucketedData.map(d => d.age);
                 const portfolioValues = bucketedData.map(d => parseFloat(d.portfolio_value_end));
