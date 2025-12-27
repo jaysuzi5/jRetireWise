@@ -136,6 +136,27 @@
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
 <script>
 (function() {
+    // Helper to get theme colors from CSS variables
+    function getChartColors() {
+        const styles = getComputedStyle(document.documentElement);
+        return {
+            text: styles.getPropertyValue('--chart-text-color').trim() || '#374151',
+            grid: styles.getPropertyValue('--chart-grid-color').trim() || 'rgba(107, 114, 128, 0.1)'
+        };
+    }
+
+    // Helper to update chart colors
+    function updateChartColors(chart, colors) {
+        chart.options.scales.x.title.color = colors.text;
+        chart.options.scales.x.ticks.color = colors.text;
+        chart.options.scales.x.grid.color = colors.grid;
+        chart.options.scales.y.title.color = colors.text;
+        chart.options.scales.y.ticks.color = colors.text;
+        chart.options.scales.y.grid.color = colors.grid;
+        chart.options.plugins.legend.labels.color = colors.text;
+        chart.update('none');
+    }
+
     const ctx = document.getElementById('mcChart').getContext('2d');
     const yearlyPercentiles = {{ calc.yearly_percentiles|safe }};
     const constantReturn = {{ calc.constant_return_trajectory|safe|default:'[]' }};
@@ -143,163 +164,73 @@
     const ssAnnual = {{ calc.parameters.social_security_annual|default:0 }};
     const pensionStartAge = {{ calc.parameters.pension_start_age|default:'null' }};
     const pensionAnnual = {{ calc.parameters.pension_annual|default:0 }};
-    const retirementAge = {{ calc.parameters.retirement_age|default:65 }};
 
-    // Detect dark mode for chart colors - check both localStorage and DOM class for reliability
-    const isDark = localStorage.getItem('theme-preference') === 'dark' || document.documentElement.classList.contains('dark');
-    const textColor = isDark ? '#ffffff' : '#374151';  // White for dark mode, gray-700 for light
-    const gridColor = isDark ? 'rgba(156, 163, 175, 0.3)' : 'rgba(209, 213, 219, 0.5)';  // Brighter grid in dark mode
-
+    let colors = getChartColors();
     const ages = yearlyPercentiles.map(p => p.age);
-    const p10 = yearlyPercentiles.map(p => p.p10);  // Target success rate (~90% success)
-    const p50 = yearlyPercentiles.map(p => p.p50);  // Median
+    const p10 = yearlyPercentiles.map(p => p.p10);
+    const p50 = yearlyPercentiles.map(p => p.p50);
     const constantValues = constantReturn.map(c => c.portfolio_value);
 
-    // Find index where SS and Pension start (for annotations)
+    // Build annotations for SS and Pension if present
     const ssStartIndex = ssStartAge && ssAnnual > 0 ? ages.indexOf(ssStartAge) : -1;
     const pensionStartIndex = pensionStartAge && pensionAnnual > 0 ? ages.indexOf(pensionStartAge) : -1;
-
-    // Build annotations for SS and Pension if present
     const annotations = {};
     if (ssStartIndex >= 0 && ssAnnual > 0) {
         annotations.ssLine = {
-            type: 'line',
-            xMin: ssStartIndex,
-            xMax: ssStartIndex,
-            borderColor: 'rgba(59, 130, 246, 0.7)',
-            borderWidth: 2,
-            borderDash: [6, 4],
-            label: {
-                display: true,
-                content: 'SS Starts',
-                position: 'start',
-                backgroundColor: 'rgba(59, 130, 246, 0.8)',
-                color: 'white',
-                font: { size: 11 }
-            }
+            type: 'line', xMin: ssStartIndex, xMax: ssStartIndex,
+            borderColor: 'rgba(59, 130, 246, 0.7)', borderWidth: 2, borderDash: [6, 4],
+            label: { display: true, content: 'SS Starts', position: 'start', backgroundColor: 'rgba(59, 130, 246, 0.8)', color: 'white', font: { size: 11 } }
         };
     }
     if (pensionStartIndex >= 0 && pensionAnnual > 0) {
         annotations.pensionLine = {
-            type: 'line',
-            xMin: pensionStartIndex,
-            xMax: pensionStartIndex,
-            borderColor: 'rgba(168, 85, 247, 0.7)',
-            borderWidth: 2,
-            borderDash: [6, 4],
-            label: {
-                display: true,
-                content: 'Pension Starts',
-                position: 'start',
-                backgroundColor: 'rgba(168, 85, 247, 0.8)',
-                color: 'white',
-                font: { size: 11 }
-            }
+            type: 'line', xMin: pensionStartIndex, xMax: pensionStartIndex,
+            borderColor: 'rgba(168, 85, 247, 0.7)', borderWidth: 2, borderDash: [6, 4],
+            label: { display: true, content: 'Pension Starts', position: 'start', backgroundColor: 'rgba(168, 85, 247, 0.8)', color: 'white', font: { size: 11 } }
         };
     }
 
-    new Chart(ctx, {
+    const mcChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: ages,
             datasets: [
-                {
-                    label: 'Constant Return',
-                    data: constantValues,
-                    borderColor: 'rgb(34, 197, 94)',
-                    backgroundColor: 'rgba(34, 197, 94, 0.2)',
-                    borderWidth: 2,
-                    pointRadius: 0,
-                    fill: true,
-                    order: 3
-                },
-                {
-                    label: 'Random Returns: Median',
-                    data: p50,
-                    borderColor: 'rgb(167, 139, 250)',
-                    backgroundColor: 'transparent',
-                    borderWidth: 2,
-                    pointRadius: 0,
-                    fill: false,
-                    order: 2
-                },
-                {
-                    label: 'Random Returns: Target Success',
-                    data: p10,
-                    borderColor: 'rgb(251, 113, 133)',
-                    backgroundColor: 'transparent',
-                    borderWidth: 2,
-                    pointRadius: 0,
-                    fill: false,
-                    order: 1
-                }
+                { label: 'Constant Return', data: constantValues, borderColor: 'rgb(34, 197, 94)', backgroundColor: 'rgba(34, 197, 94, 0.2)', borderWidth: 2, pointRadius: 0, fill: true, order: 3 },
+                { label: 'Random Returns: Median', data: p50, borderColor: 'rgb(167, 139, 250)', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, fill: false, order: 2 },
+                { label: 'Random Returns: Target Success', data: p10, borderColor: 'rgb(251, 113, 133)', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, fill: false, order: 1 }
             ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            interaction: {
-                mode: 'index',
-                intersect: false
-            },
+            interaction: { mode: 'index', intersect: false },
             scales: {
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Age',
-                        color: textColor
-                    },
-                    grid: {
-                        color: gridColor
-                    },
-                    ticks: {
-                        color: textColor
-                    }
-                },
+                x: { title: { display: true, text: 'Age', color: colors.text }, grid: { color: colors.grid }, ticks: { color: colors.text } },
                 y: {
-                    title: {
-                        display: true,
-                        text: 'Portfolio Value',
-                        color: textColor
-                    },
-                    grid: {
-                        color: gridColor
-                    },
+                    title: { display: true, text: 'Portfolio Value', color: colors.text },
+                    grid: { color: colors.grid },
                     ticks: {
-                        color: textColor,
+                        color: colors.text,
                         callback: function(value) {
-                            if (value >= 1000000) {
-                                return '$' + (value / 1000000).toFixed(1) + 'M';
-                            } else if (value >= 1000) {
-                                return '$' + (value / 1000).toFixed(0) + 'K';
-                            }
+                            if (value >= 1000000) return '$' + (value / 1000000).toFixed(1) + 'M';
+                            if (value >= 1000) return '$' + (value / 1000).toFixed(0) + 'K';
                             return '$' + value;
                         }
                     }
                 }
             },
             plugins: {
-                legend: {
-                    display: true,
-                    position: 'bottom',
-                    labels: {
-                        color: textColor,
-                        usePointStyle: true,
-                        padding: 20
-                    }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return context.dataset.label + ': $' + context.parsed.y.toLocaleString();
-                        }
-                    }
-                },
-                annotation: {
-                    annotations: annotations
-                }
+                legend: { display: true, position: 'bottom', labels: { color: colors.text, usePointStyle: true, padding: 20 } },
+                tooltip: { callbacks: { label: function(context) { return context.dataset.label + ': $' + context.parsed.y.toLocaleString(); } } },
+                annotation: { annotations: annotations }
             }
         }
+    });
+
+    // Listen for theme changes
+    window.addEventListener('themechange', function() {
+        colors = getChartColors();
+        updateChartColors(mcChart, colors);
     });
 })();
 </script>
@@ -550,94 +481,59 @@
 
 <script>
 (function() {
+    // Helper to get theme colors from CSS variables
+    function getChartColors() {
+        const styles = getComputedStyle(document.documentElement);
+        return {
+            text: styles.getPropertyValue('--chart-text-color').trim() || '#374151',
+            grid: styles.getPropertyValue('--chart-grid-color').trim() || 'rgba(107, 114, 128, 0.1)'
+        };
+    }
+
+    // Helper to update chart colors for dual-axis chart
+    function updateChartColors(chart, colors) {
+        chart.options.scales.y.title.color = colors.text;
+        chart.options.scales.y.ticks.color = colors.text;
+        chart.options.scales.y.grid.color = colors.grid;
+        chart.options.scales.y1.title.color = colors.text;
+        chart.options.scales.y1.ticks.color = colors.text;
+        chart.options.plugins.legend.labels.color = colors.text;
+        chart.update('none');
+    }
+
     const ctx = document.getElementById('projectionChart').getContext('2d');
     const projections = {{ scenario.result.result_data.calculation.projections|safe }};
-
-    // Detect dark mode for chart colors - check both localStorage and DOM class for reliability
-    const isDark = localStorage.getItem('theme-preference') === 'dark' || document.documentElement.classList.contains('dark');
-    const textColor = isDark ? '#ffffff' : '#374151';  // White for dark mode, gray-700 for light
-    const gridColor = isDark ? 'rgba(156, 163, 175, 0.15)' : 'rgba(107, 114, 128, 0.1)';
+    let colors = getChartColors();
 
     const ages = projections.map(p => p.age);
     const portfolioValues = projections.map(p => p.portfolio_value);
     const withdrawals = projections.map(p => p.annual_withdrawal);
 
-    new Chart(ctx, {
+    const projectionChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: ages,
             datasets: [
-                {
-                    label: 'Portfolio Value',
-                    data: portfolioValues,
-                    borderColor: '#4F46E5',
-                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                    borderWidth: 2,
-                    tension: 0.4,
-                    yAxisID: 'y'
-                },
-                {
-                    label: 'Annual Withdrawal',
-                    data: withdrawals,
-                    borderColor: '#EF4444',
-                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                    borderWidth: 2,
-                    tension: 0.4,
-                    yAxisID: 'y1'
-                }
+                { label: 'Portfolio Value', data: portfolioValues, borderColor: '#4F46E5', backgroundColor: 'rgba(79, 70, 229, 0.1)', borderWidth: 2, tension: 0.4, yAxisID: 'y' },
+                { label: 'Annual Withdrawal', data: withdrawals, borderColor: '#EF4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', borderWidth: 2, tension: 0.4, yAxisID: 'y1' }
             ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            interaction: {
-                mode: 'index',
-                intersect: false
-            },
+            interaction: { mode: 'index', intersect: false },
             scales: {
-                y: {
-                    type: 'linear',
-                    display: true,
-                    position: 'left',
-                    title: {
-                        display: true,
-                        text: 'Portfolio Value ($)',
-                        color: textColor
-                    },
-                    ticks: {
-                        color: textColor
-                    },
-                    grid: {
-                        color: gridColor
-                    }
-                },
-                y1: {
-                    type: 'linear',
-                    display: true,
-                    position: 'right',
-                    title: {
-                        display: true,
-                        text: 'Annual Withdrawal ($)',
-                        color: textColor
-                    },
-                    ticks: {
-                        color: textColor
-                    },
-                    grid: {
-                        drawOnChartArea: false
-                    }
-                }
+                y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Portfolio Value ($)', color: colors.text }, ticks: { color: colors.text }, grid: { color: colors.grid } },
+                y1: { type: 'linear', display: true, position: 'right', title: { display: true, text: 'Annual Withdrawal ($)', color: colors.text }, ticks: { color: colors.text }, grid: { drawOnChartArea: false } }
             },
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'top',
-                    labels: {
-                        color: textColor
-                    }
-                }
-            }
+            plugins: { legend: { display: true, position: 'top', labels: { color: colors.text } } }
         }
+    });
+
+    // Listen for theme changes
+    window.addEventListener('themechange', function() {
+        colors = getChartColors();
+        updateChartColors(projectionChart, colors);
     });
 })();
 </script>
@@ -817,132 +713,156 @@
 
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
             <script>
-                // Use projections from result_data (already JSON)
-                const bucketedData = {{ scenario.result.result_data.projections|safe }};
-                const isDark = localStorage.getItem('theme-preference') === 'dark' || document.documentElement.classList.contains('dark');
-                const textColor = isDark ? '#ffffff' : '#374151';  // White for dark mode, gray-700 for light
-                const gridColor = isDark ? 'rgba(156, 163, 175, 0.3)' : 'rgba(209, 213, 219, 0.5)';  // Brighter grid in dark mode
-
-                // Prepare data for charts
-                const labels = bucketedData.map(d => d.age);
-                const portfolioValues = bucketedData.map(d => parseFloat(d.portfolio_value_end));
-                const withdrawals = bucketedData.map(d => parseFloat(d.actual_withdrawal));
-                const totalIncome = bucketedData.map(d => parseFloat(d.total_available_income));
-
-                // Portfolio Value Chart
-                new Chart(document.getElementById('portfolioChart').getContext('2d'), {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Portfolio Value',
-                            data: portfolioValues,
-                            borderColor: '#4f46e5',
-                            backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                            borderWidth: 2,
-                            fill: true,
-                            tension: 0.4,
-                            pointRadius: 2
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: true,
-                        plugins: {
-                            legend: { display: false }
-                        },
-                        scales: {
-                            x: {
-                                title: { display: true, text: 'Age', color: textColor },
-                                grid: { color: gridColor },
-                                ticks: { color: textColor }
-                            },
-                            y: {
-                                title: { display: true, text: 'Portfolio Value ($)', color: textColor },
-                                grid: { color: gridColor },
-                                ticks: {
-                                    color: textColor,
-                                    callback: function(value) {
-                                        if (value >= 1000000) return '$' + (value / 1000000).toFixed(1) + 'M';
-                                        if (value >= 1000) return '$' + (value / 1000).toFixed(0) + 'K';
-                                        return '$' + value;
-                                    }
-                                }
-                            }
-                        }
+                (function() {
+                    // Helper to get theme colors from CSS variables
+                    function getChartColors() {
+                        const styles = getComputedStyle(document.documentElement);
+                        return {
+                            text: styles.getPropertyValue('--chart-text-color').trim() || '#374151',
+                            grid: styles.getPropertyValue('--chart-grid-color').trim() || 'rgba(107, 114, 128, 0.1)'
+                        };
                     }
-                });
 
-                // Annual Income Chart (Withdrawal + Total Available)
-                new Chart(document.getElementById('incomeChart').getContext('2d'), {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [
-                            {
-                                label: 'Total Available Income',
-                                data: totalIncome,
-                                borderColor: '#22c55e',
-                                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                    // Helper to update chart colors
+                    function updateChartColors(chart, colors) {
+                        if (chart.options.scales.x) {
+                            chart.options.scales.x.title.color = colors.text;
+                            chart.options.scales.x.ticks.color = colors.text;
+                            chart.options.scales.x.grid.color = colors.grid;
+                        }
+                        if (chart.options.scales.y) {
+                            chart.options.scales.y.title.color = colors.text;
+                            chart.options.scales.y.ticks.color = colors.text;
+                            chart.options.scales.y.grid.color = colors.grid;
+                        }
+                        if (chart.options.plugins.legend && chart.options.plugins.legend.labels) {
+                            chart.options.plugins.legend.labels.color = colors.text;
+                        }
+                        chart.update('none');
+                    }
+
+                    // Data
+                    const bucketedData = {{ scenario.result.result_data.projections|safe }};
+                    const labels = bucketedData.map(d => d.age);
+                    const portfolioValues = bucketedData.map(d => parseFloat(d.portfolio_value_end));
+                    const withdrawals = bucketedData.map(d => parseFloat(d.actual_withdrawal));
+                    const totalIncome = bucketedData.map(d => parseFloat(d.total_available_income));
+
+                    let colors = getChartColors();
+
+                    // Portfolio Value Chart
+                    const portfolioChart = new Chart(document.getElementById('portfolioChart').getContext('2d'), {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Portfolio Value',
+                                data: portfolioValues,
+                                borderColor: '#4f46e5',
+                                backgroundColor: 'rgba(79, 70, 229, 0.1)',
                                 borderWidth: 2,
                                 fill: true,
                                 tension: 0.4,
                                 pointRadius: 2
-                            },
-                            {
-                                label: 'Portfolio Withdrawal',
-                                data: withdrawals,
-                                borderColor: '#ef4444',
-                                backgroundColor: 'transparent',
-                                borderWidth: 2,
-                                fill: false,
-                                tension: 0.4,
-                                pointRadius: 2
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: true,
-                        interaction: {
-                            mode: 'index',
-                            intersect: false
+                            }]
                         },
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'top',
-                                labels: { color: textColor, padding: 15 }
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        return context.dataset.label + ': $' + context.parsed.y.toLocaleString();
-                                    }
-                                }
-                            }
-                        },
-                        scales: {
-                            x: {
-                                title: { display: true, text: 'Age', color: textColor },
-                                grid: { color: gridColor },
-                                ticks: { color: textColor }
-                            },
-                            y: {
-                                title: { display: true, text: 'Annual Income ($)', color: textColor },
-                                grid: { color: gridColor },
-                                ticks: {
-                                    color: textColor,
-                                    callback: function(value) {
-                                        if (value >= 1000000) return '$' + (value / 1000000).toFixed(1) + 'M';
-                                        if (value >= 1000) return '$' + (value / 1000).toFixed(0) + 'K';
-                                        return '$' + value;
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                x: {
+                                    title: { display: true, text: 'Age', color: colors.text },
+                                    grid: { color: colors.grid },
+                                    ticks: { color: colors.text }
+                                },
+                                y: {
+                                    title: { display: true, text: 'Portfolio Value ($)', color: colors.text },
+                                    grid: { color: colors.grid },
+                                    ticks: {
+                                        color: colors.text,
+                                        callback: function(value) {
+                                            if (value >= 1000000) return '$' + (value / 1000000).toFixed(1) + 'M';
+                                            if (value >= 1000) return '$' + (value / 1000).toFixed(0) + 'K';
+                                            return '$' + value;
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                });
+                    });
+
+                    // Annual Income Chart
+                    const incomeChart = new Chart(document.getElementById('incomeChart').getContext('2d'), {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: 'Total Available Income',
+                                    data: totalIncome,
+                                    borderColor: '#22c55e',
+                                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                                    borderWidth: 2,
+                                    fill: true,
+                                    tension: 0.4,
+                                    pointRadius: 2
+                                },
+                                {
+                                    label: 'Portfolio Withdrawal',
+                                    data: withdrawals,
+                                    borderColor: '#ef4444',
+                                    backgroundColor: 'transparent',
+                                    borderWidth: 2,
+                                    fill: false,
+                                    tension: 0.4,
+                                    pointRadius: 2
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            interaction: { mode: 'index', intersect: false },
+                            plugins: {
+                                legend: { display: true, position: 'top', labels: { color: colors.text, padding: 15 } },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return context.dataset.label + ': $' + context.parsed.y.toLocaleString();
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    title: { display: true, text: 'Age', color: colors.text },
+                                    grid: { color: colors.grid },
+                                    ticks: { color: colors.text }
+                                },
+                                y: {
+                                    title: { display: true, text: 'Annual Income ($)', color: colors.text },
+                                    grid: { color: colors.grid },
+                                    ticks: {
+                                        color: colors.text,
+                                        callback: function(value) {
+                                            if (value >= 1000000) return '$' + (value / 1000000).toFixed(1) + 'M';
+                                            if (value >= 1000) return '$' + (value / 1000).toFixed(0) + 'K';
+                                            return '$' + value;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                    // Listen for theme changes and update charts
+                    window.addEventListener('themechange', function() {
+                        colors = getChartColors();
+                        updateChartColors(portfolioChart, colors);
+                        updateChartColors(incomeChart, colors);
+                    });
+                })();
             </script>
         {% else %}
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8 text-center">
@@ -1140,99 +1060,59 @@
 
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script>
-            const yearlyData = {{ data.yearly_percentiles|safe }};
-            const isDark = localStorage.getItem('theme-preference') === 'dark' || document.documentElement.classList.contains('dark');
-            const textColor = isDark ? '#ffffff' : '#374151';  // White for dark mode, gray-700 for light
-            const gridColor = isDark ? 'rgba(156, 163, 175, 0.3)' : 'rgba(209, 213, 219, 0.5)';  // Brighter grid in dark mode
+        (function() {
+            // Helper to get theme colors from CSS variables
+            function getChartColors() {
+                const styles = getComputedStyle(document.documentElement);
+                return {
+                    text: styles.getPropertyValue('--chart-text-color').trim() || '#374151',
+                    grid: styles.getPropertyValue('--chart-grid-color').trim() || 'rgba(107, 114, 128, 0.1)'
+                };
+            }
 
+            // Helper to update chart colors
+            function updateChartColors(chart, colors) {
+                chart.options.scales.x.title.color = colors.text;
+                chart.options.scales.x.ticks.color = colors.text;
+                chart.options.scales.x.grid.color = colors.grid;
+                chart.options.scales.y.title.color = colors.text;
+                chart.options.scales.y.ticks.color = colors.text;
+                chart.options.scales.y.grid.color = colors.grid;
+                chart.options.plugins.legend.labels.color = colors.text;
+                chart.update('none');
+            }
+
+            const yearlyData = {{ data.yearly_percentiles|safe }};
+            let colors = getChartColors();
             const labels = yearlyData.map(d => d.age);
 
-            new Chart(document.getElementById('historicalChart').getContext('2d'), {
+            const historicalChart = new Chart(document.getElementById('historicalChart').getContext('2d'), {
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: [
-                        {
-                            label: '95th Percentile',
-                            data: yearlyData.map(d => d.p95),
-                            borderColor: 'rgba(34, 197, 94, 0.5)',
-                            backgroundColor: 'transparent',
-                            borderWidth: 1,
-                            borderDash: [5, 5],
-                            pointRadius: 0,
-                            fill: false
-                        },
-                        {
-                            label: '75th Percentile',
-                            data: yearlyData.map(d => d.p75),
-                            borderColor: 'rgba(34, 197, 94, 0.8)',
-                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                            borderWidth: 1,
-                            pointRadius: 0,
-                            fill: '+1'
-                        },
-                        {
-                            label: 'Median (50th)',
-                            data: yearlyData.map(d => d.p50),
-                            borderColor: '#4f46e5',
-                            backgroundColor: 'transparent',
-                            borderWidth: 3,
-                            pointRadius: 0,
-                            fill: false
-                        },
-                        {
-                            label: '25th Percentile',
-                            data: yearlyData.map(d => d.p25),
-                            borderColor: 'rgba(239, 68, 68, 0.8)',
-                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                            borderWidth: 1,
-                            pointRadius: 0,
-                            fill: '-1'
-                        },
-                        {
-                            label: '5th Percentile',
-                            data: yearlyData.map(d => d.p5),
-                            borderColor: 'rgba(239, 68, 68, 0.5)',
-                            backgroundColor: 'transparent',
-                            borderWidth: 1,
-                            borderDash: [5, 5],
-                            pointRadius: 0,
-                            fill: false
-                        }
+                        { label: '95th Percentile', data: yearlyData.map(d => d.p95), borderColor: 'rgba(34, 197, 94, 0.5)', backgroundColor: 'transparent', borderWidth: 1, borderDash: [5, 5], pointRadius: 0, fill: false },
+                        { label: '75th Percentile', data: yearlyData.map(d => d.p75), borderColor: 'rgba(34, 197, 94, 0.8)', backgroundColor: 'rgba(34, 197, 94, 0.1)', borderWidth: 1, pointRadius: 0, fill: '+1' },
+                        { label: 'Median (50th)', data: yearlyData.map(d => d.p50), borderColor: '#4f46e5', backgroundColor: 'transparent', borderWidth: 3, pointRadius: 0, fill: false },
+                        { label: '25th Percentile', data: yearlyData.map(d => d.p25), borderColor: 'rgba(239, 68, 68, 0.8)', backgroundColor: 'rgba(239, 68, 68, 0.1)', borderWidth: 1, pointRadius: 0, fill: '-1' },
+                        { label: '5th Percentile', data: yearlyData.map(d => d.p5), borderColor: 'rgba(239, 68, 68, 0.5)', backgroundColor: 'transparent', borderWidth: 1, borderDash: [5, 5], pointRadius: 0, fill: false }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: true,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false
-                    },
+                    interaction: { mode: 'index', intersect: false },
                     plugins: {
-                        legend: {
-                            display: true,
-                            position: 'top',
-                            labels: { color: textColor, padding: 10 }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return context.dataset.label + ': $' + context.parsed.y.toLocaleString();
-                                }
-                            }
-                        }
+                        legend: { display: true, position: 'top', labels: { color: colors.text, padding: 10 } },
+                        tooltip: { callbacks: { label: function(context) { return context.dataset.label + ': $' + context.parsed.y.toLocaleString(); } } }
                     },
                     scales: {
-                        x: {
-                            title: { display: true, text: 'Age', color: textColor },
-                            grid: { color: gridColor },
-                            ticks: { color: textColor }
-                        },
+                        x: { title: { display: true, text: 'Age', color: colors.text }, grid: { color: colors.grid }, ticks: { color: colors.text } },
                         y: {
-                            title: { display: true, text: 'Portfolio Value ($)', color: textColor },
-                            grid: { color: gridColor },
+                            title: { display: true, text: 'Portfolio Value ($)', color: colors.text },
+                            grid: { color: colors.grid },
                             ticks: {
-                                color: textColor,
+                                color: colors.text,
                                 callback: function(value) {
                                     if (value >= 1000000) return '$' + (value / 1000000).toFixed(1) + 'M';
                                     if (value >= 1000) return '$' + (value / 1000).toFixed(0) + 'K';
@@ -1243,6 +1123,13 @@
                     }
                 }
             });
+
+            // Listen for theme changes
+            window.addEventListener('themechange', function() {
+                colors = getChartColors();
+                updateChartColors(historicalChart, colors);
+            });
+        })();
         </script>
         {% endwith %}
     {% else %}

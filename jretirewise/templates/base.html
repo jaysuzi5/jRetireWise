@@ -27,6 +27,15 @@
         body {
             font-family: 'Inter', sans-serif;
         }
+        /* Chart theme colors - used by Chart.js via JavaScript */
+        :root {
+            --chart-text-color: #374151;
+            --chart-grid-color: rgba(107, 114, 128, 0.1);
+        }
+        .dark {
+            --chart-text-color: #ffffff;
+            --chart-grid-color: rgba(156, 163, 175, 0.3);
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -162,6 +171,8 @@
                     document.body.classList.remove('dark:bg-gray-900');
                 }
                 localStorage.setItem('theme-preference', theme);
+                // Dispatch custom event so charts can re-render with new colors
+                window.dispatchEvent(new CustomEvent('themechange', { detail: { theme: theme } }));
             }
 
             // Check for saved preference or use default
