@@ -187,24 +187,8 @@
                     const currentTheme = htmlElement.classList.contains('dark') ? 'dark' : 'light';
                     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
 
-                    // Apply theme immediately
+                    // Apply theme immediately (saved to localStorage in applyTheme)
                     applyTheme(newTheme);
-
-                    // Save to server if user is authenticated
-                    const userEmail = document.querySelector('p.text-gray-600.dark\\:text-gray-400');
-                    if (userEmail) {
-                        // User is authenticated, save preference to server
-                        fetch('/auth/profile/', {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
-                            },
-                            body: JSON.stringify({
-                                theme_preference: newTheme
-                            })
-                        }).catch(err => console.log('Theme save to server failed, but local preference applied'));
-                    }
                 });
             }
 
