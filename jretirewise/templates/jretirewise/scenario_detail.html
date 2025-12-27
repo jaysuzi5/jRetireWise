@@ -150,6 +150,9 @@
     const textColor = isDark ? '#ffffff' : '#374151';  // White for dark mode, gray-700 for light
     const gridColor = isDark ? 'rgba(156, 163, 175, 0.3)' : 'rgba(209, 213, 219, 0.5)';  // Brighter grid in dark mode
 
+    // Debug logging
+    console.log('Monte Carlo chart - isDark:', isDark, 'textColor:', textColor, 'html classes:', document.documentElement.className);
+
     const ages = yearlyPercentiles.map(p => p.age);
     const p10 = yearlyPercentiles.map(p => p.p10);  // Target success rate (~90% success)
     const p50 = yearlyPercentiles.map(p => p.p50);  // Median
@@ -557,6 +560,9 @@
     const isDark = document.documentElement.classList.contains('dark');
     const textColor = isDark ? '#ffffff' : '#374151';  // White for dark mode, gray-700 for light
     const gridColor = isDark ? 'rgba(156, 163, 175, 0.15)' : 'rgba(107, 114, 128, 0.1)';
+
+    // Debug logging
+    console.log('Projection chart - isDark:', isDark, 'textColor:', textColor, 'html classes:', document.documentElement.className);
 
     const ages = projections.map(p => p.age);
     const portfolioValues = projections.map(p => p.portfolio_value);
@@ -1147,6 +1153,9 @@
             const isDark = document.documentElement.classList.contains('dark');
             const textColor = isDark ? '#ffffff' : '#374151';  // White for dark mode, gray-700 for light
             const gridColor = isDark ? 'rgba(156, 163, 175, 0.3)' : 'rgba(209, 213, 219, 0.5)';  // Brighter grid in dark mode
+
+            // Debug logging
+            console.log('Historical chart - isDark:', isDark, 'textColor:', textColor, 'html classes:', document.documentElement.className);
 
             const labels = yearlyData.map(d => d.age);
 
