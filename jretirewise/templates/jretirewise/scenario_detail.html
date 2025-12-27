@@ -147,7 +147,7 @@
 
     // Detect dark mode for chart colors
     const isDark = document.documentElement.classList.contains('dark');
-    const textColor = isDark ? '#f3f4f6' : '#374151';  // gray-100 for dark mode, gray-700 for light
+    const textColor = isDark ? '#ffffff' : '#374151';  // White for dark mode, gray-700 for light
     const gridColor = isDark ? 'rgba(156, 163, 175, 0.3)' : 'rgba(209, 213, 219, 0.5)';  // Brighter grid in dark mode
 
     const ages = yearlyPercentiles.map(p => p.age);
@@ -555,7 +555,7 @@
 
     // Detect dark mode for chart colors
     const isDark = document.documentElement.classList.contains('dark');
-    const textColor = isDark ? '#f3f4f6' : '#6B7280';  // gray-100 for dark mode, gray-500 for light
+    const textColor = isDark ? '#ffffff' : '#374151';  // White for dark mode, gray-700 for light
     const gridColor = isDark ? 'rgba(156, 163, 175, 0.15)' : 'rgba(107, 114, 128, 0.1)';
 
     const ages = projections.map(p => p.age);
@@ -820,7 +820,7 @@
                 // Use projections from result_data (already JSON)
                 const bucketedData = {{ scenario.result.result_data.projections|safe }};
                 const isDark = document.documentElement.classList.contains('dark');
-                const textColor = isDark ? '#f3f4f6' : '#374151';  // Use gray-100 for dark mode (brighter)
+                const textColor = isDark ? '#ffffff' : '#374151';  // White for dark mode, gray-700 for light
                 const gridColor = isDark ? 'rgba(156, 163, 175, 0.3)' : 'rgba(209, 213, 219, 0.5)';  // Brighter grid in dark mode
 
                 // Prepare data for charts
@@ -1142,7 +1142,7 @@
         <script>
             const yearlyData = {{ data.yearly_percentiles|safe }};
             const isDark = document.documentElement.classList.contains('dark');
-            const textColor = isDark ? '#f3f4f6' : '#374151';  // gray-100 for dark mode, gray-700 for light
+            const textColor = isDark ? '#ffffff' : '#374151';  // White for dark mode, gray-700 for light
             const gridColor = isDark ? 'rgba(156, 163, 175, 0.3)' : 'rgba(209, 213, 219, 0.5)';  // Brighter grid in dark mode
 
             const labels = yearlyData.map(d => d.age);
